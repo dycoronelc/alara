@@ -1,4 +1,6 @@
+import { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
+import type { Request } from 'express';
 type N8nPayload = {
     runId?: string;
     status?: 'STARTED' | 'SUCCESS' | 'FAILED';
@@ -19,6 +21,12 @@ type N8nPayload = {
         }[];
     };
 };
+type TwilioRecordingPayload = {
+    RecordingUrl?: string;
+    RecordingSid?: string;
+    CallSid?: string;
+    RecordingDuration?: string;
+};
 export declare class WebhooksController {
     private readonly prisma;
     constructor(prisma: PrismaService);
@@ -26,5 +34,16 @@ export declare class WebhooksController {
         ok: boolean;
         runId: bigint;
     }>;
+    handleTwilioRecording(payload: TwilioRecordingPayload, inspectionRequestId?: string): Promise<{
+        ok: boolean;
+        message: string;
+        id?: undefined;
+    } | {
+        ok: boolean;
+        id: bigint;
+        message?: undefined;
+    }>;
+    getTwiml(id: number, req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    private assertTwilioSignature;
 }
 export {};

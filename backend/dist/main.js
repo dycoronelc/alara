@@ -6,6 +6,7 @@ const app_module_1 = require("./app.module");
 const bigint_interceptor_1 = require("./common/bigint.interceptor");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    app.set('trust proxy', 1);
     app.enableCors({ origin: true });
     app.setGlobalPrefix('api');
     app.useGlobalPipes(new common_1.ValidationPipe({

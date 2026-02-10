@@ -224,6 +224,7 @@ model Client {
   email         String?   @db.VarChar(255)
   phone_mobile  String?   @db.VarChar(30)
   phone_home    String?   @db.VarChar(30)
+  phone_work    String?   @db.VarChar(30)
   employer_name String?   @db.VarChar(200)
   employer_tax_id String? @db.VarChar(50)
   profession    String?   @db.VarChar(150)

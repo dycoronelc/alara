@@ -234,6 +234,73 @@ let InspectionRequestsService = class InspectionRequestsService {
             return { runId: run.id, status: run.status };
         });
     }
+    async startCall(context, id) {
+        if (!context.userId) {
+            throw new common_1.BadRequestException('userId requerido');
+        }
+        if (context.role === 'INSURER') {
+            throw new common_1.ForbiddenException('Solo ALARA puede iniciar llamadas');
+        }
+        const request = await this.prisma.inspectionRequest.findUnique({
+            where: { id },
+            include: { client: true },
+        });
+        if (!request) {
+            throw new common_1.NotFoundException('Solicitud no encontrada');
+        }
+        this.ensureTenancy(context, request);
+        const phone = request.client?.phone_mobile ??
+            request.client?.phone_home ??
+            request.client?.phone_work ??
+            null;
+        if (!phone) {
+            throw new common_1.BadRequestException('El cliente no tiene teléfono para llamar');
+        }
+        const n8nUrl = process.env.N8N_CALL_START_URL;
+        if (!n8nUrl) {
+            throw new common_1.BadRequestException('N8N_CALL_START_URL no configurado');
+        }
+        const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
+        const twilioFrom = process.env.TWILIO_FROM;
+        const transcriptionWebhook = process.env.N8N_TRANSCRIPTION_WEBHOOK;
+        const recordingWebhook = process.env.N8N_RECORDING_WEBHOOK;
+        if (!twilioAccountSid || !twilioFrom || !transcriptionWebhook) {
+            throw new common_1.BadRequestException('Faltan variables de Twilio/n8n para iniciar llamada');
+        }
+        const backendUrl = process.env.BACKEND_PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 3000}`;
+        const twilioTwimlUrl = process.env.TWILIO_TWIML_URL ?? `${backendUrl}/api/webhooks/twilio/twiml/${id}`;
+        const payload = {
+            inspection_request_id: id,
+            client: {
+                full_name: `${request.client?.first_name ?? ''} ${request.client?.last_name ?? ''}`.trim(),
+                phone,
+                id_number: request.client?.id_number ?? '',
+            },
+            twilio_account_sid: twilioAccountSid,
+            twilio_from: twilioFrom,
+            twilio_twiml_url: twilioTwimlUrl,
+            recording_webhook: recordingWebhook ?? undefined,
+            transcription_webhook: transcriptionWebhook,
+            backend_url: backendUrl,
+        };
+        const response = await fetch(n8nUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+            const detail = await response.text();
+            throw new common_1.BadRequestException(`No se pudo iniciar la llamada: ${detail}`);
+        }
+        let result = null;
+        try {
+            result = await response.json();
+        }
+        catch (error) {
+            result = null;
+        }
+        return { ok: true, n8n: result };
+    }
     async listInvestigations(context, id) {
         const request = await this.prisma.inspectionRequest.findUnique({ where: { id } });
         if (!request) {

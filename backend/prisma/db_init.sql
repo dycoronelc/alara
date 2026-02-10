@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS clients (
   email VARCHAR(255) NULL,
   phone_mobile VARCHAR(30) NULL,
   phone_home VARCHAR(30) NULL,
+  phone_work VARCHAR(30) NULL,
 
   employer_name VARCHAR(200) NULL,
   employer_tax_id VARCHAR(50) NULL,

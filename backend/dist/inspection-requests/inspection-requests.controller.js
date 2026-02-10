@@ -72,6 +72,9 @@ let InspectionRequestsController = class InspectionRequestsController {
     async triggerInvestigation(req, id, payload) {
         return this.service.triggerInvestigation(req.userContext, id, payload.sources ?? []);
     }
+    async startCall(req, id) {
+        return this.service.startCall(req.userContext, id);
+    }
     async listInvestigations(req, id) {
         return this.service.listInvestigations(req.userContext, id);
     }
@@ -162,6 +165,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, Number, Object]),
     __metadata("design:returntype", Promise)
 ], InspectionRequestsController.prototype, "triggerInvestigation", null);
+__decorate([
+    (0, common_1.Post)(':id/call/start'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number]),
+    __metadata("design:returntype", Promise)
+], InspectionRequestsController.prototype, "startCall", null);
 __decorate([
     (0, common_1.Get)(':id/investigations'),
     __param(0, (0, common_1.Req)()),
