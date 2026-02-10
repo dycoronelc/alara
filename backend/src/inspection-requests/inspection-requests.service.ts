@@ -298,15 +298,16 @@ export class InspectionRequestsService {
 
     const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
     const twilioFrom = process.env.TWILIO_FROM;
-    const twilioTwimlUrl = process.env.TWILIO_TWIML_URL;
     const transcriptionWebhook = process.env.N8N_TRANSCRIPTION_WEBHOOK;
     const recordingWebhook = process.env.N8N_RECORDING_WEBHOOK;
 
-    if (!twilioAccountSid || !twilioFrom || !twilioTwimlUrl || !transcriptionWebhook) {
+    if (!twilioAccountSid || !twilioFrom || !transcriptionWebhook) {
       throw new BadRequestException('Faltan variables de Twilio/n8n para iniciar llamada');
     }
 
     const backendUrl = process.env.BACKEND_PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 3000}`;
+    const twilioTwimlUrl =
+      process.env.TWILIO_TWIML_URL ?? `${backendUrl}/api/webhooks/twilio/twiml/${id}`;
 
     const payload = {
       inspection_request_id: id,

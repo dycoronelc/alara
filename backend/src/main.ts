@@ -5,6 +5,7 @@ import { BigIntInterceptor } from './common/bigint.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.set('trust proxy', 1);
   app.enableCors({ origin: true });
   app.setGlobalPrefix('api');
   app.useGlobalPipes(

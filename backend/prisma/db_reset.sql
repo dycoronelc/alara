@@ -1,5 +1,6 @@
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS call_recordings;
 DROP TABLE IF EXISTS workflow_runs;
 DROP TABLE IF EXISTS investigations;
 DROP TABLE IF EXISTS report_fields;

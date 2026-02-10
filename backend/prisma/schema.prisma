@@ -328,6 +328,7 @@ model InspectionRequest {
   investigations Investigation[]
   workflow_runs  WorkflowRun[]
   notifications  Notification[]
+  call_recordings CallRecording[]
 
   @@unique([insurer_id, request_number])
   @@index([status])
@@ -337,6 +338,23 @@ model InspectionRequest {
   @@index([assigned_investigator_user_id])
   @@index([scheduled_start_at])
   @@map("inspection_requests")
+}
+
+model CallRecording {
+  id                    BigInt   @id @default(autoincrement())
+  inspection_request_id BigInt?
+  recording_sid         String   @db.VarChar(64)
+  call_sid              String?  @db.VarChar(64)
+  recording_url         String   @db.VarChar(1024)
+  recording_duration    Int?
+  created_at            DateTime @default(now())
+
+  inspection_request InspectionRequest? @relation(fields: [inspection_request_id], references: [id], onDelete: SetNull)
+
+  @@index([inspection_request_id])
+  @@index([recording_sid])
+  @@index([call_sid])
+  @@map("call_recordings")
 }
 
 model InspectionRequestStatusHistory {

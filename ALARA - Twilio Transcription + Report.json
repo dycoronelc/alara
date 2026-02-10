@@ -1,0 +1,350 @@
+{
+  "name": "ALARA - Twilio Transcription + Report",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/call/start",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "06f0dbc9-6034-41ae-827b-af8fb2d04aed",
+      "name": "Webhook - Call Start",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        256,
+        304
+      ],
+      "webhookId": "6528518f-7aa8-4b5f-a12a-c7566b290a09"
+    },
+    {
+      "parameters": {
+        "resource": "call",
+        "from": "={{ $json.twilio_from || $json.fromNumber }}",
+        "to": "={{ $json.client?.phone || $json.toNumber }}",
+        "twiml": false,
+        "message": "={{ $json.twilio_twiml_url || ($json.backend_url ? $json.backend_url + '/api/webhooks/twilio/twiml/' + $json.inspection_request_id : $json.twimlUrl) }}",
+        "options": {}
+      },
+      "id": "232947e6-a251-42cc-851a-d650d6fed3ca",
+      "name": "Twilio - Create Call",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        480,
+        304
+      ],
+      "credentials": {
+        "twilioApi": {
+          "id": "sRdV2NHqHs169Xwh",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/call/transcription",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "33c2c25e-bcb2-4d67-a686-df5cf56b7390",
+      "name": "Webhook - Call Transcription",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        256,
+        640
+      ],
+      "webhookId": "6467a50d-9e0a-4900-b002-84e41adc3d64"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "transcription",
+              "value": "={{ $json.TranscriptionText || $json.transcription }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "requestId",
+              "value": "={{ $json.query?.inspection_request_id || $json.inspection_request_id || $json.requestId }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "callSid",
+              "value": "={{ $json.CallSid || $json.callSid }}",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "metadata",
+              "value": "={{ $json.metadata }}",
+              "type": "object"
+            },
+            {
+              "id": "id-5",
+              "name": "backend_url",
+              "value": "={{ $json.query?.backend_url || $json.backend_url || $env.BACKEND_URL || 'http://localhost:5000' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b88aae89-ea4a-4185-bce8-d945c819dffb",
+      "name": "Set Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.transcription }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a structured data extractor. Convert the transcript into the inspection report JSON schema used by the ALARA backend. Output JSON only. Use keys: outcome, summary, additional_comments, sections[]. Each section has code, title, order, fields[]. Each field has key, label, type, value. If a value is not present, return an empty string."
+        }
+      },
+      "id": "f4afbd2e-e71b-41d9-aa51-df5ad766c02e",
+      "name": "AI Agent - Extract Report",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        736,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "7dfbaf1d-4b7a-4f24-8ad1-dd630e5bab01",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        800,
+        960
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "xHoVHmeWA0yQHfol",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"outcome\": {\"type\": \"string\"},\n    \"summary\": {\"type\": \"string\"},\n    \"additional_comments\": {\"type\": \"string\"},\n    \"sections\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"code\": {\"type\": \"string\"},\n          \"title\": {\"type\": \"string\"},\n          \"order\": {\"type\": \"number\"},\n          \"fields\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"object\",\n              \"properties\": {\n                \"key\": {\"type\": \"string\"},\n                \"label\": {\"type\": \"string\"},\n                \"type\": {\"type\": \"string\"},\n                \"value\": {\"type\": \"string\"}\n              },\n              \"required\": [\"key\", \"value\"]\n            }\n          }\n        },\n        \"required\": [\"code\", \"title\", \"fields\"]\n      }\n    }\n  },\n  \"required\": [\"outcome\", \"sections\"]\n}",
+        "autoFix": true
+      },
+      "id": "5cb97a75-f411-4d13-8c2b-579ebab5c858",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        944,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($json.backend_url || $env.BACKEND_URL || 'http://localhost:5000') + '/api/inspection-requests/' + $json.requestId + '/report' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + ($env.ALARA_SERVICE_TOKEN || '') }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "3cbe0d91-aca0-4e25-9dc9-508495fb9873",
+      "name": "HTTP Request - Save Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1200,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/call/recording",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "9b8f7f4c-0bb5-4f6c-9e4a-5d3e0b8d61b0",
+      "name": "Webhook - Call Recording",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        256,
+        960
+      ],
+      "webhookId": "call-recording-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($json.query?.backend_url || $json.backend_url || $env.BACKEND_URL || 'http://localhost:5000') + '/api/webhooks/twilio/recording' }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "inspection_request_id",
+              "value": "={{ $json.query?.inspection_request_id || $json.inspection_request_id || '' }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "b6c5cdb9-0906-4d42-bb39-6bda0e47cb2a",
+      "name": "HTTP Request - Save Recording",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        520,
+        960
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Call Start": {
+      "main": [
+        [
+          {
+            "node": "Twilio - Create Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Call Transcription": {
+      "main": [
+        [
+          {
+            "node": "Set Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Context": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Extract Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent - Extract Report",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent - Extract Report",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Extract Report": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Save Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Call Recording": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Save Recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "1d7e41e4-8bf4-4faf-a73f-07835e8427b3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7f9ba910a29f5e215a4b4a694ee3408825b7b8212157cd2e725d3dcd110c61dc"
+  },
+  "id": "8qOv_xiO6MRGDht30GhD9",
+  "tags": []
+}

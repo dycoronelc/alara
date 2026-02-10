@@ -388,7 +388,25 @@ CREATE TABLE IF NOT EXISTS workflow_runs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ================================
--- 10) Notificaciones
+-- 10) Grabaciones de llamadas
+-- ================================
+CREATE TABLE IF NOT EXISTS call_recordings (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  inspection_request_id BIGINT UNSIGNED NULL,
+  recording_sid VARCHAR(64) NOT NULL,
+  call_sid VARCHAR(64) NULL,
+  recording_url VARCHAR(1024) NOT NULL,
+  recording_duration INT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY ix_cr_request (inspection_request_id),
+  KEY ix_cr_recording_sid (recording_sid),
+  KEY ix_cr_call_sid (call_sid),
+  CONSTRAINT fk_cr_request FOREIGN KEY (inspection_request_id) REFERENCES inspection_requests(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ================================
+-- 11) Notificaciones
 -- ================================
 CREATE TABLE IF NOT EXISTS notifications (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
