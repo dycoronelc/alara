@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="alice" language="es-ES">
+    Hola. Le saluda ALARA INSP, S.A. Esta llamada será grabada para fines de entrevista de inspección.
+  </Say>
+  <Pause length="1"/>
+  <Say voice="alice" language="es-ES">
+    Cuando esté listo, por favor responda las preguntas de la entrevista.
+  </Say>
+  <Record
+    playBeep="true"
+    maxLength="3600"
+    transcribe="true"
+    transcribeCallback="https://YOUR_N8N_DOMAIN/webhook/call/transcription"
+    recordingStatusCallback="https://YOUR_N8N_DOMAIN/webhook/call/recording"
+  />
+  <Say voice="alice" language="es-ES">
+    Gracias. La entrevista ha finalizado.
+  </Say>
+</Response>
