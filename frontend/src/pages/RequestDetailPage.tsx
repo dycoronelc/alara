@@ -579,7 +579,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
             <span>Solicitud de Inspección</span>
             <button
               className="ghost-button"
-              onClick={() => downloadPdf(`/api/inspection-requests/${data.id}/pdf/solicitud`)}
+              onClick={() => downloadPdf(Number(data.id), 'solicitud')}
             >
               Descargar
             </button>
@@ -594,7 +594,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
               (portal === 'alara' || data.report_shared_at) ? (
                 <button
                   className="ghost-button"
-                  onClick={() => downloadPdf(`/api/inspection-requests/${data.id}/pdf/reporte`)}
+                  onClick={() => downloadPdf(Number(data.id), 'reporte')}
                 >
                   Descargar
                 </button>
@@ -878,7 +878,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                 (portal === 'alara' || data.report_shared_at) ? (
                   <button
                     className="ghost-button"
-                    onClick={() => downloadPdf(`/api/inspection-requests/${data.id}/pdf/reporte`)}
+                    onClick={() => downloadPdf(Number(data.id), 'reporte')}
                   >
                     Descargar Reporte PDF
                   </button>

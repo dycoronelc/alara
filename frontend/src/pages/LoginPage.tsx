@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { login } from '../data/api';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -10,11 +11,7 @@ const LoginPage = () => {
   const handleLogin = async () => {
     setError('');
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await login(email, password);
       if (!response.ok) {
         throw new Error('Credenciales inválidas');
       }

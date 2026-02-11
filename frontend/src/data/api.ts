@@ -2,6 +2,15 @@ import { mockAlaraDashboard, mockInsurerDashboard, mockRequests } from './mock';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '';
 
+export const getApiUrl = () => API_URL;
+
+export const login = (email: string, password: string) =>
+  fetch(`${API_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+
 const getStoredInsurerId = () => {
   const stored = localStorage.getItem('alara-insurer-id');
   return stored ? Number(stored) : undefined;
@@ -82,7 +91,10 @@ export const shareInspectionReport = (id: number, role: 'ALARA' | 'INSURER') =>
     null,
   );
 
-export const downloadPdf = async (url: string) => {
+export type PdfType = 'solicitud' | 'reporte';
+
+export const downloadPdf = async (requestId: number, type: PdfType) => {
+  const url = `${API_URL}/api/inspection-requests/${requestId}/pdf/${type}`;
   const token = localStorage.getItem('alara-token');
   const response = await fetch(url, {
     headers: {
@@ -98,7 +110,7 @@ export const downloadPdf = async (url: string) => {
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = objectUrl;
-  link.download = url.includes('reporte') ? 'reporte_inspeccion.pdf' : 'solicitud_inspeccion.pdf';
+  link.download = type === 'reporte' ? 'reporte_inspeccion.pdf' : 'solicitud_inspeccion.pdf';
   document.body.appendChild(link);
   link.click();
   link.remove();
