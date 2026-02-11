@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { InspectionRequestsService } from './inspection-requests.service';
 import { CreateInspectionRequestDto } from './dto/create-inspection-request.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
+import { UpdateClientDto } from './dto/update-client.dto';
 import { DecisionDto } from './dto/decision.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { DocumentsService } from '../documents/documents.service';
@@ -55,6 +56,15 @@ export class InspectionRequestsController {
     @Body() payload: DecisionDto,
   ) {
     return this.service.decide(req.userContext!, id, payload);
+  }
+
+  @Patch(':id/client')
+  async updateClient(
+    @Req() req: Request,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() payload: UpdateClientDto,
+  ) {
+    return this.service.updateClient(req.userContext!, id, payload);
   }
 
   @Post(':id/report')

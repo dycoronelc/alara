@@ -153,3 +153,34 @@ export const getReportTemplate = (role: 'ALARA' | 'INSURER') =>
     { headers: defaultHeaders(role) },
     null,
   );
+
+export type UpdateClientPayload = {
+  first_name?: string;
+  last_name?: string;
+  dob?: string;
+  id_type?: 'CEDULA' | 'PASSPORT' | 'OTRO';
+  id_number?: string;
+  email?: string;
+  phone_mobile?: string;
+  phone_home?: string;
+  phone_work?: string;
+  employer_name?: string;
+  employer_tax_id?: string;
+  profession?: string;
+};
+
+export const updateInspectionRequestClient = (
+  id: number,
+  payload: UpdateClientPayload,
+  role: 'ALARA' | 'INSURER',
+  insurerId?: number,
+) =>
+  safeFetch(
+    `${API_URL}/api/inspection-requests/${id}/client`,
+    {
+      method: 'PATCH',
+      headers: defaultHeaders(role, insurerId),
+      body: JSON.stringify(payload),
+    },
+    null,
+  );

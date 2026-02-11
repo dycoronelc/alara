@@ -8,6 +8,8 @@ import {
   shareInspectionReport,
   startInspectionCall,
   triggerInvestigation,
+  updateInspectionRequestClient,
+  type UpdateClientPayload,
 } from '../data/api';
 import StatusBadge from '../components/StatusBadge';
 
@@ -320,8 +322,8 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const navigate = useNavigate();
   const [data, setData] = useState<RequestDetail | null>(null);
   const [activeTab, setActiveTab] = useState<
-    'cliente' | 'solicitud' | 'reporte' | 'documentacion' | 'investigaciones'
-  >('cliente');
+    'general' | 'cliente' | 'solicitud' | 'reporte' | 'documentacion' | 'investigaciones'
+  >('general');
   const [showReportForm] = useState(true);
   const [reportValues, setReportValues] = useState<Record<string, string>>({});
   const [reportSummary, setReportSummary] = useState('');
@@ -334,6 +336,9 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const [documents, setDocuments] = useState<File[]>([]);
   const [investigationMessage, setInvestigationMessage] = useState('');
   const [callMessage, setCallMessage] = useState('');
+  const [editingClient, setEditingClient] = useState(false);
+  const [clientForm, setClientForm] = useState<Record<string, string>>({});
+  const [clientMessage, setClientMessage] = useState('');
 
   const [templateSections, setTemplateSections] = useState<SectionDef[]>(buildReportSections());
 
@@ -524,6 +529,72 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
     }
   };
 
+  const startEditingClient = () => {
+    const c = data?.client;
+    setClientForm({
+      first_name: c?.first_name ?? '',
+      last_name: c?.last_name ?? '',
+      dob: c?.dob ? (typeof c.dob === 'string' ? c.dob.slice(0, 10) : '') : '',
+      id_type: c?.id_type ?? 'CEDULA',
+      id_number: c?.id_number ?? '',
+      email: c?.email ?? '',
+      phone_mobile: c?.phone_mobile ?? '',
+      phone_home: c?.phone_home ?? '',
+      phone_work: c?.phone_work ?? '',
+      employer_name: c?.employer_name ?? '',
+      employer_tax_id: c?.employer_tax_id ?? '',
+      profession: c?.profession ?? '',
+    });
+    setClientMessage('');
+    setEditingClient(true);
+  };
+
+  const cancelEditingClient = () => {
+    setEditingClient(false);
+    setClientMessage('');
+  };
+
+  const handleSaveClient = async () => {
+    if (!id || !data) return;
+    if (!clientForm.first_name?.trim() || !clientForm.last_name?.trim()) {
+      setClientMessage('Nombre y apellidos son obligatorios.');
+      return;
+    }
+    setClientMessage('');
+    const role = portal === 'aseguradora' ? 'INSURER' : 'ALARA';
+    const payload: UpdateClientPayload = {
+      first_name: clientForm.first_name || undefined,
+      last_name: clientForm.last_name || undefined,
+      dob: clientForm.dob || undefined,
+      id_type: (clientForm.id_type as 'CEDULA' | 'PASSPORT' | 'OTRO') || undefined,
+      id_number: clientForm.id_number || undefined,
+      email: clientForm.email || undefined,
+      phone_mobile: clientForm.phone_mobile || undefined,
+      phone_home: clientForm.phone_home || undefined,
+      phone_work: clientForm.phone_work || undefined,
+      employer_name: clientForm.employer_name || undefined,
+      employer_tax_id: clientForm.employer_tax_id || undefined,
+      profession: clientForm.profession || undefined,
+    };
+    try {
+      const refreshed = await updateInspectionRequestClient(
+        Number(id),
+        payload,
+        role,
+        portal === 'aseguradora' ? Number(localStorage.getItem('alara-insurer-id') || 0) || undefined : undefined,
+      );
+      if (refreshed) {
+        setData(refreshed);
+        setEditingClient(false);
+        setClientMessage('Datos del cliente guardados.');
+      } else {
+        setClientMessage('No se pudo guardar.');
+      }
+    } catch (error) {
+      setClientMessage('No se pudo guardar. Verifica los datos.');
+    }
+  };
+
   if (!data) {
     return (
       <div className="page">
@@ -549,91 +620,10 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
         </div>
       </div>
 
-      <div className="grid-two">
-        <div className="info-card">
-          <h4>Datos del cliente</h4>
-          <ul className="details-list">
-            <li>
-              <span>Nombre</span>
-              <strong>{data.client ? `${data.client.first_name ?? ''} ${data.client.last_name ?? ''}` : '—'}</strong>
-            </li>
-            <li>
-              <span>Documento</span>
-              <strong>
-                {data.client?.id_type ?? '—'} {data.client?.id_number ?? ''}
-              </strong>
-            </li>
-            <li>
-              <span>Correo</span>
-              <strong>{data.client?.email ?? '—'}</strong>
-            </li>
-            <li>
-              <span>Profesión</span>
-              <strong>{data.client?.profession ?? '—'}</strong>
-            </li>
-          </ul>
-        </div>
-        <div className="info-card">
-          <h4>Documentos</h4>
-          <div className="file-row">
-            <span>Solicitud de Inspección</span>
-            <button
-              className="ghost-button"
-              onClick={() => downloadPdf(Number(data.id), 'solicitud')}
-            >
-              Descargar
-            </button>
-          </div>
-          <div className="file-row">
-            <span>Reporte de inspección</span>
-            <div className="file-actions">
-              {data.status === 'REALIZADA' && !data.report_shared_at && (
-                <span className="pending-pill">Pendiente de envío</span>
-              )}
-              {['REALIZADA', 'APROBADA', 'RECHAZADA'].includes(data.status) &&
-              (portal === 'alara' || data.report_shared_at) ? (
-                <button
-                  className="ghost-button"
-                  onClick={() => downloadPdf(Number(data.id), 'reporte')}
-                >
-                  Descargar
-                </button>
-              ) : (
-                <span>En proceso</span>
-              )}
-            </div>
-          </div>
-          {portal === 'alara' && (
-            <div className="file-row">
-              <span>Llamada</span>
-              <button className="ghost-button" onClick={handleStartCall}>
-                Llamar
-              </button>
-            </div>
-          )}
-          <div className="file-row">
-            <span>Investigación</span>
-            <button className="ghost-button" onClick={handleInvestigate}>
-              Investigar
-            </button>
-          </div>
-          {callMessage && <span className="form-message">{callMessage}</span>}
-        </div>
-      </div>
-
-      <div className="info-card">
-        <h4>Línea de tiempo</h4>
-        <div className="timeline">
-          {timelineItems.map((item, index) => (
-            <div key={`${item.label}-${index}`}>
-              <span>{new Date(item.date).toLocaleDateString()}</span>
-              <p>{item.label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
       <div className="tabs">
+        <button className={activeTab === 'general' ? 'tab active' : 'tab'} onClick={() => setActiveTab('general')}>
+          General
+        </button>
         <button className={activeTab === 'cliente' ? 'tab active' : 'tab'} onClick={() => setActiveTab('cliente')}>
           Cliente
         </button>
@@ -657,40 +647,247 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
         </button>
       </div>
 
+      {activeTab === 'general' && (
+        <div className="grid-two">
+          <div className="info-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <h4 style={{ margin: 0 }}>Datos del cliente</h4>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => {
+                  setActiveTab('cliente');
+                  setTimeout(() => startEditingClient(), 0);
+                }}
+              >
+                Editar
+              </button>
+            </div>
+            <ul className="details-list">
+              <li>
+                <span>Nombre</span>
+                <strong>{data.client ? `${data.client.first_name ?? ''} ${data.client.last_name ?? ''}` : '—'}</strong>
+              </li>
+              <li>
+                <span>Documento</span>
+                <strong>
+                  {data.client?.id_type ?? '—'} {data.client?.id_number ?? ''}
+                </strong>
+              </li>
+              <li>
+                <span>Correo</span>
+                <strong>{data.client?.email ?? '—'}</strong>
+              </li>
+              <li>
+                <span>Profesión</span>
+                <strong>{data.client?.profession ?? '—'}</strong>
+              </li>
+            </ul>
+          </div>
+          <div className="info-card">
+            <h4>Documentos</h4>
+            <div className="file-row">
+              <span>Solicitud de Inspección</span>
+              <button
+                className="ghost-button"
+                onClick={() => downloadPdf(Number(data.id), 'solicitud')}
+              >
+                Descargar
+              </button>
+            </div>
+            <div className="file-row">
+              <span>Reporte de inspección</span>
+              <div className="file-actions">
+                {data.status === 'REALIZADA' && !data.report_shared_at && (
+                  <span className="pending-pill">Pendiente de envío</span>
+                )}
+                {['REALIZADA', 'APROBADA', 'RECHAZADA'].includes(data.status) &&
+                (portal === 'alara' || data.report_shared_at) ? (
+                  <button
+                    className="ghost-button"
+                    onClick={() => downloadPdf(Number(data.id), 'reporte')}
+                  >
+                    Descargar
+                  </button>
+                ) : (
+                  <span>En proceso</span>
+                )}
+              </div>
+            </div>
+            {portal === 'alara' && (
+              <div className="file-row">
+                <span>Llamada</span>
+                <button className="ghost-button" onClick={handleStartCall}>
+                  Llamar
+                </button>
+              </div>
+            )}
+            <div className="file-row">
+              <span>Investigación</span>
+              <button className="ghost-button" onClick={handleInvestigate}>
+                Investigar
+              </button>
+            </div>
+            {callMessage && <span className="form-message">{callMessage}</span>}
+          </div>
+        </div>
+      )}
+
       {activeTab === 'cliente' && (
         <div className="info-card">
-          <div className="details-grid">
-            <div>
-              <span>Nombre</span>
-              <strong>{data.client ? `${data.client.first_name ?? ''} ${data.client.last_name ?? ''}` : '—'}</strong>
+          {editingClient ? (
+            <div className="report-form">
+              <div className="form-section">
+                <h4>Editar datos del cliente</h4>
+                <div className="form-grid">
+                  <label className="form-field">
+                    <span>Nombre</span>
+                    <input
+                      value={clientForm.first_name ?? ''}
+                      onChange={(e) => setClientForm((f) => ({ ...f, first_name: e.target.value }))}
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span>Apellidos</span>
+                    <input
+                      value={clientForm.last_name ?? ''}
+                      onChange={(e) => setClientForm((f) => ({ ...f, last_name: e.target.value }))}
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span>Fecha de nacimiento</span>
+                    <input
+                      type="date"
+                      value={clientForm.dob ?? ''}
+                      onChange={(e) => setClientForm((f) => ({ ...f, dob: e.target.value }))}
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span>Tipo documento</span>
+                    <select
+                      value={clientForm.id_type ?? 'CEDULA'}
+                      onChange={(e) =>
+                        setClientForm((f) => ({
+                          ...f,
+                          id_type: e.target.value as 'CEDULA' | 'PASSPORT' | 'OTRO',
+                        }))
+                      }
+                    >
+                      <option value="CEDULA">Cédula</option>
+                      <option value="PASSPORT">Pasaporte</option>
+                      <option value="OTRO">Otro</option>
+                    </select>
+                  </label>
+                  <label className="form-field">
+                    <span>Número documento</span>
+                    <input
+                      value={clientForm.id_number ?? ''}
+                      onChange={(e) => setClientForm((f) => ({ ...f, id_number: e.target.value }))}
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span>Email</span>
+                    <input
+                      type="email"
+                      value={clientForm.email ?? ''}
+                      onChange={(e) => setClientForm((f) => ({ ...f, email: e.target.value }))}
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span>Teléfono móvil</span>
+                    <input
+                      value={clientForm.phone_mobile ?? ''}
+                      onChange={(e) => setClientForm((f) => ({ ...f, phone_mobile: e.target.value }))}
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span>Teléfono residencia</span>
+                    <input
+                      value={clientForm.phone_home ?? ''}
+                      onChange={(e) => setClientForm((f) => ({ ...f, phone_home: e.target.value }))}
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span>Teléfono laboral</span>
+                    <input
+                      value={clientForm.phone_work ?? ''}
+                      onChange={(e) => setClientForm((f) => ({ ...f, phone_work: e.target.value }))}
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span>Empresa</span>
+                    <input
+                      value={clientForm.employer_name ?? ''}
+                      onChange={(e) => setClientForm((f) => ({ ...f, employer_name: e.target.value }))}
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span>CUIT / NIT / RUC</span>
+                    <input
+                      value={clientForm.employer_tax_id ?? ''}
+                      onChange={(e) => setClientForm((f) => ({ ...f, employer_tax_id: e.target.value }))}
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span>Profesión</span>
+                    <input
+                      value={clientForm.profession ?? ''}
+                      onChange={(e) => setClientForm((f) => ({ ...f, profession: e.target.value }))}
+                    />
+                  </label>
+                </div>
+              </div>
+              <div className="form-actions">
+                <button className="primary-button" onClick={handleSaveClient}>
+                  Guardar
+                </button>
+                <button className="ghost-button" onClick={cancelEditingClient}>
+                  Cancelar
+                </button>
+                {clientMessage && <span className="form-message">{clientMessage}</span>}
+              </div>
             </div>
-            <div>
-              <span>Documento</span>
-              <strong>
-                {data.client?.id_type ?? '—'} {data.client?.id_number ?? ''}
-              </strong>
-            </div>
-            <div>
-              <span>Email</span>
-              <strong>{data.client?.email ?? '—'}</strong>
-            </div>
-            <div>
-              <span>Teléfono móvil</span>
-              <strong>{data.client?.phone_mobile ?? '—'}</strong>
-            </div>
-            <div>
-              <span>Teléfono residencia</span>
-              <strong>{data.client?.phone_home ?? '—'}</strong>
-            </div>
-            <div>
-              <span>Empresa</span>
-              <strong>{data.client?.employer_name ?? '—'}</strong>
-            </div>
-            <div>
-              <span>Profesión</span>
-              <strong>{data.client?.profession ?? '—'}</strong>
-            </div>
-          </div>
+          ) : (
+            <>
+              <div className="details-grid">
+                <div>
+                  <span>Nombre</span>
+                  <strong>{data.client ? `${data.client.first_name ?? ''} ${data.client.last_name ?? ''}` : '—'}</strong>
+                </div>
+                <div>
+                  <span>Documento</span>
+                  <strong>
+                    {data.client?.id_type ?? '—'} {data.client?.id_number ?? ''}
+                  </strong>
+                </div>
+                <div>
+                  <span>Email</span>
+                  <strong>{data.client?.email ?? '—'}</strong>
+                </div>
+                <div>
+                  <span>Teléfono móvil</span>
+                  <strong>{data.client?.phone_mobile ?? '—'}</strong>
+                </div>
+                <div>
+                  <span>Teléfono residencia</span>
+                  <strong>{data.client?.phone_home ?? '—'}</strong>
+                </div>
+                <div>
+                  <span>Empresa</span>
+                  <strong>{data.client?.employer_name ?? '—'}</strong>
+                </div>
+                <div>
+                  <span>Profesión</span>
+                  <strong>{data.client?.profession ?? '—'}</strong>
+                </div>
+              </div>
+              <div className="form-actions" style={{ marginTop: '1rem' }}>
+                <button className="ghost-button" onClick={startEditingClient}>
+                  Editar datos del cliente
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -948,6 +1145,18 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
           </div>
         </div>
       )}
+
+      <div className="info-card">
+        <h4>Línea de tiempo</h4>
+        <div className="timeline">
+          {timelineItems.map((item, index) => (
+            <div key={`${item.label}-${index}`}>
+              <span>{new Date(item.date).toLocaleDateString()}</span>
+              <p>{item.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

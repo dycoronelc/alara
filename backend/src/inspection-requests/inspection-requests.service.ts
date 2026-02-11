@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestContext } from '../common/request-context.middleware';
 import { CreateInspectionRequestDto } from './dto/create-inspection-request.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
+import { UpdateClientDto } from './dto/update-client.dto';
 import { DecisionDto } from './dto/decision.dto';
 import { SaveReportDto } from './dto/save-report.dto';
 
@@ -537,6 +538,41 @@ export class InspectionRequestsService {
 
       return updated;
     });
+  }
+
+  async updateClient(context: RequestContext, requestId: number, payload: UpdateClientDto) {
+    const request = await this.prisma.inspectionRequest.findUnique({
+      where: { id: requestId },
+      include: { client: true },
+    });
+    if (!request) {
+      throw new NotFoundException('Solicitud no encontrada');
+    }
+    this.ensureTenancy(context, request);
+    if (!request.client_id) {
+      throw new BadRequestException('La solicitud no tiene cliente asociado');
+    }
+
+    const data: Prisma.ClientUpdateInput = {};
+    if (payload.first_name !== undefined) data.first_name = payload.first_name;
+    if (payload.last_name !== undefined) data.last_name = payload.last_name;
+    if (payload.dob !== undefined) data.dob = payload.dob ? new Date(payload.dob) : null;
+    if (payload.id_type !== undefined) data.id_type = payload.id_type;
+    if (payload.id_number !== undefined) data.id_number = payload.id_number;
+    if (payload.email !== undefined) data.email = payload.email;
+    if (payload.phone_mobile !== undefined) data.phone_mobile = payload.phone_mobile;
+    if (payload.phone_home !== undefined) data.phone_home = payload.phone_home;
+    if (payload.phone_work !== undefined) data.phone_work = payload.phone_work;
+    if (payload.employer_name !== undefined) data.employer_name = payload.employer_name;
+    if (payload.employer_tax_id !== undefined) data.employer_tax_id = payload.employer_tax_id;
+    if (payload.profession !== undefined) data.profession = payload.profession;
+
+    await this.prisma.client.update({
+      where: { id: request.client_id },
+      data,
+    });
+
+    return this.getById(context, requestId);
   }
 
   private ensureTenancy(context: RequestContext, request: InspectionRequest) {
