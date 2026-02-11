@@ -3,37 +3,19 @@
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "POST",
-        "path": "/call/start",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "id": "06f0dbc9-6034-41ae-827b-af8fb2d04aed",
-      "name": "Webhook - Call Start",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        256,
-        304
-      ],
-      "webhookId": "6528518f-7aa8-4b5f-a12a-c7566b290a09"
-    },
-    {
-      "parameters": {
         "resource": "call",
         "from": "={{ $json.twilio_from || $json.fromNumber }}",
         "to": "={{ $json.client?.phone || $json.toNumber }}",
-        "twiml": false,
         "message": "={{ $json.twilio_twiml_url || ($json.backend_url ? $json.backend_url + '/api/webhooks/twilio/twiml/' + $json.inspection_request_id : $json.twimlUrl) }}",
         "options": {}
       },
-      "id": "232947e6-a251-42cc-851a-d650d6fed3ca",
-      "name": "Twilio - Create Call",
+      "id": "eb441795-67fe-44ce-a626-ac90a374e440",
+      "name": "Twilio - Create Call1",
       "type": "n8n-nodes-base.twilio",
       "typeVersion": 1,
       "position": [
-        480,
-        304
+        1792,
+        560
       ],
       "credentials": {
         "twilioApi": {
@@ -49,13 +31,13 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "33c2c25e-bcb2-4d67-a686-df5cf56b7390",
-      "name": "Webhook - Call Transcription",
+      "id": "d2f9dd42-9ff3-445f-91df-b37c12f7b120",
+      "name": "Webhook - Call Transcription1",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        256,
-        640
+        1568,
+        896
       ],
       "webhookId": "6467a50d-9e0a-4900-b002-84e41adc3d64"
     },
@@ -97,13 +79,13 @@
         },
         "options": {}
       },
-      "id": "b88aae89-ea4a-4185-bce8-d945c819dffb",
-      "name": "Set Context",
+      "id": "586bca92-d428-42fe-a009-c5ee1640eeba",
+      "name": "Set Context1",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        480,
-        640
+        1792,
+        896
       ]
     },
     {
@@ -115,13 +97,13 @@
           "systemMessage": "You are a structured data extractor. Convert the transcript into the inspection report JSON schema used by the ALARA backend. Output JSON only. Use keys: outcome, summary, additional_comments, sections[]. Each section has code, title, order, fields[]. Each field has key, label, type, value. If a value is not present, return an empty string."
         }
       },
-      "id": "f4afbd2e-e71b-41d9-aa51-df5ad766c02e",
-      "name": "AI Agent - Extract Report",
+      "id": "0389c4ed-0a2f-48b8-a18b-05a2d8ba8f72",
+      "name": "AI Agent - Extract Report1",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        736,
-        640
+        2048,
+        896
       ]
     },
     {
@@ -134,18 +116,18 @@
         "builtInTools": {},
         "options": {}
       },
-      "id": "7dfbaf1d-4b7a-4f24-8ad1-dd630e5bab01",
-      "name": "OpenAI Chat Model",
+      "id": "8200bf03-c44e-46d2-b70c-b3a86ba46e8c",
+      "name": "OpenAI Chat Model1",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        800,
-        960
+        2112,
+        1216
       ],
       "credentials": {
         "openAiApi": {
-          "id": "xHoVHmeWA0yQHfol",
-          "name": "n8n free OpenAI API credits"
+          "id": "1R1it0eEi8fboD41",
+          "name": "OpenAi Innexia"
         }
       }
     },
@@ -155,13 +137,13 @@
         "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"outcome\": {\"type\": \"string\"},\n    \"summary\": {\"type\": \"string\"},\n    \"additional_comments\": {\"type\": \"string\"},\n    \"sections\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"code\": {\"type\": \"string\"},\n          \"title\": {\"type\": \"string\"},\n          \"order\": {\"type\": \"number\"},\n          \"fields\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"object\",\n              \"properties\": {\n                \"key\": {\"type\": \"string\"},\n                \"label\": {\"type\": \"string\"},\n                \"type\": {\"type\": \"string\"},\n                \"value\": {\"type\": \"string\"}\n              },\n              \"required\": [\"key\", \"value\"]\n            }\n          }\n        },\n        \"required\": [\"code\", \"title\", \"fields\"]\n      }\n    }\n  },\n  \"required\": [\"outcome\", \"sections\"]\n}",
         "autoFix": true
       },
-      "id": "5cb97a75-f411-4d13-8c2b-579ebab5c858",
-      "name": "Structured Output Parser",
+      "id": "fb91f410-d239-4999-abd4-f1a4493a2125",
+      "name": "Structured Output Parser1",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        944,
-        832
+        2256,
+        1088
       ]
     },
     {
@@ -177,7 +159,7 @@
             },
             {
               "name": "Authorization",
-              "value": "={{ 'Bearer ' + ($env.ALARA_SERVICE_TOKEN || '') }}"
+              "value": "={{ 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjI0LCJyb2xlIjoiQUxBUkEiLCJzZXJ2aWNlIjp0cnVlLCJsYWJlbCI6Im44biIsImlhdCI6MTc3MDc0NjIxM30.R0A806ZOHJ3g969f_mpSsOpD_GAixRzBX1615w4He3I' }}"
             }
           ]
         },
@@ -186,29 +168,28 @@
         "jsonBody": "={{ $json }}",
         "options": {}
       },
-      "id": "3cbe0d91-aca0-4e25-9dc9-508495fb9873",
-      "name": "HTTP Request - Save Report",
+      "id": "921552c4-a94d-40c9-a4a8-ff666dbfb7a9",
+      "name": "HTTP Request - Save Report1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1200,
-        640
+        2512,
+        896
       ]
     },
     {
       "parameters": {
         "httpMethod": "POST",
         "path": "/call/recording",
-        "responseMode": "onReceived",
         "options": {}
       },
-      "id": "9b8f7f4c-0bb5-4f6c-9e4a-5d3e0b8d61b0",
-      "name": "Webhook - Call Recording",
+      "id": "d94410f4-9e86-4c0d-a9d7-46c74cee5b4e",
+      "name": "Webhook - Call Recording1",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        256,
-        960
+        1568,
+        1216
       ],
       "webhookId": "call-recording-webhook"
     },
@@ -239,94 +220,111 @@
         "jsonBody": "={{ $json }}",
         "options": {}
       },
-      "id": "b6c5cdb9-0906-4d42-bb39-6bda0e47cb2a",
-      "name": "HTTP Request - Save Recording",
+      "id": "5d19761c-5f3e-43f3-988b-6fa55096ff8b",
+      "name": "HTTP Request - Save Recording1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        520,
-        960
+        1840,
+        1216
       ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/call/start",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1c870439-5b8e-4378-96ac-e980f9ef7ad4",
+      "name": "Webhook - Call Start",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        1568,
+        560
+      ],
+      "webhookId": "6528518f-7aa8-4b5f-a12a-c7566b290a09"
     }
   ],
   "pinData": {},
   "connections": {
-    "Webhook - Call Start": {
+    "Webhook - Call Transcription1": {
       "main": [
         [
           {
-            "node": "Twilio - Create Call",
+            "node": "Set Context1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Webhook - Call Transcription": {
+    "Set Context1": {
       "main": [
         [
           {
-            "node": "Set Context",
+            "node": "AI Agent - Extract Report1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Set Context": {
+    "AI Agent - Extract Report1": {
       "main": [
         [
           {
-            "node": "AI Agent - Extract Report",
+            "node": "HTTP Request - Save Report1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "OpenAI Chat Model": {
+    "OpenAI Chat Model1": {
       "ai_languageModel": [
         [
           {
-            "node": "AI Agent - Extract Report",
+            "node": "AI Agent - Extract Report1",
             "type": "ai_languageModel",
             "index": 0
           },
           {
-            "node": "Structured Output Parser",
+            "node": "Structured Output Parser1",
             "type": "ai_languageModel",
             "index": 0
           }
         ]
       ]
     },
-    "Structured Output Parser": {
+    "Structured Output Parser1": {
       "ai_outputParser": [
         [
           {
-            "node": "AI Agent - Extract Report",
+            "node": "AI Agent - Extract Report1",
             "type": "ai_outputParser",
             "index": 0
           }
         ]
       ]
     },
-    "AI Agent - Extract Report": {
+    "Webhook - Call Recording1": {
       "main": [
         [
           {
-            "node": "HTTP Request - Save Report",
+            "node": "HTTP Request - Save Recording1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Webhook - Call Recording": {
+    "Webhook - Call Start": {
       "main": [
         [
           {
-            "node": "HTTP Request - Save Recording",
+            "node": "Twilio - Create Call1",
             "type": "main",
             "index": 0
           }
@@ -334,13 +332,13 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "1d7e41e4-8bf4-4faf-a73f-07835e8427b3",
+  "versionId": "51b44c81-c186-477b-9008-fbb0886097f4",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "7f9ba910a29f5e215a4b4a694ee3408825b7b8212157cd2e725d3dcd110c61dc"
