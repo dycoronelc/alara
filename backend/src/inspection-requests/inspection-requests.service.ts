@@ -298,12 +298,24 @@ export class InspectionRequestsService {
     }
 
     const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
-    const twilioFrom = process.env.TWILIO_FROM;
+    let twilioFrom = process.env.TWILIO_FROM;
     const transcriptionWebhook = process.env.N8N_TRANSCRIPTION_WEBHOOK;
     const recordingWebhook = process.env.N8N_RECORDING_WEBHOOK;
+    const useWhatsApp = process.env.TWILIO_USE_WHATSAPP === 'true' || process.env.TWILIO_USE_WHATSAPP === '1';
 
     if (!twilioAccountSid || !twilioFrom || !transcriptionWebhook) {
       throw new BadRequestException('Faltan variables de Twilio/n8n para iniciar llamada');
+    }
+
+    const normalizeE164 = (num: string) => {
+      const digits = num.replace(/\D/g, '');
+      return digits ? `+${digits}` : num;
+    };
+    let fromForTwilio = twilioFrom.trim();
+    let phoneForTwilio = phone.trim();
+    if (useWhatsApp) {
+      fromForTwilio = `whatsapp:${normalizeE164(twilioFrom)}`;
+      phoneForTwilio = `whatsapp:${normalizeE164(phone)}`;
     }
 
     const backendUrl = process.env.BACKEND_PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 3000}`;
@@ -312,13 +324,14 @@ export class InspectionRequestsService {
 
     const payload = {
       inspection_request_id: id,
+      use_whatsapp: useWhatsApp,
       client: {
         full_name: `${request.client?.first_name ?? ''} ${request.client?.last_name ?? ''}`.trim(),
-        phone,
+        phone: phoneForTwilio,
         id_number: request.client?.id_number ?? '',
       },
       twilio_account_sid: twilioAccountSid,
-      twilio_from: twilioFrom,
+      twilio_from: fromForTwilio,
       twilio_twiml_url: twilioTwimlUrl,
       recording_webhook: recordingWebhook ?? undefined,
       transcription_webhook: transcriptionWebhook,

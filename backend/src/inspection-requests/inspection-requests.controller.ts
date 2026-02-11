@@ -131,7 +131,10 @@ export class InspectionRequestsController {
   }
 
   @Post(':id/call/start')
-  async startCall(@Req() req: Request, @Param('id', ParseIntPipe) id: number) {
+  async startCall(
+    @Req() req: Request,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
     return this.service.startCall(req.userContext!, id);
   }
 

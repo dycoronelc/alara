@@ -82,6 +82,7 @@ No agregues aún el código como servicio; primero crearemos la base de datos.
    | `TWILIO_ACCOUNT_SID` | Account SID de Twilio. | De tu consola Twilio. |
    | `TWILIO_AUTH_TOKEN` | Auth Token de Twilio. | De tu consola Twilio. |
    | `TWILIO_FROM` | Número Twilio que origina la llamada. | Ej: `+507XXXXXXX` |
+   | `TWILIO_USE_WHATSAPP` | Si quieres que la “llamada” sea por **WhatsApp** (voz vía WhatsApp), pon `true` o `1`. Si no, omite o pon `false`. | `true` o `1` para WhatsApp |
 
    Para `DATABASE_URL`: si añadiste el servicio MySQL en el mismo proyecto, en Variables puedes usar la referencia a otro servicio, por ejemplo:  
    `${{MySQL.MYSQL_URL}}`  
@@ -139,7 +140,22 @@ No agregues aún el código como servicio; primero crearemos la base de datos.
 
 ---
 
-## Paso 5: Configurar Twilio para producción
+## Paso 5 (opcional): Llamadas por WhatsApp en lugar de llamada normal
+
+Si configuraste `TWILIO_USE_WHATSAPP=true` en el backend:
+
+- El backend enviará a n8n números con prefijo `whatsapp:` (p. ej. `whatsapp:+50761234567`). Twilio realizará una **llamada de voz por WhatsApp** (WhatsApp Business Calling) en lugar de una llamada PSTN.
+- **Requisitos en Twilio:**
+  - Número registrado como **WhatsApp sender** en la [plataforma WhatsApp de Twilio](https://www.twilio.com/docs/whatsapp).
+  - Ese sender debe tener **Programmable Voice** activado (TwiML App configurada en la configuración de voz del sender).
+- **Restricciones:** Las llamadas salientes (business-initiated) por WhatsApp **no** están disponibles en: USA, Canadá, Egipto, Nigeria, Turquía ni Vietnam. El número del negocio debe estar en un país soportado.
+- Para llamadas **iniciadas por el negocio** hacia el cliente, Meta/Twilio pueden requerir que el cliente haya aceptado antes un permiso de llamada (p. ej. mediante una plantilla con botón “Voice Call Request”). Consulta la [documentación de WhatsApp Business Calling](https://www.twilio.com/docs/voice/whatsapp-business-calling).
+
+Si no usas WhatsApp, deja `TWILIO_USE_WHATSAPP` sin definir o en `false` y todo funcionará como llamada telefónica normal.
+
+---
+
+## Paso 6: Configurar Twilio para producción
 
 1. En la consola de Twilio, en el número que usas para las llamadas:
    - **Voice & Fax** → “A CALL COMES IN” puede quedarse en “Webhook”.
@@ -151,7 +167,7 @@ No agregues aún el código como servicio; primero crearemos la base de datos.
 
 ---
 
-## Paso 6: Configurar n8n con las URLs de Railway
+## Paso 7: Configurar n8n con las URLs de Railway
 
 1. En tu instancia n8n, abre el workflow **“ALARA - Twilio Transcription + Report”** (el del JSON en la raíz del proyecto).
 2. **Webhook “Call Start”**  
@@ -173,7 +189,7 @@ No agregues aún el código como servicio; primero crearemos la base de datos.
 
 ---
 
-## Paso 7: Resumen de variables por servicio
+## Paso 8: Resumen de variables por servicio
 
 ### Backend (Railway)
 
@@ -194,7 +210,7 @@ No agregues aún el código como servicio; primero crearemos la base de datos.
 
 ---
 
-## Paso 8: Comandos útiles
+## Paso 9: Comandos útiles
 
 - **Solo backend (local contra DB en Railway):**  
   En `backend/`:  
