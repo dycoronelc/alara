@@ -128,16 +128,16 @@ const NewRequestPage = () => {
               <input type="date" value={form.dob} onChange={(e) => updateField('dob', e.target.value)} />
             </label>
             <label className="form-field">
-              <span>Número y tipo de Documento</span>
-              <input value={form.id_number} onChange={(e) => updateField('id_number', e.target.value)} />
-            </label>
-            <label className="form-field">
               <span>Tipo de Documento</span>
               <select value={form.id_type} onChange={(e) => updateField('id_type', e.target.value)}>
                 <option value="">Seleccione...</option>
                 <option value="CEDULA">Cédula</option>
                 <option value="PASSPORT">Pasaporte</option>
               </select>
+            </label>
+            <label className="form-field">
+              <span>Número</span>
+              <input value={form.id_number} onChange={(e) => updateField('id_number', e.target.value)} />
             </label>
             <label className="form-field">
               <span>Email</span>
