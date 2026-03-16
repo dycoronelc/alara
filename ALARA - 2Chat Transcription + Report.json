@@ -1,0 +1,361 @@
+{
+  "name": "ALARA - 2Chat Transcription + Report",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/call/start",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1c870439-5b8e-4378-96ac-e980f9ef7ad4",
+      "name": "Webhook - Call Start",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [1568, 560],
+      "webhookId": "6528518f-7aa8-4b5f-a12a-c7566b290a09"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.p.2chat.io/open/voip/calls",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-User-API-Key", "value": "={{ $env.TWOCHAT_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { to_number: (($json.body && $json.body.client && $json.body.client.phone) || $json.client?.phone || $json.toNumber || '').toString().replace(/^whatsapp:/i, ''), caller_id_uuid: $env.TWOCHAT_CALLER_ID_UUID || ($json.body && $json.body.twochat_caller_id_uuid) || $json.twochat_caller_id_uuid || '', metadata: { inspection_request_id: $json.body?.inspection_request_id ?? $json.inspection_request_id } } }}",
+        "options": {}
+      },
+      "id": "2chat-create-call-001",
+      "name": "2Chat - Create Outbound Call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1792, 560],
+      "notesInFlow": true,
+      "notes": "Configurar TWOCHAT_API_KEY y TWOCHAT_CALLER_ID_UUID. Si 2Chat no soporta POST /open/voip/calls, revisar docs: https://developers.2chat.co/docs/API/Phone-Calls"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($('Webhook - Call Start').item.json.body?.backend_url || $('Webhook - Call Start').item.json.backend_url || $env.BACKEND_URL || 'http://localhost:5000') + '/api/inspection-requests/' + ($('Webhook - Call Start').item.json.body?.inspection_request_id ?? $('Webhook - Call Start').item.json.inspection_request_id) + '/call/register' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Authorization", "value": "={{ 'Bearer ' + ($env.ALARA_SERVICE_TOKEN || '') }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { provider: '2chat', call_uuid: $json.uuid ?? $json.call_uuid ?? $json.id } }}",
+        "options": {}
+      },
+      "id": "register-call-backend-001",
+      "name": "Register call in backend",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1904, 560],
+      "notesInFlow": true,
+      "notes": "Backend: POST /api/inspection-requests/:id/call/register con body { provider, call_uuid } para poder resolver by-call después"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2016, 560]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/webhook/2chat/call-completed",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-2chat-completed-001",
+      "name": "Webhook - 2Chat Call Completed",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [1568, 880],
+      "webhookId": "2chat-call-completed-webhook",
+      "notesInFlow": true,
+      "notes": "En 2Chat configurar webhook para evento call.outbound.completed apuntando a esta URL"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "cond-recording",
+              "leftValue": "={{ $json.recording_url }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-has-recording-001",
+      "name": "IF - Has recording_url",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1792, 880]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Webhook - 2Chat Call Completed').item.json.recording_url }}",
+        "options": {
+          "response": {
+            "response": { "responseFormat": "file", "outputPropertyName": "data" }
+          }
+        }
+      },
+      "id": "download-recording-001",
+      "name": "HTTP - Download Recording",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2016, 800],
+      "notesInFlow": true,
+      "notes": "Descarga el MP3 desde recording_url de 2Chat como binario para Whisper"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "binaryPropertyName": "data",
+        "options": {
+          "language": "es"
+        }
+      },
+      "id": "openai-whisper-001",
+      "name": "OpenAI - Transcribe Recording",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.2,
+      "position": [2240, 800],
+      "credentials": { "openAiApi": { "id": "1R1it0eEi8fboD41", "name": "OpenAi Innexia" } },
+      "notesInFlow": true,
+      "notes": "Whisper: transcripción de audio a texto. Límite 25 MB por archivo."
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ ($env.BACKEND_URL || 'http://localhost:5000') + '/api/inspection-requests/by-call/' + $('Webhook - 2Chat Call Completed').item.json.uuid }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.ALARA_SERVICE_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "resolve-request-id-001",
+      "name": "Resolve inspection_request_id",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2016, 960],
+      "notesInFlow": true,
+      "notes": "Backend debe exponer GET /api/inspection-requests/by-call/:callUuid y devolver { inspection_request_id, backend_url }. Registrar call_uuid al crear la llamada."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "a1", "name": "transcription", "value": "={{ $json.text ?? $json }}", "type": "string" },
+            { "id": "a2", "name": "requestId", "value": "={{ $('Resolve inspection_request_id').item.json.inspection_request_id ?? $('Webhook - 2Chat Call Completed').item.json.metadata?.inspection_request_id }}", "type": "string" },
+            { "id": "a3", "name": "callUuid", "value": "={{ $('Webhook - 2Chat Call Completed').item.json.uuid }}", "type": "string" },
+            { "id": "a4", "name": "backend_url", "value": "={{ $('Resolve inspection_request_id').item.json.backend_url || $env.BACKEND_URL || 'http://localhost:5000' }}", "type": "string" },
+            { "id": "a5", "name": "recording_url", "value": "={{ $('Webhook - 2Chat Call Completed').item.json.recording_url }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-context-2chat-001",
+      "name": "Set Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2464, 800]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.transcription }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a structured data extractor. Convert the transcript into the inspection report JSON schema used by the ALARA backend. Output JSON only. Use keys: outcome, summary, additional_comments, sections[]. Each section has code, title, order, fields[]. Each field has key, label, type, value. If a value is not present, return an empty string."
+        }
+      },
+      "id": "0389c4ed-0a2f-48b8-a18b-05a2d8ba8f72",
+      "name": "AI Agent - Extract Report",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [2688, 800]
+    },
+    {
+      "parameters": {
+        "model": { "__rl": true, "mode": "list", "value": "gpt-4o-mini" },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "8200bf03-c44e-46d2-b70c-b3a86ba46e8c",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [2912, 1000],
+      "credentials": { "openAiApi": { "id": "1R1it0eEi8fboD41", "name": "OpenAi Innexia" } }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"outcome\": {\"type\": \"string\"},\n    \"summary\": {\"type\": \"string\"},\n    \"additional_comments\": {\"type\": \"string\"},\n    \"sections\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"code\": {\"type\": \"string\"},\n          \"title\": {\"type\": \"string\"},\n          \"order\": {\"type\": \"number\"},\n          \"fields\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"object\",\n              \"properties\": {\n                \"key\": {\"type\": \"string\"},\n                \"label\": {\"type\": \"string\"},\n                \"type\": {\"type\": \"string\"},\n                \"value\": {\"type\": \"string\"}\n              },\n              \"required\": [\"key\", \"value\"]\n            }\n          }\n        },\n        \"required\": [\"code\", \"title\", \"fields\"]\n      }\n    }\n  },\n  \"required\": [\"outcome\", \"sections\"]\n}",
+        "autoFix": true
+      },
+      "id": "fb91f410-d239-4999-abd4-f1a4493a2125",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [2912, 880]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($json.backend_url || $env.BACKEND_URL || 'http://localhost:5000') + '/api/inspection-requests/' + $json.requestId + '/report' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Authorization", "value": "={{ 'Bearer ' + ($env.ALARA_SERVICE_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...') }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "921552c4-a94d-40c9-a4a8-ff666dbfb7a9",
+      "name": "HTTP Request - Save Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2912, 800]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "Respond to Webhook - Transcription",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [3136, 800]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.BACKEND_URL || 'http://localhost:5000') + '/api/webhooks/2chat/recording' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"inspection_request_id\": \"{{ $('Set Context').item.json.requestId }}\",\n  \"call_uuid\": \"{{ $('Webhook - 2Chat Call Completed').item.json.uuid }}\",\n  \"recording_url\": \"{{ $('Webhook - 2Chat Call Completed').item.json.recording_url }}\",\n  \"duration\": {{ $('Webhook - 2Chat Call Completed').item.json.duration ?? 'null' }},\n  \"to_number\": \"{{ $('Webhook - 2Chat Call Completed').item.json.to_number }}\"\n}",
+        "options": {}
+      },
+      "id": "save-recording-2chat-001",
+      "name": "HTTP Request - Save Recording",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2688, 640]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "id": "respond-no-recording-001",
+      "name": "Respond to Webhook - No Recording",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2016, 1040]
+    }
+  ],
+  "connections": {
+    "Webhook - Call Start": {
+      "main": [[{ "node": "2Chat - Create Outbound Call", "type": "main", "index": 0 }]]
+    },
+    "2Chat - Create Outbound Call": {
+      "main": [[{ "node": "Register call in backend", "type": "main", "index": 0 }]]
+    },
+    "Register call in backend": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    },
+    "Webhook - 2Chat Call Completed": {
+      "main": [[{ "node": "IF - Has recording_url", "type": "main", "index": 0 }]]
+    },
+    "IF - Has recording_url": {
+      "main": [
+        [{ "node": "Resolve inspection_request_id", "type": "main", "index": 0 }],
+        [{ "node": "Respond to Webhook - No Recording", "type": "main", "index": 0 }]
+      ]
+    },
+    "Resolve inspection_request_id": {
+      "main": [[{ "node": "HTTP - Download Recording", "type": "main", "index": 0 }]]
+    },
+    "HTTP - Download Recording": {
+      "main": [[{ "node": "OpenAI - Transcribe Recording", "type": "main", "index": 0 }]]
+    },
+    "OpenAI - Transcribe Recording": {
+      "main": [[{ "node": "Set Context", "type": "main", "index": 0 }]]
+    },
+    "Set Context": {
+      "main": [
+        [
+          { "node": "AI Agent - Extract Report", "type": "main", "index": 0 },
+          { "node": "HTTP Request - Save Recording", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "AI Agent - Extract Report": {
+      "main": [[{ "node": "HTTP Request - Save Report", "type": "main", "index": 0 }]]
+    },
+    "HTTP Request - Save Report": {
+      "main": [[{ "node": "Respond to Webhook - Transcription", "type": "main", "index": 0 }]]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [[
+        { "node": "AI Agent - Extract Report", "type": "ai_languageModel", "index": 0 },
+        { "node": "Structured Output Parser", "type": "ai_languageModel", "index": 0 }
+      ]]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [[{ "node": "AI Agent - Extract Report", "type": "ai_outputParser", "index": 0 }]]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "2chat-v1",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "7f9ba910a29f5e215a4b4a694ee3408825b7b8212157cd2e725d3dcd110c61dc"
+  },
+  "tags": []
+}

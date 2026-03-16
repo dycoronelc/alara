@@ -133,7 +133,11 @@ const NewRequestPage = () => {
             </label>
             <label className="form-field">
               <span>Tipo de Documento</span>
-              <input value={form.id_type} onChange={(e) => updateField('id_type', e.target.value)} />
+              <select value={form.id_type} onChange={(e) => updateField('id_type', e.target.value)}>
+                <option value="">Seleccione...</option>
+                <option value="CEDULA">Cédula</option>
+                <option value="PASSPORT">Pasaporte</option>
+              </select>
             </label>
             <label className="form-field">
               <span>Email</span>
@@ -213,11 +217,29 @@ const NewRequestPage = () => {
             </label>
             <label className="form-field">
               <span>Estado Civil</span>
-              <input value={form.marital_status} onChange={(e) => updateField('marital_status', e.target.value)} />
+              <select value={form.marital_status} onChange={(e) => updateField('marital_status', e.target.value)}>
+                <option value="">Seleccione...</option>
+                <option value="Soltero">Soltero</option>
+                <option value="Casado">Casado</option>
+                <option value="Divorciado">Divorciado</option>
+                <option value="Viudo">Viudo</option>
+                <option value="Otro">Otro</option>
+              </select>
             </label>
             <label className="form-field">
               <span>Idioma para la Entrevista</span>
-              <input value={form.interview_language} onChange={(e) => updateField('interview_language', e.target.value)} />
+              <select value={form.interview_language} onChange={(e) => updateField('interview_language', e.target.value)}>
+                <option value="">Seleccione...</option>
+                <option value="Español">Español</option>
+                <option value="Inglés">Inglés</option>
+                <option value="Mandarín">Mandarín</option>
+                <option value="Portugués">Portugués</option>
+                <option value="Francés">Francés</option>
+                <option value="Italiano">Italiano</option>
+                <option value="Alemán">Alemán</option>
+                <option value="Ruso">Ruso</option>
+                <option value="Hindi">Hindi</option>
+              </select>
             </label>
             <label className="form-field checkbox-field">
               <span>¿El cliente ha sido avisado?</span>
