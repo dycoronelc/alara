@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, InspectionRequest } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestContext } from '../common/request-context.middleware';
@@ -400,14 +394,6 @@ export class InspectionRequestsService {
       throw new BadRequestException('userId requerido');
     }
     const userId = context.userId;
-    const creatingUser = await this.prisma.user.findUnique({
-      where: { id: BigInt(userId) },
-    });
-    if (!creatingUser || !creatingUser.is_active) {
-      throw new UnauthorizedException(
-        'Usuario no encontrado o inactivo. Por favor, inicia sesión de nuevo.',
-      );
-    }
 
     const existingClient = await this.prisma.client.findFirst({
       where: {

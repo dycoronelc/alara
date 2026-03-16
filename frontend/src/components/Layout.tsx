@@ -1,5 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { useInactivityLogout } from '../hooks/useInactivityLogout';
+import InactivityModal from './InactivityModal';
 
 type NavItem = { label: string; to: string };
 
@@ -14,6 +16,21 @@ const Layout = ({ portal, title, navItems, primaryAction }: LayoutProps) => {
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showInactivityModal, setShowInactivityModal] = useState(false);
+
+  const handleInactivity = useCallback(() => {
+    setShowInactivityModal(true);
+  }, []);
+
+  const handleCloseInactivityAndLogout = useCallback(() => {
+    setShowInactivityModal(false);
+    localStorage.removeItem('alara-token');
+    localStorage.removeItem('alara-role');
+    localStorage.removeItem('alara-insurer-id');
+    navigate('/', { replace: true });
+  }, [navigate]);
+
+  useInactivityLogout(handleInactivity);
 
   const mockNotifications = [
     { id: 1, title: 'Nueva solicitud VIP recibida', time: 'Hace 5 min' },
@@ -22,6 +39,9 @@ const Layout = ({ portal, title, navItems, primaryAction }: LayoutProps) => {
 
   return (
     <div className="app-shell">
+      {showInactivityModal && (
+        <InactivityModal onClose={handleCloseInactivityAndLogout} />
+      )}
       <aside className="sidebar">
         <div className="sidebar-brand">
           <img src="/logo-width.png" alt="ALARA INSP" />
@@ -93,10 +113,10 @@ const Layout = ({ portal, title, navItems, primaryAction }: LayoutProps) => {
                   <button
                     className="ghost-button"
                     onClick={() => {
-                      localStorage.removeItem('alara-role');
                       localStorage.removeItem('alara-token');
+                      localStorage.removeItem('alara-role');
                       localStorage.removeItem('alara-insurer-id');
-                      navigate('/');
+                      navigate('/', { replace: true });
                     }}
                   >
                     Cerrar sesión
