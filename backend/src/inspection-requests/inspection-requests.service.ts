@@ -1,4 +1,10 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, InspectionRequest } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestContext } from '../common/request-context.middleware';
@@ -429,29 +435,53 @@ export class InspectionRequestsService {
         },
       }));
 
-    return this.prisma.inspectionRequest.create({
-      data: {
-        insurer_id: context.insurerId,
-        insurer_client_id: insurerClient.id,
-        client_id: client.id,
-        request_number: payload.request_number,
-        agent_name: payload.agent_name,
-        insured_amount: payload.insured_amount,
-        has_amount_in_force: payload.has_amount_in_force ?? false,
-        responsible_name: payload.responsible_name,
-        responsible_phone: payload.responsible_phone,
-        responsible_email: payload.responsible_email,
-        marital_status: payload.marital_status,
-        comments: payload.comments,
-        client_notified: payload.client_notified ?? false,
-        interview_language: payload.interview_language,
-        priority: payload.priority ?? 'NORMAL',
-        ...(createdByUserId != null && {
-          created_by_user_id: createdByUserId,
-          updated_by_user_id: createdByUserId,
-        }),
+    const existingByNumber = await this.prisma.inspectionRequest.findUnique({
+      where: {
+        insurer_id_request_number: {
+          insurer_id: context.insurerId,
+          request_number: payload.request_number.trim(),
+        },
       },
     });
+    if (existingByNumber) {
+      throw new ConflictException(
+        `Ya existe una solicitud con el número "${payload.request_number}" para esta aseguradora. Usa otro número de solicitud.`,
+      );
+    }
+
+    try {
+      return await this.prisma.inspectionRequest.create({
+        data: {
+          insurer_id: context.insurerId,
+          insurer_client_id: insurerClient.id,
+          client_id: client.id,
+          request_number: payload.request_number.trim(),
+          agent_name: payload.agent_name,
+          insured_amount: payload.insured_amount,
+          has_amount_in_force: payload.has_amount_in_force ?? false,
+          responsible_name: payload.responsible_name,
+          responsible_phone: payload.responsible_phone,
+          responsible_email: payload.responsible_email,
+          marital_status: payload.marital_status,
+          comments: payload.comments,
+          client_notified: payload.client_notified ?? false,
+          interview_language: payload.interview_language,
+          priority: payload.priority ?? 'NORMAL',
+          ...(createdByUserId != null && {
+            created_by_user_id: createdByUserId,
+            updated_by_user_id: createdByUserId,
+          }),
+        },
+      });
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code;
+      if (code === 'P2002') {
+        throw new ConflictException(
+          `Ya existe una solicitud con el número "${payload.request_number}" para esta aseguradora. Usa otro número de solicitud.`,
+        );
+      }
+      throw err;
+    }
   }
 
   async updateStatus(context: RequestContext, id: number, payload: UpdateStatusDto) {
