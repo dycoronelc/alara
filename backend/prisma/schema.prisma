@@ -308,7 +308,7 @@ model InspectionRequest {
   insurer_decided_at         DateTime?
   report_shared_at           DateTime?
   report_shared_by_user_id   BigInt?
-  created_by_user_id         BigInt
+  created_by_user_id         BigInt?
   updated_by_user_id         BigInt?
   created_at                 DateTime        @default(now())
   updated_at                 DateTime?       @updatedAt
@@ -316,7 +316,7 @@ model InspectionRequest {
   insurer        Insurer       @relation(fields: [insurer_id], references: [id])
   client         Client        @relation(fields: [client_id], references: [id])
   insurer_client InsurerClient @relation(fields: [insurer_client_id], references: [id])
-  created_by     User          @relation("created_requests", fields: [created_by_user_id], references: [id])
+  created_by     User?         @relation("created_requests", fields: [created_by_user_id], references: [id])
   updated_by     User?         @relation("updated_requests", fields: [updated_by_user_id], references: [id])
   assigned_investigator User?  @relation("assigned_requests", fields: [assigned_investigator_user_id], references: [id])
   decided_by     User?         @relation("decided_requests", fields: [insurer_decided_by_user_id], references: [id])

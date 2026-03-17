@@ -394,6 +394,12 @@ export class InspectionRequestsService {
       throw new BadRequestException('userId requerido');
     }
     const userId = context.userId;
+    const creatingUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, is_active: true },
+    });
+    const createdByUserId =
+      creatingUser && creatingUser.is_active ? Number(creatingUser.id) : undefined;
 
     const existingClient = await this.prisma.client.findFirst({
       where: {
@@ -440,8 +446,10 @@ export class InspectionRequestsService {
         client_notified: payload.client_notified ?? false,
         interview_language: payload.interview_language,
         priority: payload.priority ?? 'NORMAL',
-        created_by_user_id: userId,
-        updated_by_user_id: userId,
+        ...(createdByUserId != null && {
+          created_by_user_id: createdByUserId,
+          updated_by_user_id: createdByUserId,
+        }),
       },
     });
   }
