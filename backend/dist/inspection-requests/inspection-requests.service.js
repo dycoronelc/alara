@@ -261,23 +261,35 @@ let InspectionRequestsService = class InspectionRequestsService {
             throw new common_1.BadRequestException('N8N_CALL_START_URL no configurado');
         }
         const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
-        const twilioFrom = process.env.TWILIO_FROM;
+        let twilioFrom = process.env.TWILIO_FROM;
         const transcriptionWebhook = process.env.N8N_TRANSCRIPTION_WEBHOOK;
         const recordingWebhook = process.env.N8N_RECORDING_WEBHOOK;
+        const useWhatsApp = process.env.TWILIO_USE_WHATSAPP === 'true' || process.env.TWILIO_USE_WHATSAPP === '1';
         if (!twilioAccountSid || !twilioFrom || !transcriptionWebhook) {
             throw new common_1.BadRequestException('Faltan variables de Twilio/n8n para iniciar llamada');
+        }
+        const normalizeE164 = (num) => {
+            const digits = num.replace(/\D/g, '');
+            return digits ? `+${digits}` : num;
+        };
+        let fromForTwilio = twilioFrom.trim();
+        let phoneForTwilio = phone.trim();
+        if (useWhatsApp) {
+            fromForTwilio = `whatsapp:${normalizeE164(twilioFrom)}`;
+            phoneForTwilio = `whatsapp:${normalizeE164(phone)}`;
         }
         const backendUrl = process.env.BACKEND_PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 3000}`;
         const twilioTwimlUrl = process.env.TWILIO_TWIML_URL ?? `${backendUrl}/api/webhooks/twilio/twiml/${id}`;
         const payload = {
             inspection_request_id: id,
+            use_whatsapp: useWhatsApp,
             client: {
                 full_name: `${request.client?.first_name ?? ''} ${request.client?.last_name ?? ''}`.trim(),
-                phone,
+                phone: phoneForTwilio,
                 id_number: request.client?.id_number ?? '',
             },
             twilio_account_sid: twilioAccountSid,
-            twilio_from: twilioFrom,
+            twilio_from: fromForTwilio,
             twilio_twiml_url: twilioTwimlUrl,
             recording_webhook: recordingWebhook ?? undefined,
             transcription_webhook: transcriptionWebhook,
@@ -333,6 +345,11 @@ let InspectionRequestsService = class InspectionRequestsService {
             throw new common_1.BadRequestException('userId requerido');
         }
         const userId = context.userId;
+        const creatingUser = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, is_active: true },
+        });
+        const createdByUserId = creatingUser && creatingUser.is_active ? Number(creatingUser.id) : undefined;
         const existingClient = await this.prisma.client.findFirst({
             where: {
                 id_type: payload.client.id_type ?? undefined,
@@ -373,8 +390,10 @@ let InspectionRequestsService = class InspectionRequestsService {
                 client_notified: payload.client_notified ?? false,
                 interview_language: payload.interview_language,
                 priority: payload.priority ?? 'NORMAL',
-                created_by_user_id: userId,
-                updated_by_user_id: userId,
+                ...(createdByUserId != null && {
+                    created_by_user_id: createdByUserId,
+                    updated_by_user_id: createdByUserId,
+                }),
             },
         });
     }
@@ -470,6 +489,49 @@ let InspectionRequestsService = class InspectionRequestsService {
             });
             return updated;
         });
+    }
+    async updateClient(context, requestId, payload) {
+        const request = await this.prisma.inspectionRequest.findUnique({
+            where: { id: requestId },
+            include: { client: true },
+        });
+        if (!request) {
+            throw new common_1.NotFoundException('Solicitud no encontrada');
+        }
+        this.ensureTenancy(context, request);
+        if (!request.client_id) {
+            throw new common_1.BadRequestException('La solicitud no tiene cliente asociado');
+        }
+        const data = {};
+        if (payload.first_name !== undefined)
+            data.first_name = payload.first_name;
+        if (payload.last_name !== undefined)
+            data.last_name = payload.last_name;
+        if (payload.dob !== undefined)
+            data.dob = payload.dob ? new Date(payload.dob) : null;
+        if (payload.id_type !== undefined)
+            data.id_type = payload.id_type;
+        if (payload.id_number !== undefined)
+            data.id_number = payload.id_number;
+        if (payload.email !== undefined)
+            data.email = payload.email;
+        if (payload.phone_mobile !== undefined)
+            data.phone_mobile = payload.phone_mobile;
+        if (payload.phone_home !== undefined)
+            data.phone_home = payload.phone_home;
+        if (payload.phone_work !== undefined)
+            data.phone_work = payload.phone_work;
+        if (payload.employer_name !== undefined)
+            data.employer_name = payload.employer_name;
+        if (payload.employer_tax_id !== undefined)
+            data.employer_tax_id = payload.employer_tax_id;
+        if (payload.profession !== undefined)
+            data.profession = payload.profession;
+        await this.prisma.client.update({
+            where: { id: request.client_id },
+            data,
+        });
+        return this.getById(context, requestId);
     }
     ensureTenancy(context, request) {
         if (context.role === 'INSURER' &&

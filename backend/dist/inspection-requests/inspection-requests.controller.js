@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const inspection_requests_service_1 = require("./inspection-requests.service");
 const create_inspection_request_dto_1 = require("./dto/create-inspection-request.dto");
 const update_status_dto_1 = require("./dto/update-status.dto");
+const update_client_dto_1 = require("./dto/update-client.dto");
 const decision_dto_1 = require("./dto/decision.dto");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const documents_service_1 = require("../documents/documents.service");
@@ -42,6 +43,9 @@ let InspectionRequestsController = class InspectionRequestsController {
     }
     async decide(req, id, payload) {
         return this.service.decide(req.userContext, id, payload);
+    }
+    async updateClient(req, id, payload) {
+        return this.service.updateClient(req.userContext, id, payload);
     }
     async saveReport(req, id, payload) {
         const report = await this.service.saveReport(req.userContext, id, payload);
@@ -121,6 +125,15 @@ __decorate([
     __metadata("design:paramtypes", [Object, Number, decision_dto_1.DecisionDto]),
     __metadata("design:returntype", Promise)
 ], InspectionRequestsController.prototype, "decide", null);
+__decorate([
+    (0, common_1.Patch)(':id/client'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number, update_client_dto_1.UpdateClientDto]),
+    __metadata("design:returntype", Promise)
+], InspectionRequestsController.prototype, "updateClient", null);
 __decorate([
     (0, common_1.Post)(':id/report'),
     __param(0, (0, common_1.Req)()),

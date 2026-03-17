@@ -43,7 +43,7 @@ let WebhooksController = class WebhooksController {
                         where: { inspection_request_id: id },
                         create: {
                             inspection_request_id: id,
-                            created_by_user_id: request.assigned_investigator_user_id ?? request.created_by_user_id,
+                            created_by_user_id: request.assigned_investigator_user_id ?? request.created_by_user_id ?? undefined,
                             summary: report.summary ?? null,
                             additional_comments: report.additional_comments ?? null,
                             outcome: report.outcome ?? 'PENDIENTE',
@@ -92,7 +92,7 @@ let WebhooksController = class WebhooksController {
                         old_status: request.status,
                         new_status: 'REALIZADA',
                         note: 'n8n workflow completado',
-                        changed_by_user_id: request.assigned_investigator_user_id ?? request.created_by_user_id,
+                        changed_by_user_id: request.assigned_investigator_user_id ?? request.created_by_user_id ?? undefined,
                     },
                 });
             });

@@ -12,6 +12,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateInspectionRequestDto = exports.ClientInputDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
+const ID_TYPE_MAP = {
+    cedula: 'CEDULA',
+    cédula: 'CEDULA',
+    pasaporte: 'PASSPORT',
+    passport: 'PASSPORT',
+    otro: 'OTRO',
+};
+function normalizeIdType(value) {
+    if (value == null || value === '')
+        return undefined;
+    const s = String(value).trim();
+    const upper = s.toUpperCase();
+    if (upper === 'CEDULA' || upper === 'PASSPORT' || upper === 'OTRO')
+        return upper;
+    const normalized = ID_TYPE_MAP[s.toLowerCase()];
+    return normalized ?? s;
+}
 class ClientInputDto {
 }
 exports.ClientInputDto = ClientInputDto;
@@ -32,6 +49,7 @@ __decorate([
 ], ClientInputDto.prototype, "dob", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => normalizeIdType(value)),
     (0, class_validator_1.IsEnum)(['CEDULA', 'PASSPORT', 'OTRO']),
     __metadata("design:type", String)
 ], ClientInputDto.prototype, "id_type", void 0);
