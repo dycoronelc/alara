@@ -8,3 +8,7 @@ ALTER TABLE inspection_reports
 
 ALTER TABLE inspection_request_status_history
   MODIFY COLUMN changed_by_user_id BIGINT UNSIGNED NULL;
+
+-- Hacer nullable uploaded_by_user_id en documents
+ALTER TABLE documents
+  MODIFY COLUMN uploaded_by_user_id BIGINT UNSIGNED NULL;

@@ -413,13 +413,13 @@ model Document {
   storage_key           String        @db.VarChar(512)
   storage_url           String?       @db.VarChar(1024)
   sha256                String?       @db.Char(64)
-  uploaded_by_user_id   BigInt
+  uploaded_by_user_id   BigInt?
   uploaded_at           DateTime      @default(now())
 
   insurer           Insurer          @relation(fields: [insurer_id], references: [id])
   inspection_request InspectionRequest? @relation(fields: [inspection_request_id], references: [id], onDelete: Cascade)
   client            Client?          @relation(fields: [client_id], references: [id], onDelete: SetNull)
-  uploaded_by       User             @relation(fields: [uploaded_by_user_id], references: [id])
+  uploaded_by       User?           @relation(fields: [uploaded_by_user_id], references: [id])
 
   @@index([insurer_id])
   @@index([inspection_request_id])

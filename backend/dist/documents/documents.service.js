@@ -32,7 +32,8 @@ let DocumentsService = class DocumentsService {
         this.ensureTenancy(context, request.insurer_id);
         const buffer = await this.pdfService.buildRequestPdf(request);
         const filename = `solicitud_${request.request_number}.pdf`;
-        const effectiveUserId = userId || Number(request.created_by_user_id);
+        const reqCreatedBy = request.created_by_user_id != null ? Number(request.created_by_user_id) : undefined;
+        const effectiveUserId = (userId && userId > 0) ? userId : (reqCreatedBy && reqCreatedBy > 0 ? reqCreatedBy : undefined);
         return this.persistPdf({
             buffer,
             filename,
@@ -75,7 +76,8 @@ let DocumentsService = class DocumentsService {
             : null;
         const buffer = await this.pdfService.buildReportPdf(request, report);
         const filename = `reporte_${request.request_number}.pdf`;
-        const effectiveUserId = userId || Number(request.created_by_user_id);
+        const reqCreatedBy = request.created_by_user_id != null ? Number(request.created_by_user_id) : undefined;
+        const effectiveUserId = (userId && userId > 0) ? userId : (reqCreatedBy && reqCreatedBy > 0 ? reqCreatedBy : undefined);
         return this.persistPdf({
             buffer,
             filename,
@@ -103,7 +105,7 @@ let DocumentsService = class DocumentsService {
                 storage_provider: 'LOCAL',
                 storage_key: storageKey,
                 storage_url: null,
-                uploaded_by_user_id: params.userId,
+                ...(params.userId != null && params.userId > 0 && { uploaded_by_user_id: params.userId }),
             },
         });
         return { buffer: params.buffer, document };

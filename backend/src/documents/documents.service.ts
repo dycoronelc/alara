@@ -24,7 +24,8 @@ export class DocumentsService {
 
     const buffer = await this.pdfService.buildRequestPdf(request);
     const filename = `solicitud_${request.request_number}.pdf`;
-    const effectiveUserId = userId || Number(request.created_by_user_id);
+    const reqCreatedBy = request.created_by_user_id != null ? Number(request.created_by_user_id) : undefined;
+    const effectiveUserId = (userId && userId > 0) ? userId : (reqCreatedBy && reqCreatedBy > 0 ? reqCreatedBy : undefined);
     return this.persistPdf({
       buffer,
       filename,
@@ -71,7 +72,8 @@ export class DocumentsService {
 
     const buffer = await this.pdfService.buildReportPdf(request, report);
     const filename = `reporte_${request.request_number}.pdf`;
-    const effectiveUserId = userId || Number(request.created_by_user_id);
+    const reqCreatedBy = request.created_by_user_id != null ? Number(request.created_by_user_id) : undefined;
+    const effectiveUserId = (userId && userId > 0) ? userId : (reqCreatedBy && reqCreatedBy > 0 ? reqCreatedBy : undefined);
     return this.persistPdf({
       buffer,
       filename,
@@ -90,7 +92,7 @@ export class DocumentsService {
     insurerId: number;
     inspectionRequestId: number;
     clientId: number;
-    userId: number;
+    userId?: number;
   }) {
     await fs.mkdir(this.storageDir, { recursive: true });
     const storageKey = `${Date.now()}_${params.filename}`;
@@ -109,7 +111,7 @@ export class DocumentsService {
         storage_provider: 'LOCAL',
         storage_key: storageKey,
         storage_url: null,
-        uploaded_by_user_id: params.userId,
+        ...(params.userId != null && params.userId > 0 && { uploaded_by_user_id: params.userId }),
       },
     });
 
