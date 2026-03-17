@@ -27,6 +27,16 @@ const allowedTransitions: Record<InspectionRequest['status'], InspectionRequest[
 export class InspectionRequestsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Resuelve el userId del contexto a un id válido de User para FKs. Retorna undefined si no existe o está inactivo. */
+  private async resolveEffectiveUserId(userId: number | undefined): Promise<number | undefined> {
+    if (userId == null || userId <= 0) return undefined;
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, is_active: true },
+    });
+    return user && user.is_active ? Number(user.id) : undefined;
+  }
+
   async list(context: RequestContext, filters: { status?: InspectionRequest['status']; search?: string }) {
     const where: Prisma.InspectionRequestWhereInput = {};
 
@@ -80,10 +90,6 @@ export class InspectionRequestsService {
   }
 
   async saveReport(context: RequestContext, id: number, payload: SaveReportDto) {
-    if (!context.userId) {
-      throw new BadRequestException('userId requerido');
-    }
-    const userId = context.userId;
     if (context.role === 'INSURER') {
       throw new ForbiddenException('Solo ALARA puede registrar reportes');
     }
@@ -95,76 +101,99 @@ export class InspectionRequestsService {
 
     this.ensureTenancy(context, request);
 
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const report = await tx.inspectionReport.upsert({
-        where: { inspection_request_id: id },
-        create: {
-          inspection_request_id: id,
-          created_by_user_id: userId,
-          summary: payload.summary ?? null,
-          additional_comments: payload.additional_comments ?? null,
-          outcome: payload.outcome ?? 'PENDIENTE',
-        },
-        update: {
-          summary: payload.summary ?? null,
-          additional_comments: payload.additional_comments ?? null,
-          outcome: payload.outcome ?? 'PENDIENTE',
-        },
-      });
+    const effectiveUserId = await this.resolveEffectiveUserId(context.userId);
 
-      await tx.reportSection.deleteMany({ where: { inspection_report_id: report.id } });
-      for (const section of payload.sections) {
-        const sectionEntity = await tx.reportSection.create({
-          data: {
-            inspection_report_id: report.id,
-            section_code: section.code,
-            section_title: section.title,
-            section_order: section.order ?? 0,
+    try {
+      return await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        const report = await tx.inspectionReport.upsert({
+          where: { inspection_request_id: id },
+          create: {
+            inspection_request_id: id,
+            ...(effectiveUserId != null && { created_by_user_id: effectiveUserId }),
+            summary: payload.summary ?? null,
+            additional_comments: payload.additional_comments ?? null,
+            outcome: payload.outcome ?? 'PENDIENTE',
+          },
+          update: {
+            summary: payload.summary ?? null,
+            additional_comments: payload.additional_comments ?? null,
+            outcome: payload.outcome ?? 'PENDIENTE',
           },
         });
-        if (section.fields?.length) {
-          await tx.reportField.createMany({
-            data: section.fields.map((field) => ({
-              report_section_id: sectionEntity.id,
-              field_key: field.key,
-              field_label: field.label ?? null,
-              field_type: (field.type as any) ?? 'TEXT',
-              field_value: field.value ?? null,
-            })),
+
+        await tx.reportSection.deleteMany({ where: { inspection_report_id: report.id } });
+        const seenSectionCodes = new Set<string>();
+        for (const section of payload.sections) {
+          const code = (section.code ?? '').trim() || `section_${seenSectionCodes.size}`;
+          if (seenSectionCodes.has(code)) continue;
+          seenSectionCodes.add(code);
+
+          const sectionEntity = await tx.reportSection.create({
+            data: {
+              inspection_report_id: report.id,
+              section_code: code,
+              section_title: (section.title ?? '').trim() || 'Sección',
+              section_order: section.order ?? 0,
+            },
+          });
+
+          if (section.fields?.length) {
+            const seenKeys = new Set<string>();
+            const rows = section.fields
+              .filter((f) => {
+                const k = (f.key ?? '').trim();
+                if (!k || seenKeys.has(k)) return false;
+                seenKeys.add(k);
+                return true;
+              })
+              .map((field) => ({
+                report_section_id: sectionEntity.id,
+                field_key: field.key!.trim(),
+                field_label: field.label ?? null,
+                field_type: (field.type as any) ?? 'TEXT',
+                field_value: field.value ?? null,
+              }));
+            if (rows.length) {
+              await tx.reportField.createMany({ data: rows });
+            }
+          }
+        }
+
+        if (request.status !== 'REALIZADA') {
+          await tx.inspectionRequest.update({
+            where: { id },
+            data: {
+              status: 'REALIZADA',
+              completed_at: new Date(),
+              ...(effectiveUserId != null && { updated_by_user_id: effectiveUserId }),
+            },
+          });
+
+          await tx.inspectionRequestStatusHistory.create({
+            data: {
+              inspection_request_id: id,
+              old_status: request.status,
+              new_status: 'REALIZADA',
+              note: 'Reporte registrado',
+              ...(effectiveUserId != null && { changed_by_user_id: effectiveUserId }),
+            },
           });
         }
+
+        return report;
+      });
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code;
+      if (code === 'P2002') {
+        throw new BadRequestException(
+          'Código de sección o clave de campo duplicado. Revisa que no repitas section.code ni field.key dentro del mismo reporte.',
+        );
       }
-
-      if (request.status !== 'REALIZADA') {
-        await tx.inspectionRequest.update({
-          where: { id },
-          data: {
-            status: 'REALIZADA',
-            completed_at: new Date(),
-            updated_by_user_id: userId,
-          },
-        });
-
-        await tx.inspectionRequestStatusHistory.create({
-          data: {
-            inspection_request_id: id,
-            old_status: request.status,
-            new_status: 'REALIZADA',
-            note: 'Reporte registrado',
-            changed_by_user_id: userId,
-          },
-        });
-      }
-
-      return report;
-    });
+      throw err;
+    }
   }
 
   async shareReport(context: RequestContext, id: number) {
-    if (!context.userId) {
-      throw new BadRequestException('userId requerido');
-    }
-    const userId = context.userId;
     if (context.role === 'INSURER') {
       throw new ForbiddenException('Solo ALARA puede compartir reportes');
     }
@@ -176,12 +205,14 @@ export class InspectionRequestsService {
 
     this.ensureTenancy(context, request);
 
+    const effectiveUserId = await this.resolveEffectiveUserId(context.userId);
+
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const updated = await tx.inspectionRequest.update({
         where: { id },
         data: {
           report_shared_at: new Date(),
-          report_shared_by_user_id: userId,
+          ...(effectiveUserId != null && { report_shared_by_user_id: effectiveUserId }),
         },
       });
 
@@ -191,7 +222,7 @@ export class InspectionRequestsService {
           old_status: request.status,
           new_status: request.status,
           note: 'Reporte enviado a aseguradora',
-          changed_by_user_id: userId,
+          ...(effectiveUserId != null && { changed_by_user_id: effectiveUserId }),
         },
       });
 
@@ -223,10 +254,6 @@ export class InspectionRequestsService {
     id: number,
     sources: { name: string; url: string }[],
   ) {
-    if (!context.userId) {
-      throw new BadRequestException('userId requerido');
-    }
-    const userId = context.userId;
     if (context.role === 'INSURER') {
       throw new ForbiddenException('Solo ALARA puede investigar');
     }
@@ -237,6 +264,8 @@ export class InspectionRequestsService {
     }
 
     this.ensureTenancy(context, request);
+
+    const effectiveUserId = await this.resolveEffectiveUserId(context.userId);
 
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const run = await tx.workflowRun.create({
@@ -258,7 +287,7 @@ export class InspectionRequestsService {
       await tx.investigation.create({
         data: {
           inspection_request_id: id,
-          created_by_user_id: userId,
+          ...(effectiveUserId != null && { created_by_user_id: effectiveUserId }),
           source_type: 'OTHER',
           source_name: 'n8n',
           finding_summary: 'Investigación en curso.',

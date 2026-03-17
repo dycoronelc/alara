@@ -9,6 +9,7 @@ import { SaveReportDto } from './dto/save-report.dto';
 export declare class InspectionRequestsService {
     private readonly prisma;
     constructor(prisma: PrismaService);
+    private resolveEffectiveUserId;
     list(context: RequestContext, filters: {
         status?: InspectionRequest['status'];
         search?: string;
@@ -243,7 +244,7 @@ export declare class InspectionRequestsService {
     }>;
     listInvestigations(context: RequestContext, id: number): Promise<{
         id: bigint;
-        created_by_user_id: bigint;
+        created_by_user_id: bigint | null;
         created_at: Date;
         inspection_request_id: bigint;
         source_type: import(".prisma/client").$Enums.InvestigationSource;

@@ -493,7 +493,7 @@ model ReportTemplate {
 model Investigation {
   id                    BigInt             @id @default(autoincrement())
   inspection_request_id BigInt
-  created_by_user_id    BigInt
+  created_by_user_id    BigInt?
   source_type           InvestigationSource @default(OTHER)
   source_name           String?            @db.VarChar(200)
   finding_summary       String             @db.Text
@@ -502,7 +502,7 @@ model Investigation {
   created_at            DateTime           @default(now())
 
   inspection_request InspectionRequest @relation(fields: [inspection_request_id], references: [id], onDelete: Cascade)
-  created_by         User              @relation(fields: [created_by_user_id], references: [id])
+  created_by         User?             @relation(fields: [created_by_user_id], references: [id])
 
   @@index([inspection_request_id])
   @@map("investigations")
