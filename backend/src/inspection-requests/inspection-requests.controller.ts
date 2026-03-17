@@ -1,4 +1,17 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Logger,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 import { InspectionRequestsService } from './inspection-requests.service';
 import { CreateInspectionRequestDto } from './dto/create-inspection-request.dto';
@@ -12,6 +25,8 @@ import { SaveReportDto } from './dto/save-report.dto';
 @Controller('inspection-requests')
 @UseGuards(JwtAuthGuard)
 export class InspectionRequestsController {
+  private readonly logger = new Logger(InspectionRequestsController.name);
+
   constructor(
     private readonly service: InspectionRequestsService,
     private readonly documentsService: DocumentsService,
@@ -32,11 +47,16 @@ export class InspectionRequestsController {
   @Post()
   async create(@Req() req: Request, @Body() payload: CreateInspectionRequestDto) {
     const created = await this.service.create(req.userContext!, payload);
-    await this.documentsService.generateRequestPdf(
-      Number(created.id),
-      req.userContext?.userId ?? 0,
-      req.userContext,
-    );
+    try {
+      await this.documentsService.generateRequestPdf(
+        Number(created.id),
+        req.userContext?.userId ?? 0,
+        req.userContext,
+      );
+    } catch (err) {
+      // No fallar la creación si el PDF falla (ej. FK uploaded_by_user_id); la solicitud ya se guardó
+      this.logger.warn('No se pudo generar el PDF de la solicitud', (err as Error)?.message ?? err);
+    }
     return created;
   }
 

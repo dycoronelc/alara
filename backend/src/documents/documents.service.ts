@@ -11,6 +11,16 @@ export class DocumentsService {
 
   private storageDir = join(process.cwd(), 'storage');
 
+  /** Solo retorna un userId si existe en User y está activo, para evitar FK en uploaded_by_user_id. */
+  private async resolveEffectiveUserId(userId: number | undefined): Promise<number | undefined> {
+    if (userId == null || userId <= 0) return undefined;
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, is_active: true },
+    });
+    return user && user.is_active ? Number(user.id) : undefined;
+  }
+
   async generateRequestPdf(inspectionRequestId: number, userId: number, context?: RequestContext) {
     const request = await this.prisma.inspectionRequest.findUnique({
       where: { id: inspectionRequestId },
@@ -24,8 +34,10 @@ export class DocumentsService {
 
     const buffer = await this.pdfService.buildRequestPdf(request);
     const filename = `solicitud_${request.request_number}.pdf`;
-    const reqCreatedBy = request.created_by_user_id != null ? Number(request.created_by_user_id) : undefined;
-    const effectiveUserId = (userId && userId > 0) ? userId : (reqCreatedBy && reqCreatedBy > 0 ? reqCreatedBy : undefined);
+    const fromRequest = request.created_by_user_id != null ? Number(request.created_by_user_id) : undefined;
+    const effectiveUserId = await this.resolveEffectiveUserId(
+      (userId && userId > 0) ? userId : (fromRequest && fromRequest > 0 ? fromRequest : undefined),
+    );
     return this.persistPdf({
       buffer,
       filename,
@@ -72,8 +84,10 @@ export class DocumentsService {
 
     const buffer = await this.pdfService.buildReportPdf(request, report);
     const filename = `reporte_${request.request_number}.pdf`;
-    const reqCreatedBy = request.created_by_user_id != null ? Number(request.created_by_user_id) : undefined;
-    const effectiveUserId = (userId && userId > 0) ? userId : (reqCreatedBy && reqCreatedBy > 0 ? reqCreatedBy : undefined);
+    const fromRequest = request.created_by_user_id != null ? Number(request.created_by_user_id) : undefined;
+    const effectiveUserId = await this.resolveEffectiveUserId(
+      (userId && userId > 0) ? userId : (fromRequest && fromRequest > 0 ? fromRequest : undefined),
+    );
     return this.persistPdf({
       buffer,
       filename,
