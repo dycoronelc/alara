@@ -2,6 +2,12 @@ import { IsEmail, IsEnum, IsOptional, IsString, IsDateString, ValidateIf } from 
 import { Transform } from 'class-transformer';
 import { IsPanamaCedula } from '../../common/validation/panama-cedula.validator';
 
+function emptyStringToUndefined(value: unknown): string | undefined {
+  if (value == null) return undefined;
+  const s = String(value).trim();
+  return s === '' ? undefined : s;
+}
+
 const ID_TYPE_MAP: Record<string, 'CEDULA' | 'PASSPORT' | 'OTRO'> = {
   cedula: 'CEDULA',
   cédula: 'CEDULA',
@@ -44,6 +50,7 @@ export class UpdateClientDto {
   id_number?: string;
 
   @IsOptional()
+  @Transform(({ value }) => emptyStringToUndefined(value))
   @IsEmail()
   email?: string;
 

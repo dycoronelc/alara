@@ -30,6 +30,13 @@ function normalizeIdType(value: unknown): 'CEDULA' | 'PASSPORT' | 'OTRO' | undef
   return normalized ?? (s as 'CEDULA' | 'PASSPORT' | 'OTRO');
 }
 
+/** Convierte cadena vacía en undefined para que @IsOptional() y @IsEmail() no fallen. */
+function emptyStringToUndefined(value: unknown): string | undefined {
+  if (value == null) return undefined;
+  const s = String(value).trim();
+  return s === '' ? undefined : s;
+}
+
 export class ClientInputDto {
   @IsString()
   @IsNotEmpty()
@@ -55,6 +62,7 @@ export class ClientInputDto {
   id_number?: string;
 
   @IsOptional()
+  @Transform(({ value }) => emptyStringToUndefined(value))
   @IsEmail()
   email?: string;
 
@@ -105,6 +113,7 @@ export class CreateInspectionRequestDto {
   responsible_phone?: string;
 
   @IsOptional()
+  @Transform(({ value }) => emptyStringToUndefined(value))
   @IsEmail()
   responsible_email?: string;
 
