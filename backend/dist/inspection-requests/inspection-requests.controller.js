@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var InspectionRequestsController_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InspectionRequestsController = void 0;
 const common_1 = require("@nestjs/common");
@@ -22,10 +23,11 @@ const decision_dto_1 = require("./dto/decision.dto");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const documents_service_1 = require("../documents/documents.service");
 const save_report_dto_1 = require("./dto/save-report.dto");
-let InspectionRequestsController = class InspectionRequestsController {
+let InspectionRequestsController = InspectionRequestsController_1 = class InspectionRequestsController {
     constructor(service, documentsService) {
         this.service = service;
         this.documentsService = documentsService;
+        this.logger = new common_1.Logger(InspectionRequestsController_1.name);
     }
     async list(req, status, search) {
         return this.service.list(req.userContext, {
@@ -35,7 +37,12 @@ let InspectionRequestsController = class InspectionRequestsController {
     }
     async create(req, payload) {
         const created = await this.service.create(req.userContext, payload);
-        await this.documentsService.generateRequestPdf(Number(created.id), req.userContext?.userId ?? 0, req.userContext);
+        try {
+            await this.documentsService.generateRequestPdf(Number(created.id), req.userContext?.userId ?? 0, req.userContext);
+        }
+        catch (err) {
+            this.logger.warn('No se pudo generar el PDF de la solicitud', err?.message ?? err);
+        }
         return created;
     }
     async updateStatus(req, id, payload) {
@@ -209,7 +216,7 @@ __decorate([
     __metadata("design:paramtypes", [Object, Number]),
     __metadata("design:returntype", Promise)
 ], InspectionRequestsController.prototype, "detail", null);
-exports.InspectionRequestsController = InspectionRequestsController = __decorate([
+exports.InspectionRequestsController = InspectionRequestsController = InspectionRequestsController_1 = __decorate([
     (0, common_1.Controller)('inspection-requests'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [inspection_requests_service_1.InspectionRequestsService,

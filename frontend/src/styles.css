@@ -651,6 +651,23 @@ a {
   font-weight: 600;
 }
 
+.field-required {
+  color: #dc2626;
+  font-weight: 600;
+  margin-left: 2px;
+}
+
+.field-error {
+  font-size: 0.8rem;
+  color: #dc2626;
+  margin-top: 2px;
+}
+
+.form-field.has-error input,
+.form-field.has-error select {
+  border-color: #dc2626;
+}
+
 .list-block {
   display: grid;
   gap: 12px;

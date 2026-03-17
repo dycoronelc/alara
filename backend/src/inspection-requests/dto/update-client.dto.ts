@@ -1,5 +1,6 @@
-import { IsEmail, IsEnum, IsOptional, IsString, IsDateString } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, IsDateString, ValidateIf } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { IsPanamaCedula } from '../../common/validation/panama-cedula.validator';
 
 const ID_TYPE_MAP: Record<string, 'CEDULA' | 'PASSPORT' | 'OTRO'> = {
   cedula: 'CEDULA',
@@ -36,8 +37,10 @@ export class UpdateClientDto {
   @IsEnum(['CEDULA', 'PASSPORT', 'OTRO'])
   id_type?: 'CEDULA' | 'PASSPORT' | 'OTRO';
 
+  @ValidateIf((o: UpdateClientDto) => o.id_type === 'CEDULA')
   @IsOptional()
   @IsString()
+  @IsPanamaCedula()
   id_number?: string;
 
   @IsOptional()

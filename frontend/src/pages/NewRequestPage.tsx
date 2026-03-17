@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { createInspectionRequest } from '../data/api';
+import { isPanamaCedula, PANAMA_CEDULA_HINT } from '../utils/panamaCedula';
 
 const initialState = {
   responsible_name: '',
@@ -34,6 +35,7 @@ const initialState = {
 const NewRequestPage = () => {
   const [form, setForm] = useState(initialState);
   const [message, setMessage] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const updateField = (key: string, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -41,6 +43,22 @@ const NewRequestPage = () => {
 
   const handleSubmit = async () => {
     setMessage('');
+    setFieldErrors({});
+
+    const errors: Record<string, string> = {};
+    if (!form.responsible_name?.trim()) errors.responsible_name = 'Requerido';
+    if (!form.request_number?.trim()) errors.request_number = 'Requerido';
+    if (!form.first_name?.trim()) errors.first_name = 'Requerido';
+    if (!form.last_name?.trim()) errors.last_name = 'Requerido';
+    if (form.id_type === 'CEDULA' && form.id_number?.trim() && !isPanamaCedula(form.id_number)) {
+      errors.id_number = 'Formato de cédula de Panamá no válido. ' + PANAMA_CEDULA_HINT;
+    }
+    if (Object.keys(errors).length) {
+      setFieldErrors(errors);
+      setMessage('Completa los campos obligatorios y corrige los errores.');
+      return;
+    }
+
     const payload = {
       request_number: form.request_number,
       agent_name: form.agent_name,
@@ -81,8 +99,12 @@ const NewRequestPage = () => {
       await createInspectionRequest(payload);
       setMessage('Solicitud creada correctamente.');
       setForm(initialState);
-    } catch (error) {
-      setMessage('No se pudo crear la solicitud. Verifica los campos.');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string | string[] } } };
+      const msg = err.response?.data?.message;
+      setMessage(
+        Array.isArray(msg) ? msg.join(' ') : typeof msg === 'string' ? msg : 'No se pudo crear la solicitud. Verifica los campos.',
+      );
     }
   };
 
@@ -97,9 +119,10 @@ const NewRequestPage = () => {
         <div className="form-section">
           <h4>Datos del responsable</h4>
           <div className="form-grid">
-            <label className="form-field">
-              <span>Persona responsable del pedido</span>
+            <label className={`form-field ${fieldErrors.responsible_name ? 'has-error' : ''}`}>
+              <span>Persona responsable del pedido <span className="field-required" aria-label="obligatorio">*</span></span>
               <input value={form.responsible_name} onChange={(e) => updateField('responsible_name', e.target.value)} />
+              {fieldErrors.responsible_name && <span className="field-error">{fieldErrors.responsible_name}</span>}
             </label>
             <label className="form-field">
               <span>Número de teléfono del responsable</span>
@@ -115,13 +138,15 @@ const NewRequestPage = () => {
         <div className="form-section">
           <h4>Datos del propuesto asegurado</h4>
           <div className="form-grid">
-            <label className="form-field">
-              <span>Nombres</span>
+            <label className={`form-field ${fieldErrors.first_name ? 'has-error' : ''}`}>
+              <span>Nombres <span className="field-required" aria-label="obligatorio">*</span></span>
               <input value={form.first_name} onChange={(e) => updateField('first_name', e.target.value)} />
+              {fieldErrors.first_name && <span className="field-error">{fieldErrors.first_name}</span>}
             </label>
-            <label className="form-field">
-              <span>Apellidos</span>
+            <label className={`form-field ${fieldErrors.last_name ? 'has-error' : ''}`}>
+              <span>Apellidos <span className="field-required" aria-label="obligatorio">*</span></span>
               <input value={form.last_name} onChange={(e) => updateField('last_name', e.target.value)} />
+              {fieldErrors.last_name && <span className="field-error">{fieldErrors.last_name}</span>}
             </label>
             <label className="form-field">
               <span>Fecha de Nacimiento</span>
@@ -135,9 +160,17 @@ const NewRequestPage = () => {
                 <option value="PASSPORT">Pasaporte</option>
               </select>
             </label>
-            <label className="form-field">
-              <span>Número</span>
-              <input value={form.id_number} onChange={(e) => updateField('id_number', e.target.value)} />
+            <label className={`form-field ${fieldErrors.id_number ? 'has-error' : ''}`}>
+              <span>Número {form.id_type === 'CEDULA' && <span className="field-required" aria-label="obligatorio">*</span>}</span>
+              <input
+                value={form.id_number}
+                onChange={(e) => updateField('id_number', e.target.value)}
+                placeholder={form.id_type === 'CEDULA' ? 'Ej: 1-1234-12345 o E-8-157481' : undefined}
+              />
+              {form.id_type === 'CEDULA' && (
+                <span className="field-error" style={{ color: '#64748b', fontWeight: 'normal', fontSize: '0.75rem' }}>{PANAMA_CEDULA_HINT}</span>
+              )}
+              {fieldErrors.id_number && <span className="field-error">{fieldErrors.id_number}</span>}
             </label>
             <label className="form-field">
               <span>Email</span>
@@ -195,9 +228,10 @@ const NewRequestPage = () => {
         <div className="form-section">
           <h4>Datos de la solicitud</h4>
           <div className="form-grid">
-            <label className="form-field">
-              <span>Número de Solicitud</span>
+            <label className={`form-field ${fieldErrors.request_number ? 'has-error' : ''}`}>
+              <span>Número de Solicitud <span className="field-required" aria-label="obligatorio">*</span></span>
               <input value={form.request_number} onChange={(e) => updateField('request_number', e.target.value)} />
+              {fieldErrors.request_number && <span className="field-error">{fieldErrors.request_number}</span>}
             </label>
             <label className="form-field">
               <span>Nombre del Agente</span>

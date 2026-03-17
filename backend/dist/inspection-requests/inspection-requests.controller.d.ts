@@ -9,6 +9,7 @@ import { SaveReportDto } from './dto/save-report.dto';
 export declare class InspectionRequestsController {
     private readonly service;
     private readonly documentsService;
+    private readonly logger;
     constructor(service: InspectionRequestsService, documentsService: DocumentsService);
     list(req: Request, status?: string, search?: string): Promise<({
         insurer: {

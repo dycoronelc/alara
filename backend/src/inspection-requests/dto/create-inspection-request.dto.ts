@@ -7,9 +7,11 @@ import {
   IsOptional,
   IsString,
   IsDateString,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
+import { IsPanamaCedula } from '../../common/validation/panama-cedula.validator';
 
 const ID_TYPE_MAP: Record<string, 'CEDULA' | 'PASSPORT' | 'OTRO'> = {
   cedula: 'CEDULA',
@@ -46,8 +48,10 @@ export class ClientInputDto {
   @IsEnum(['CEDULA', 'PASSPORT', 'OTRO'])
   id_type?: 'CEDULA' | 'PASSPORT' | 'OTRO';
 
+  @ValidateIf((o: ClientInputDto) => o.id_type === 'CEDULA')
   @IsOptional()
   @IsString()
+  @IsPanamaCedula()
   id_number?: string;
 
   @IsOptional()

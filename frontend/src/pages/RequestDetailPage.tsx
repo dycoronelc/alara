@@ -12,6 +12,7 @@ import {
   type UpdateClientPayload,
 } from '../data/api';
 import StatusBadge from '../components/StatusBadge';
+import { isPanamaCedula, PANAMA_CEDULA_HINT } from '../utils/panamaCedula';
 
 type RequestDetailProps = {
   portal: 'aseguradora' | 'alara';
@@ -560,6 +561,10 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       setClientMessage('Nombre y apellidos son obligatorios.');
       return;
     }
+    if (clientForm.id_type === 'CEDULA' && clientForm.id_number?.trim() && !isPanamaCedula(clientForm.id_number)) {
+      setClientMessage('Formato de cédula de Panamá no válido. ' + PANAMA_CEDULA_HINT);
+      return;
+    }
     setClientMessage('');
     const role = portal === 'aseguradora' ? 'INSURER' : 'ALARA';
     const payload: UpdateClientPayload = {
@@ -741,14 +746,14 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                 <h4>Editar datos del cliente</h4>
                 <div className="form-grid">
                   <label className="form-field">
-                    <span>Nombre</span>
+                    <span>Nombre <span className="field-required" aria-label="obligatorio">*</span></span>
                     <input
                       value={clientForm.first_name ?? ''}
                       onChange={(e) => setClientForm((f) => ({ ...f, first_name: e.target.value }))}
                     />
                   </label>
                   <label className="form-field">
-                    <span>Apellidos</span>
+                    <span>Apellidos <span className="field-required" aria-label="obligatorio">*</span></span>
                     <input
                       value={clientForm.last_name ?? ''}
                       onChange={(e) => setClientForm((f) => ({ ...f, last_name: e.target.value }))}
@@ -779,11 +784,15 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                     </select>
                   </label>
                   <label className="form-field">
-                    <span>Número documento</span>
+                    <span>Número documento {clientForm.id_type === 'CEDULA' && <span className="field-required" aria-label="obligatorio">*</span>}</span>
                     <input
                       value={clientForm.id_number ?? ''}
                       onChange={(e) => setClientForm((f) => ({ ...f, id_number: e.target.value }))}
+                      placeholder={clientForm.id_type === 'CEDULA' ? 'Ej: 1-1234-12345 o E-8-157481' : undefined}
                     />
+                    {clientForm.id_type === 'CEDULA' && (
+                      <span className="field-error" style={{ color: '#64748b', fontWeight: 'normal', fontSize: '0.75rem' }}>{PANAMA_CEDULA_HINT}</span>
+                    )}
                   </label>
                   <label className="form-field">
                     <span>Email</span>
