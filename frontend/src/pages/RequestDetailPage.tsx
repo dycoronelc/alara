@@ -12,6 +12,7 @@ import {
   type UpdateClientPayload,
 } from '../data/api';
 import StatusBadge from '../components/StatusBadge';
+import InvestigationsUafSection from '../components/InvestigationsUafSection';
 import { isPanamaCedula, PANAMA_CEDULA_HINT } from '../utils/panamaCedula';
 
 type RequestDetailProps = {
@@ -336,6 +337,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const [investigations, setInvestigations] = useState<any[]>([]);
   const [documents, setDocuments] = useState<File[]>([]);
   const [investigationMessage, setInvestigationMessage] = useState('');
+  const [uafSearchMode, setUafSearchMode] = useState<'cedula' | 'nombre' | 'ambos'>('ambos');
   const [callMessage, setCallMessage] = useState('');
   const [editingClient, setEditingClient] = useState(false);
   const [clientForm, setClientForm] = useState<Record<string, string>>({});
@@ -1131,27 +1133,39 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       )}
 
       {activeTab === 'investigaciones' && (
-        <div className="info-card">
-          <div className="report-actions">
-            {portal === 'alara' && (
-              <button className="primary-button" onClick={handleInvestigate}>
-                Investigar
-              </button>
-            )}
-            {investigationMessage && <span className="form-message">{investigationMessage}</span>}
-          </div>
-          <div className="list-block">
-            {investigations.map((item) => (
-              <div key={item.id} className="list-row">
-                <div>
-                  <strong>{item.source_name ?? 'Fuente'}</strong>
-                  <span>{item.finding_summary}</span>
-                </div>
-                <span>{item.risk_level}</span>
+        <div className="info-card info-card--uaf">
+          <InvestigationsUafSection
+            client={data?.client}
+            investigations={investigations}
+            searchMode={uafSearchMode}
+            onSearchModeChange={setUafSearchMode}
+          >
+            <div className="uaf-validation__actions">
+              {portal === 'alara' && (
+                <button type="button" className="primary-button" onClick={handleInvestigate}>
+                  Ejecutar investigación (n8n)
+                </button>
+              )}
+              {investigationMessage && <span className="form-message">{investigationMessage}</span>}
+            </div>
+          </InvestigationsUafSection>
+
+          {investigations.length > 0 && (
+            <details className="uaf-validation__raw">
+              <summary>Registros crudos de investigación</summary>
+              <div className="list-block">
+                {investigations.map((item: any) => (
+                  <div key={String(item.id)} className="list-row">
+                    <div>
+                      <strong>{item.source_name ?? 'Fuente'}</strong>
+                      <span>{item.finding_summary}</span>
+                    </div>
+                    <span>{item.risk_level}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-            {!investigations.length && <p>No hay investigaciones registradas.</p>}
-          </div>
+            </details>
+          )}
         </div>
       )}
 
