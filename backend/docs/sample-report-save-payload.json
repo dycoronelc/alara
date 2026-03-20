@@ -1,0 +1,1023 @@
+{
+  "outcome": "FAVORABLE",
+  "summary": "Resumen ejecutivo simulado del reporte VIP.",
+  "additional_comments": "Comentarios adicionales de prueba.",
+  "sections": [
+    {
+      "code": "DATOS_PERSONALES",
+      "title": "Datos personales",
+      "order": 0,
+      "fields": [
+        {
+          "key": "pa_name",
+          "label": "Propuesto Asegurado",
+          "type": "TEXT",
+          "value": "Valor simulado: pa_name"
+        },
+        {
+          "key": "home_address",
+          "label": "Domicilio Particular",
+          "type": "TEXT",
+          "value": "Valor simulado: home_address"
+        },
+        {
+          "key": "residence_time",
+          "label": "Tiempo de Residencia",
+          "type": "TEXT",
+          "value": "Valor simulado: residence_time"
+        },
+        {
+          "key": "foreign_residence",
+          "label": "Residencia en el extranjero (Dónde / cuándo)",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "mobile",
+          "label": "Celular",
+          "type": "TEXT",
+          "value": "Valor simulado: mobile"
+        },
+        {
+          "key": "email",
+          "label": "E-mail",
+          "type": "TEXT",
+          "value": "Valor simulado: email"
+        },
+        {
+          "key": "dob",
+          "label": "Fecha de Nacimiento",
+          "type": "DATE",
+          "value": "15/06/1990"
+        },
+        {
+          "key": "document",
+          "label": "Tipo y No. Documento",
+          "type": "TEXT",
+          "value": "Valor simulado: document"
+        },
+        {
+          "key": "nationality",
+          "label": "Nacionalidad",
+          "type": "TEXT",
+          "value": "Valor simulado: nationality"
+        },
+        {
+          "key": "marital_status",
+          "label": "Estado Civil",
+          "type": "ENUM",
+          "value": "Casado"
+        },
+        {
+          "key": "spouse_name",
+          "label": "Nombre del Cónyuge",
+          "type": "TEXT",
+          "value": "Valor simulado: spouse_name"
+        },
+        {
+          "key": "children",
+          "label": "Hijos",
+          "type": "TEXT",
+          "value": "Valor simulado: children"
+        }
+      ]
+    },
+    {
+      "code": "PROFESION_LABORAL",
+      "title": "Profesión – Actividad Laboral",
+      "order": 1,
+      "fields": [
+        {
+          "key": "profession_studies",
+          "label": "Profesión / Estudios Cursados",
+          "type": "TEXT",
+          "value": "Valor simulado: profession_studies"
+        },
+        {
+          "key": "occupation",
+          "label": "Ocupación / Cargo",
+          "type": "TEXT",
+          "value": "Valor simulado: occupation"
+        },
+        {
+          "key": "functions",
+          "label": "Funciones",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "employer",
+          "label": "Empleador / Empresa",
+          "type": "TEXT",
+          "value": "Valor simulado: employer"
+        },
+        {
+          "key": "seniority",
+          "label": "Antigüedad en la empresa",
+          "type": "TEXT",
+          "value": "Valor simulado: seniority"
+        },
+        {
+          "key": "company_start",
+          "label": "Fecha de Creación de la Empresa",
+          "type": "DATE",
+          "value": "15/06/1990"
+        },
+        {
+          "key": "employees",
+          "label": "Cantidad de Empleados",
+          "type": "TEXT",
+          "value": "Valor simulado: employees"
+        },
+        {
+          "key": "employee_or_partner",
+          "label": "¿Es empleado o socio?",
+          "type": "ENUM",
+          "value": "Empleado"
+        },
+        {
+          "key": "business_nature",
+          "label": "Naturaleza del Negocio",
+          "type": "TEXT",
+          "value": "Valor simulado: business_nature"
+        },
+        {
+          "key": "clients",
+          "label": "Clientes",
+          "type": "TEXT",
+          "value": "Valor simulado: clients"
+        },
+        {
+          "key": "business_address",
+          "label": "Domicilio Comercial",
+          "type": "TEXT",
+          "value": "Valor simulado: business_address"
+        },
+        {
+          "key": "website",
+          "label": "Sitio Web",
+          "type": "TEXT",
+          "value": "Valor simulado: website"
+        },
+        {
+          "key": "other_occupation",
+          "label": "Otra Ocupación Actual (describa)",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        }
+      ]
+    },
+    {
+      "code": "SALUD",
+      "title": "Salud",
+      "order": 2,
+      "fields": [
+        {
+          "key": "doctor_name",
+          "label": "Nombre del Médico Personal",
+          "type": "TEXT",
+          "value": "Valor simulado: doctor_name"
+        },
+        {
+          "key": "medical_coverage",
+          "label": "Cobertura Médica",
+          "type": "TEXT",
+          "value": "Valor simulado: medical_coverage"
+        },
+        {
+          "key": "last_consult",
+          "label": "Fecha Última Consulta Médica",
+          "type": "DATE",
+          "value": "15/06/1990"
+        },
+        {
+          "key": "last_checkup",
+          "label": "Fecha Último Check-up",
+          "type": "DATE",
+          "value": "15/06/1990"
+        },
+        {
+          "key": "doctor_contact",
+          "label": "Nombre, Dirección del Médico Consultado",
+          "type": "TEXT",
+          "value": "Valor simulado: doctor_contact"
+        },
+        {
+          "key": "studies",
+          "label": "Estudios realizados",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "results",
+          "label": "Resultados Obtenidos",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "weight",
+          "label": "Peso",
+          "type": "TEXT",
+          "value": "Valor simulado: weight"
+        },
+        {
+          "key": "height",
+          "label": "Altura",
+          "type": "TEXT",
+          "value": "Valor simulado: height"
+        },
+        {
+          "key": "weight_change",
+          "label": "Cambio de Peso",
+          "type": "TEXT",
+          "value": "Valor simulado: weight_change"
+        },
+        {
+          "key": "deafness",
+          "label": "Sordera",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "blindness",
+          "label": "Ceguera",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "physical_alterations",
+          "label": "Alteraciones Físicas",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "amputations",
+          "label": "Amputaciones",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "other_impediments",
+          "label": "Otros Impedimentos",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "high_pressure",
+          "label": "Alta Presión",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "diabetes",
+          "label": "Diabetes",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "cancer",
+          "label": "Cáncer",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "cardiac",
+          "label": "Problemas Cardiacos",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "ulcer",
+          "label": "Úlcera",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "surgeries",
+          "label": "Cirugías / Fechas",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "important_diseases",
+          "label": "Enfermedades Importantes / Fechas",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "prescribed_meds",
+          "label": "Medicamentos con prescripción (Nombre y Dosis)",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "non_prescribed_meds",
+          "label": "Medicamentos no recetados (Nombre y Dosis)",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        }
+      ]
+    },
+    {
+      "code": "RIESGOS_LABORALES",
+      "title": "Factores de riesgo en sus labores",
+      "order": 3,
+      "fields": [
+        {
+          "key": "work_risk",
+          "label": "¿Está expuesto a algún riesgo por sus labores?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "work_risk_desc",
+          "label": "Descripción según Ocupación",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "safety_rules",
+          "label": "¿Hay Normas de Seguridad?",
+          "type": "BOOL",
+          "value": "No"
+        }
+      ]
+    },
+    {
+      "code": "VIAJES",
+      "title": "Viajes",
+      "order": 4,
+      "fields": [
+        {
+          "key": "travel_destination",
+          "label": "Destino",
+          "type": "TEXT",
+          "value": "Valor simulado: travel_destination"
+        },
+        {
+          "key": "travel_transport",
+          "label": "Medio",
+          "type": "TEXT",
+          "value": "Valor simulado: travel_transport"
+        },
+        {
+          "key": "travel_reason",
+          "label": "Motivo",
+          "type": "TEXT",
+          "value": "Valor simulado: travel_reason"
+        },
+        {
+          "key": "travel_frequency",
+          "label": "Frecuencia",
+          "type": "TEXT",
+          "value": "Valor simulado: travel_frequency"
+        }
+      ]
+    },
+    {
+      "code": "DEPORTES_RIESGO",
+      "title": "Deportes de Riesgo",
+      "order": 5,
+      "fields": [
+        {
+          "key": "diving",
+          "label": "¿Buceo?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "racing",
+          "label": "¿Carrera de Vehículos?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "pilot",
+          "label": "¿Es Piloto de avión o Piloto Estudiante?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "ultralight",
+          "label": "Aviones Ultraligeros",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "parachute",
+          "label": "Paracaidismo",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "paragliding",
+          "label": "Parapente",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "climbing",
+          "label": "Escalamiento de montañas",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "other_risk",
+          "label": "Otra Actividad de Riesgo (ampliar)",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "accidents",
+          "label": "¿Ha tenido accidentes o lesiones practicando deporte?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "accidents_detail",
+          "label": "Detalle de accidentes o lesiones (deporte)",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        }
+      ]
+    },
+    {
+      "code": "DEPORTES",
+      "title": "Deportes",
+      "order": 6,
+      "fields": [
+        {
+          "key": "sports_activity",
+          "label": "Deporte o Actividad Física",
+          "type": "TEXT",
+          "value": "Valor simulado: sports_activity"
+        },
+        {
+          "key": "sports_frequency",
+          "label": "Frecuencia",
+          "type": "TEXT",
+          "value": "Valor simulado: sports_frequency"
+        },
+        {
+          "key": "sports_details",
+          "label": "Detalles",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        }
+      ]
+    },
+    {
+      "code": "TABACO",
+      "title": "Tabaco",
+      "order": 7,
+      "fields": [
+        {
+          "key": "smoker",
+          "label": "¿Es Fumador o utiliza algún tipo de tabaco?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "tobacco_type",
+          "label": "Tipo de Tabaco",
+          "type": "TEXT",
+          "value": "Valor simulado: tobacco_type"
+        },
+        {
+          "key": "tobacco_amount",
+          "label": "Cantidad y Frecuencia de Consumo",
+          "type": "TEXT",
+          "value": "Valor simulado: tobacco_amount"
+        },
+        {
+          "key": "tobacco_period",
+          "label": "Período de Consumo",
+          "type": "TEXT",
+          "value": "Valor simulado: tobacco_period"
+        },
+        {
+          "key": "tobacco_last",
+          "label": "Fecha del Último consumo",
+          "type": "DATE",
+          "value": "15/06/1990"
+        },
+        {
+          "key": "vape",
+          "label": "¿Consume cigarrillo electrónico?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "vape_details",
+          "label": "Cantidad/frecuencia y circunstancias",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        }
+      ]
+    },
+    {
+      "code": "ALCOHOL_DROGAS",
+      "title": "Alcohol – Drogas",
+      "order": 8,
+      "fields": [
+        {
+          "key": "alcohol",
+          "label": "¿Toma Bebidas Alcohólicas?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "marijuana",
+          "label": "Marihuana",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "amphetamines",
+          "label": "Anfetaminas",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "barbiturics",
+          "label": "Barbitúricos",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "cocaine",
+          "label": "Cocaína",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "lsd",
+          "label": "LSD",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "stimulants",
+          "label": "Estimulantes",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "other_drugs",
+          "label": "Otras Drogas",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "treatment",
+          "label": "Tratamiento por Consumo de Drogas / Alcohol",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "treatment_detail",
+          "label": "Detalle del tratamiento (centro, fechas, etc.)",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        }
+      ]
+    },
+    {
+      "code": "POLITICA",
+      "title": "Política",
+      "order": 9,
+      "fields": [
+        {
+          "key": "pep",
+          "label": "¿Es Persona Políticamente Expuesta (PEP)?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "pep_detail",
+          "label": "Detalle PEP (cargo, organismo, etc.)",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "political_party",
+          "label": "¿Participa en algún partido político?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "political_party_detail",
+          "label": "Detalle participación política",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        }
+      ]
+    },
+    {
+      "code": "SEGURIDAD",
+      "title": "Seguridad",
+      "order": 10,
+      "fields": [
+        {
+          "key": "kidnapping",
+          "label": "¿Ha sido Secuestrado o Recibido Amenazas?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "armored_car",
+          "label": "Auto Blindado",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "weapons",
+          "label": "Portación / Tenencia de Armas",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "weapon_time",
+          "label": "¿Hace cuánto tiempo las utiliza?",
+          "type": "TEXT",
+          "value": "Valor simulado: weapon_time"
+        },
+        {
+          "key": "weapon_use",
+          "label": "¿En qué circunstancia la porta?",
+          "type": "TEXT",
+          "value": "Valor simulado: weapon_use"
+        },
+        {
+          "key": "weapon_reason",
+          "label": "Razón de portación",
+          "type": "TEXT",
+          "value": "Valor simulado: weapon_reason"
+        },
+        {
+          "key": "weapon_type",
+          "label": "Tipo de arma, calibre y modelo",
+          "type": "TEXT",
+          "value": "Valor simulado: weapon_type"
+        },
+        {
+          "key": "weapon_fired",
+          "label": "¿Utilizó o disparó el arma en alguna ocasión?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "weapon_training",
+          "label": "¿Ha recibido entrenamiento especial?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "weapon_training_detail",
+          "label": "Detalle entrenamiento especial (nombre y lugar)",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "military",
+          "label": "¿Ha pertenecido a alguna fuerza militar o política?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "military_detail",
+          "label": "Detalle fuerza militar / política",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "weapon_maintenance",
+          "label": "Frecuencia de mantenimiento del arma",
+          "type": "TEXT",
+          "value": "Valor simulado: weapon_maintenance"
+        },
+        {
+          "key": "practice_place",
+          "label": "Lugar de práctica",
+          "type": "TEXT",
+          "value": "Valor simulado: practice_place"
+        },
+        {
+          "key": "security_equipment",
+          "label": "Equipo de seguridad utilizado",
+          "type": "TEXT",
+          "value": "Valor simulado: security_equipment"
+        },
+        {
+          "key": "accidents_security",
+          "label": "¿Ha tenido accidentes?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "personal_guard",
+          "label": "Custodia Personal",
+          "type": "BOOL",
+          "value": "No"
+        }
+      ]
+    },
+    {
+      "code": "HISTORIA_SEGUROS",
+      "title": "Historia de Seguros",
+      "order": 11,
+      "fields": [
+        {
+          "key": "insurance_date",
+          "label": "Fecha del seguro",
+          "type": "DATE",
+          "value": "15/06/1990"
+        },
+        {
+          "key": "insurance_company",
+          "label": "Compañía",
+          "type": "TEXT",
+          "value": "Valor simulado: insurance_company"
+        },
+        {
+          "key": "insurance_amount",
+          "label": "Monto",
+          "type": "TEXT",
+          "value": "Valor simulado: insurance_amount"
+        },
+        {
+          "key": "insurance_reason",
+          "label": "Motivo del seguro",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "simultaneous_policy",
+          "label": "Seguro de vida en otra compañía (detallar)",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        }
+      ]
+    },
+    {
+      "code": "DETALLE_SEGURO",
+      "title": "Detalle del seguro",
+      "order": 12,
+      "fields": [
+        {
+          "key": "insurance_object",
+          "label": "Objeto del seguro",
+          "type": "TEXT",
+          "value": "Valor simulado: insurance_object"
+        },
+        {
+          "key": "policy_holder",
+          "label": "Tomador de la Póliza",
+          "type": "TEXT",
+          "value": "Valor simulado: policy_holder"
+        },
+        {
+          "key": "policy_payer",
+          "label": "Pagador de la Póliza",
+          "type": "TEXT",
+          "value": "Valor simulado: policy_payer"
+        },
+        {
+          "key": "bank_name",
+          "label": "Banco de origen de fondos",
+          "type": "TEXT",
+          "value": "Valor simulado: bank_name"
+        },
+        {
+          "key": "funds_origin",
+          "label": "Origen de fondos",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "previous_rejected",
+          "label": "¿Le han Rechazado alguna Solicitud anteriormente?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "replaces_policy",
+          "label": "¿Este Seguro Reemplaza una Póliza Actual?",
+          "type": "BOOL",
+          "value": "No"
+        }
+      ]
+    },
+    {
+      "code": "INGRESOS",
+      "title": "Ingresos",
+      "order": 13,
+      "fields": [
+        {
+          "key": "earned_income",
+          "label": "Ingreso Ganado Anual",
+          "type": "TEXT",
+          "value": "Valor simulado: earned_income"
+        },
+        {
+          "key": "earned_concept",
+          "label": "Concepto (Sueldo, Comisiones, etc.)",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "unearned_income",
+          "label": "Ingresos Anuales No Ganados",
+          "type": "TEXT",
+          "value": "Valor simulado: unearned_income"
+        },
+        {
+          "key": "unearned_concept",
+          "label": "Concepto (Dividendos, etc.)",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "total_income",
+          "label": "Ingreso Total Anual",
+          "type": "TEXT",
+          "value": "Valor simulado: total_income"
+        }
+      ]
+    },
+    {
+      "code": "ACTIVO_PERSONAL",
+      "title": "Activo Personal",
+      "order": 14,
+      "fields": [
+        {
+          "key": "total_assets",
+          "label": "Total Activo Personal",
+          "type": "TEXT",
+          "value": "Valor simulado: total_assets"
+        },
+        {
+          "key": "real_estate",
+          "label": "Inmuebles / Bienes Raíces",
+          "type": "TEXT",
+          "value": "Valor simulado: real_estate"
+        },
+        {
+          "key": "cash_bank",
+          "label": "Efectivo en banco",
+          "type": "TEXT",
+          "value": "Valor simulado: cash_bank"
+        },
+        {
+          "key": "goods",
+          "label": "Bienes (vehículos, arte, etc.)",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "society",
+          "label": "Participación en Sociedades",
+          "type": "TEXT",
+          "value": "Valor simulado: society"
+        },
+        {
+          "key": "stocks",
+          "label": "Acciones y Bonos",
+          "type": "TEXT",
+          "value": "Valor simulado: stocks"
+        },
+        {
+          "key": "other_assets",
+          "label": "Otros Activos (Detalles)",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "receivables",
+          "label": "Cuentas por Cobrar",
+          "type": "TEXT",
+          "value": "Valor simulado: receivables"
+        }
+      ]
+    },
+    {
+      "code": "PASIVO_PERSONAL",
+      "title": "Pasivo Personal",
+      "order": 15,
+      "fields": [
+        {
+          "key": "total_liabilities",
+          "label": "Total Pasivo Personal",
+          "type": "TEXT",
+          "value": "Valor simulado: total_liabilities"
+        }
+      ]
+    },
+    {
+      "code": "FINANZAS_OTROS",
+      "title": "Finanzas – Otros",
+      "order": 16,
+      "fields": [
+        {
+          "key": "banks",
+          "label": "Bancos con los cuales opera",
+          "type": "TEXT",
+          "value": "Valor simulado: banks"
+        },
+        {
+          "key": "bank_relationship",
+          "label": "Antigüedad",
+          "type": "TEXT",
+          "value": "Valor simulado: bank_relationship"
+        },
+        {
+          "key": "credit_cards",
+          "label": "Tarjetas de crédito",
+          "type": "TEXT",
+          "value": "Valor simulado: credit_cards"
+        },
+        {
+          "key": "bankruptcy",
+          "label": "¿Está en Quiebra Comercial?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "negative_history",
+          "label": "Antecedentes comerciales negativos",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        }
+      ]
+    },
+    {
+      "code": "HISTORIAL_MANEJO",
+      "title": "Historial de Manejo",
+      "order": 17,
+      "fields": [
+        {
+          "key": "dui",
+          "label": "Condenas por DUI en últimos 5 años",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "traffic",
+          "label": "Infracciones de tránsito últimos 3 años",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        }
+      ]
+    },
+    {
+      "code": "JUICIOS",
+      "title": "Juicios",
+      "order": 18,
+      "fields": [
+        {
+          "key": "criminal_case",
+          "label": "Juicio Penal",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "civil_case",
+          "label": "Juicio Civil",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "commercial_case",
+          "label": "Juicio Comercial",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "labor_case",
+          "label": "Juicio Laboral",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "arrested",
+          "label": "¿Ha sido Arrestado? Detallar",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        }
+      ]
+    },
+    {
+      "code": "COMENTARIOS",
+      "title": "Ampliación o Comentarios Adicional",
+      "order": 19,
+      "fields": [
+        {
+          "key": "additional_comments",
+          "label": "Comentarios",
+          "type": "TEXT",
+          "value": "Texto simulado para prueba de guardado."
+        }
+      ]
+    }
+  ]
+}

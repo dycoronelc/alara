@@ -13,6 +13,11 @@ import {
 } from '../data/api';
 import StatusBadge from '../components/StatusBadge';
 import InvestigationsUafSection from '../components/InvestigationsUafSection';
+import ReportFormField from '../components/ReportFormField';
+import { defaultReportSections } from '../report/defaultReportSections';
+import { mergeReportTemplate } from '../report/mergeReportTemplate';
+import { DATE_KEYS, mapApiFieldToDef, toApiFieldType, type ReportSectionDef } from '../report/fieldTypes';
+import { isoLikeToDdMmYyyy, isValidDdMmYyyy } from '../utils/ddMmYyyyDate';
 import { isPanamaCedula, PANAMA_CEDULA_HINT } from '../utils/panamaCedula';
 
 type RequestDetailProps = {
@@ -75,250 +80,6 @@ type RequestDetail = {
   } | null;
 };
 
-type FieldDef = { key: string; label: string; type?: 'text' | 'textarea' };
-type SectionDef = { code?: string; title: string; fields: FieldDef[] };
-
-const buildReportSections = (): SectionDef[] => [
-  {
-    title: 'Datos personales',
-    fields: [
-      { key: 'pa_name', label: 'Propuesto Asegurado' },
-      { key: 'home_address', label: 'Domicilio Particular' },
-      { key: 'residence_time', label: 'Tiempo de Residencia' },
-      { key: 'foreign_residence', label: 'Residencia en el extranjero (Dónde / cuándo)', type: 'textarea' },
-      { key: 'mobile', label: 'Celular' },
-      { key: 'email', label: 'E-mail' },
-      { key: 'dob', label: 'Fecha de Nacimiento' },
-      { key: 'document', label: 'Tipo y No. Documento' },
-      { key: 'nationality', label: 'Nacionalidad' },
-      { key: 'marital_status', label: 'Estado Civil' },
-      { key: 'spouse_name', label: 'Nombre del Cónyuge' },
-      { key: 'children', label: 'Hijos' },
-    ],
-  },
-  {
-    title: 'Profesión – Actividad Laboral',
-    fields: [
-      { key: 'profession_studies', label: 'Profesión / Estudios Cursados' },
-      { key: 'occupation', label: 'Ocupación / Cargo' },
-      { key: 'functions', label: 'Funciones', type: 'textarea' },
-      { key: 'employer', label: 'Empleador / Empresa' },
-      { key: 'seniority', label: 'Antigüedad en la empresa' },
-      { key: 'company_start', label: 'Fecha de Creación de la Empresa' },
-      { key: 'employees', label: 'Cantidad de Empleados' },
-      { key: 'employee_or_partner', label: '¿Es empleado o socio?' },
-      { key: 'business_nature', label: 'Naturaleza del Negocio' },
-      { key: 'clients', label: 'Clientes' },
-      { key: 'business_address', label: 'Domicilio Comercial' },
-      { key: 'website', label: 'Sitio Web' },
-      { key: 'other_occupation', label: 'Otra Ocupación Actual (describa)', type: 'textarea' },
-    ],
-  },
-  {
-    title: 'Salud',
-    fields: [
-      { key: 'doctor_name', label: 'Nombre del Médico Personal' },
-      { key: 'medical_coverage', label: 'Cobertura Médica' },
-      { key: 'last_consult', label: 'Fecha Última Consulta Médica' },
-      { key: 'last_checkup', label: 'Fecha Último Check-up' },
-      { key: 'doctor_contact', label: 'Nombre, Dirección del Médico Consultado' },
-      { key: 'studies', label: 'Estudios realizados', type: 'textarea' },
-      { key: 'results', label: 'Resultados Obtenidos', type: 'textarea' },
-      { key: 'weight', label: 'Peso' },
-      { key: 'height', label: 'Altura' },
-      { key: 'weight_change', label: 'Cambio de Peso' },
-      { key: 'deafness', label: 'Sordera' },
-      { key: 'blindness', label: 'Ceguera' },
-      { key: 'physical_alterations', label: 'Alteraciones Físicas' },
-      { key: 'amputations', label: 'Amputaciones' },
-      { key: 'other_impediments', label: 'Otros Impedimentos' },
-      { key: 'high_pressure', label: 'Alta Presión' },
-      { key: 'diabetes', label: 'Diabetes' },
-      { key: 'cancer', label: 'Cáncer' },
-      { key: 'cardiac', label: 'Problemas Cardiacos' },
-      { key: 'ulcer', label: 'Úlcera' },
-      { key: 'surgeries', label: 'Cirugías / Fechas', type: 'textarea' },
-      { key: 'important_diseases', label: 'Enfermedades Importantes / Fechas', type: 'textarea' },
-      { key: 'prescribed_meds', label: 'Medicamentos con prescripción (Nombre y Dosis)', type: 'textarea' },
-      { key: 'non_prescribed_meds', label: 'Medicamentos no recetados (Nombre y Dosis)', type: 'textarea' },
-    ],
-  },
-  {
-    title: 'Factores de riesgo en sus labores',
-    fields: [
-      { key: 'work_risk', label: '¿Está expuesto a algún riesgo por sus labores?' },
-      { key: 'work_risk_desc', label: 'Descripción según Ocupación', type: 'textarea' },
-      { key: 'safety_rules', label: '¿Hay Normas de Seguridad?' },
-    ],
-  },
-  {
-    title: 'Viajes',
-    fields: [
-      { key: 'travel_destination', label: 'Destino' },
-      { key: 'travel_transport', label: 'Medio' },
-      { key: 'travel_reason', label: 'Motivo' },
-      { key: 'travel_frequency', label: 'Frecuencia' },
-    ],
-  },
-  {
-    title: 'Deportes de Riesgo',
-    fields: [
-      { key: 'diving', label: '¿Buceo?' },
-      { key: 'racing', label: '¿Carrera de Vehículos?' },
-      { key: 'pilot', label: '¿Piloto de avión o Piloto Estudiante?' },
-      { key: 'ultralight', label: 'Aviones Ultraligeros' },
-      { key: 'parachute', label: 'Paracaidismo' },
-      { key: 'paragliding', label: 'Parapente' },
-      { key: 'climbing', label: 'Escalamiento de montañas' },
-      { key: 'other_risk', label: 'Otra Actividad de Riesgo (ampliar)', type: 'textarea' },
-      { key: 'accidents', label: 'Accidentes o lesiones (detallar)', type: 'textarea' },
-    ],
-  },
-  {
-    title: 'Deportes',
-    fields: [
-      { key: 'sports_activity', label: 'Deporte o Actividad Física' },
-      { key: 'sports_frequency', label: 'Frecuencia' },
-      { key: 'sports_details', label: 'Detalles', type: 'textarea' },
-    ],
-  },
-  {
-    title: 'Tabaco',
-    fields: [
-      { key: 'smoker', label: '¿Es Fumador o utiliza algún tipo de tabaco?' },
-      { key: 'tobacco_type', label: 'Tipo de Tabaco' },
-      { key: 'tobacco_amount', label: 'Cantidad y Frecuencia de Consumo' },
-      { key: 'tobacco_period', label: 'Período de Consumo' },
-      { key: 'tobacco_last', label: 'Fecha del Último consumo' },
-      { key: 'vape', label: '¿Consume cigarrillo electrónico?' },
-      { key: 'vape_details', label: 'Cantidad/frecuencia y circunstancias', type: 'textarea' },
-    ],
-  },
-  {
-    title: 'Alcohol – Drogas',
-    fields: [
-      { key: 'alcohol', label: '¿Toma Bebidas Alcohólicas?' },
-      { key: 'marijuana', label: 'Marihuana' },
-      { key: 'amphetamines', label: 'Anfetaminas' },
-      { key: 'barbiturics', label: 'Barbitúricos' },
-      { key: 'cocaine', label: 'Cocaína' },
-      { key: 'lsd', label: 'LSD' },
-      { key: 'stimulants', label: 'Estimulantes' },
-      { key: 'other_drugs', label: 'Otras Drogas' },
-      { key: 'treatment', label: 'Tratamiento por Consumo de Drogas / Alcohol', type: 'textarea' },
-    ],
-  },
-  {
-    title: 'Política',
-    fields: [
-      { key: 'pep', label: '¿Es PEP? (detallar)', type: 'textarea' },
-      { key: 'political_party', label: '¿Participa en partido político? (detallar)', type: 'textarea' },
-    ],
-  },
-  {
-    title: 'Seguridad',
-    fields: [
-      { key: 'kidnapping', label: '¿Ha sido Secuestrado o Recibido Amenazas?' },
-      { key: 'armored_car', label: 'Auto Blindado' },
-      { key: 'weapons', label: 'Portación / Tenencia de Armas' },
-      { key: 'weapon_time', label: '¿Hace cuánto tiempo las utiliza?' },
-      { key: 'weapon_use', label: '¿En qué circunstancia la porta?' },
-      { key: 'weapon_reason', label: 'Razón de portación' },
-      { key: 'weapon_type', label: 'Tipo de arma, calibre y modelo' },
-      { key: 'weapon_fired', label: '¿Utilizó o disparó el arma?' },
-      { key: 'weapon_training', label: 'Entrenamiento especial (nombre y lugar)', type: 'textarea' },
-      { key: 'military', label: '¿Ha pertenecido a fuerza militar/política? (detallar)', type: 'textarea' },
-      { key: 'weapon_maintenance', label: 'Frecuencia de mantenimiento del arma' },
-      { key: 'practice_place', label: 'Lugar de práctica' },
-      { key: 'security_equipment', label: 'Equipo de seguridad utilizado' },
-      { key: 'accidents_security', label: '¿Ha tenido accidentes?' },
-      { key: 'personal_guard', label: 'Custodia Personal' },
-    ],
-  },
-  {
-    title: 'Historia de Seguros',
-    fields: [
-      { key: 'insurance_date', label: 'Fecha' },
-      { key: 'insurance_company', label: 'Compañía' },
-      { key: 'insurance_amount', label: 'Monto' },
-      { key: 'insurance_reason', label: 'Motivo del seguro', type: 'textarea' },
-      { key: 'simultaneous_policy', label: 'Seguro de vida en otra compañía (detallar)', type: 'textarea' },
-    ],
-  },
-  {
-    title: 'Detalle del seguro',
-    fields: [
-      { key: 'insurance_object', label: 'Objeto del seguro' },
-      { key: 'policy_holder', label: 'Tomador de la Póliza' },
-      { key: 'policy_payer', label: 'Pagador de la Póliza' },
-      { key: 'bank_name', label: 'Banco de origen de fondos' },
-      { key: 'funds_origin', label: 'Origen de fondos', type: 'textarea' },
-      { key: 'previous_rejected', label: '¿Solicitud rechazada anteriormente?' },
-      { key: 'replaces_policy', label: '¿Reemplaza póliza actual?' },
-    ],
-  },
-  {
-    title: 'Ingresos',
-    fields: [
-      { key: 'earned_income', label: 'Ingreso Ganado Anual' },
-      { key: 'earned_concept', label: 'Concepto (Sueldo, Comisiones, etc.)', type: 'textarea' },
-      { key: 'unearned_income', label: 'Ingresos Anuales No Ganados' },
-      { key: 'unearned_concept', label: 'Concepto (Dividendos, etc.)', type: 'textarea' },
-      { key: 'total_income', label: 'Ingreso Total Anual' },
-    ],
-  },
-  {
-    title: 'Activo Personal',
-    fields: [
-      { key: 'total_assets', label: 'Total Activo Personal' },
-      { key: 'real_estate', label: 'Inmuebles / Bienes Raíces' },
-      { key: 'cash_bank', label: 'Efectivo en banco' },
-      { key: 'goods', label: 'Bienes (vehículos, arte, etc.)', type: 'textarea' },
-      { key: 'society', label: 'Participación en Sociedades' },
-      { key: 'stocks', label: 'Acciones y Bonos' },
-      { key: 'other_assets', label: 'Otros Activos (Detalles)', type: 'textarea' },
-      { key: 'receivables', label: 'Cuentas por Cobrar' },
-    ],
-  },
-  {
-    title: 'Pasivo Personal',
-    fields: [
-      { key: 'total_liabilities', label: 'Total Pasivo Personal' },
-    ],
-  },
-  {
-    title: 'Finanzas – Otros',
-    fields: [
-      { key: 'banks', label: 'Bancos con los cuales opera' },
-      { key: 'bank_relationship', label: 'Antigüedad' },
-      { key: 'credit_cards', label: 'Tarjetas de crédito' },
-      { key: 'bankruptcy', label: '¿Está en Quiebra Comercial?' },
-      { key: 'negative_history', label: 'Antecedentes comerciales negativos', type: 'textarea' },
-    ],
-  },
-  {
-    title: 'Historial de Manejo',
-    fields: [
-      { key: 'dui', label: 'Condenas por DUI en últimos 5 años', type: 'textarea' },
-      { key: 'traffic', label: 'Infracciones de tránsito últimos 3 años', type: 'textarea' },
-    ],
-  },
-  {
-    title: 'Juicios',
-    fields: [
-      { key: 'criminal_case', label: 'Juicio Penal' },
-      { key: 'civil_case', label: 'Juicio Civil' },
-      { key: 'commercial_case', label: 'Juicio Comercial' },
-      { key: 'labor_case', label: 'Juicio Laboral' },
-      { key: 'arrested', label: '¿Ha sido Arrestado? Detallar', type: 'textarea' },
-    ],
-  },
-  {
-    title: 'Ampliación o Comentarios Adicional',
-    fields: [{ key: 'additional_comments', label: 'Comentarios', type: 'textarea' }],
-  },
-];
-
 const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -326,7 +87,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const [activeTab, setActiveTab] = useState<
     'general' | 'cliente' | 'solicitud' | 'reporte' | 'documentacion' | 'investigaciones'
   >('general');
-  const [showReportForm] = useState(true);
+  const [showReportForm, setShowReportForm] = useState(true);
   const [reportValues, setReportValues] = useState<Record<string, string>>({});
   const [reportSummary, setReportSummary] = useState('');
   const [reportComments, setReportComments] = useState('');
@@ -343,7 +104,16 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const [clientForm, setClientForm] = useState<Record<string, string>>({});
   const [clientMessage, setClientMessage] = useState('');
 
-  const [templateSections, setTemplateSections] = useState<SectionDef[]>(buildReportSections());
+  const mapPayloadToSections = (sections: any[]): ReportSectionDef[] => {
+    const remote: ReportSectionDef[] = sections.map((section: any) => ({
+      code: section.code,
+      title: section.title,
+      fields: (section.fields ?? []).map((field: any) => mapApiFieldToDef(field)),
+    }));
+    return mergeReportTemplate(remote);
+  };
+
+  const [templateSections, setTemplateSections] = useState<ReportSectionDef[]>(defaultReportSections());
 
   useEffect(() => {
     const cacheKey = 'alara-report-template:INSPECTION_REPORT_V1';
@@ -352,18 +122,9 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       try {
         const parsed = JSON.parse(cached);
         if (parsed?.payload?.sections?.length) {
-          const sections = parsed.payload.sections.map((section: any) => ({
-            code: section.code,
-            title: section.title,
-            fields: (section.fields ?? []).map((field: any) => ({
-              key: field.key,
-              label: field.label,
-              type: field.type === 'TEXTAREA' ? 'textarea' : 'text',
-            })),
-          }));
-          setTemplateSections(sections);
+          setTemplateSections(mapPayloadToSections(parsed.payload.sections));
         }
-      } catch (error) {
+      } catch {
         // ignore cache parse errors
       }
     }
@@ -386,16 +147,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                 payload: resp.report_template.payload,
               }),
             );
-            const sections = resp.report_template.payload.sections.map((section: any) => ({
-              code: section.code,
-              title: section.title,
-              fields: (section.fields ?? []).map((field: any) => ({
-                key: field.key,
-                label: field.label,
-                type: field.type === 'TEXTAREA' ? 'textarea' : 'text',
-              })),
-            }));
-            setTemplateSections(sections);
+            setTemplateSections(mapPayloadToSections(resp.report_template.payload.sections));
           }
         }
         setData(resp);
@@ -410,7 +162,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       pa_name: data.client ? `${data.client.first_name ?? ''} ${data.client.last_name ?? ''}`.trim() : '',
       email: data.client?.email ?? '',
       mobile: data.client?.phone_mobile ?? '',
-      dob: data.client?.dob ?? '',
+      dob: isoLikeToDdMmYyyy(data.client?.dob),
       document: `${data.client?.id_type ?? ''} ${data.client?.id_number ?? ''}`.trim(),
       profession_studies: data.client?.profession ?? '',
       employer: data.client?.employer_name ?? '',
@@ -470,7 +222,11 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       data.inspection_report.sections.forEach((section) => {
         section.fields.forEach((field) => {
           if (field.field_key) {
-            existingValues[field.field_key] = field.field_value ?? '';
+            let v = field.field_value ?? '';
+            if (DATE_KEYS.has(field.field_key) && v) {
+              v = isoLikeToDdMmYyyy(v);
+            }
+            existingValues[field.field_key] = v;
           }
         });
       });
@@ -481,7 +237,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
     if (data?.inspection_report?.outcome) {
       setReportOutcome(data.inspection_report.outcome as any);
     }
-  }, [initialReportValues]);
+  }, [initialReportValues, data?.inspection_report]);
 
   const updateReportValue = (key: string, value: string) => {
     setReportValues((prev) => ({ ...prev, [key]: value }));
@@ -490,6 +246,22 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const handleSaveReport = async () => {
     if (!id) return;
     setReportMessage('');
+    const invalidDates: string[] = [];
+    reportSections.forEach((section) => {
+      section.fields.forEach((field) => {
+        if (field.type === 'date') {
+          const v = (reportValues[field.key] ?? '').trim();
+          if (v && !isValidDdMmYyyy(v)) {
+            invalidDates.push(field.label);
+          }
+        }
+      });
+    });
+    if (invalidDates.length) {
+      setReportMessage(`Revise fechas en formato dd/mm/aaaa: ${invalidDates.join(', ')}`);
+      return;
+    }
+
     const payload = {
       outcome: reportOutcome,
       summary: reportSummary || undefined,
@@ -501,7 +273,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
         fields: section.fields.map((field) => ({
           key: field.key,
           label: field.label,
-          type: field.type === 'textarea' ? 'TEXT' : 'TEXT',
+          type: toApiFieldType(field),
           value: reportValues[field.key] ?? '',
         })),
       })),
@@ -1047,29 +819,19 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                 </div>
               </div>
               {reportSections.map((section) => (
-                <div key={section.title} className="form-section">
+                <div key={section.code ?? section.title} className="form-section">
                   <h4>{section.title}</h4>
                   <div className="form-grid">
-                    {section.fields.map((field) => {
-                      return (
-                        <label key={field.key} className="form-field">
-                          <span>{field.label}</span>
-                          {field.type === 'textarea' ? (
-                            <textarea
-                              value={reportValues[field.key] ?? ''}
-                              onChange={(event) => updateReportValue(field.key, event.target.value)}
-                              rows={3}
-                            />
-                          ) : (
-                            <input
-                              type="text"
-                              value={reportValues[field.key] ?? ''}
-                              onChange={(event) => updateReportValue(field.key, event.target.value)}
-                            />
-                          )}
-                        </label>
-                      );
-                    })}
+                    {section.fields.map((field) => (
+                      <label key={field.key} className="form-field">
+                        <span>{field.label}</span>
+                        <ReportFormField
+                          field={field}
+                          value={reportValues[field.key] ?? ''}
+                          onChange={updateReportValue}
+                        />
+                      </label>
+                    ))}
                   </div>
                 </div>
               ))}
