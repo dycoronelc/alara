@@ -1,7 +1,25 @@
 import { mockAlaraDashboard, mockInsurerDashboard, mockRequests } from './mock';
 
+declare global {
+  interface Window {
+    /** Inyectado en producción por `scripts/write-runtime-config.mjs` (Railway runtime). */
+    __ALARA_API_BASE__?: string;
+  }
+}
+
+/**
+ * Orden: 1) runtime-config.js (npm start en Railway), 2) Vite en build (VITE_API_URL).
+ * Así la URL del backend puede definirse solo en variables de runtime del servicio frontend.
+ */
+function readApiBaseFromEnv(): string {
+  if (typeof window !== 'undefined' && window.__ALARA_API_BASE__) {
+    return String(window.__ALARA_API_BASE__).trim();
+  }
+  return (import.meta.env.VITE_API_URL ?? '').trim();
+}
+
 /** Base del API sin barra final. Vacío = rutas relativas al mismo origen (solo válido si hay proxy). */
-const normalizedBase = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/$/, '');
+const normalizedBase = readApiBaseFromEnv().replace(/\/$/, '');
 
 export const getApiUrl = () => normalizedBase;
 
