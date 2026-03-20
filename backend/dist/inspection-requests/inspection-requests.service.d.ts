@@ -16,14 +16,15 @@ export declare class InspectionRequestsService {
     }): Promise<({
         insurer: {
             id: bigint;
+            is_active: boolean;
             created_at: Date;
             updated_at: Date | null;
             name: string;
             legal_id: string | null;
-            is_active: boolean;
         };
         client: {
             id: bigint;
+            email: string | null;
             created_at: Date;
             updated_at: Date | null;
             first_name: string;
@@ -31,19 +32,18 @@ export declare class InspectionRequestsService {
             dob: Date | null;
             id_type: import(".prisma/client").$Enums.IdType | null;
             id_number: string | null;
-            email: string | null;
             phone_mobile: string | null;
             phone_home: string | null;
-            phone_work: string | null;
             employer_name: string | null;
             employer_tax_id: string | null;
             profession: string | null;
+            phone_work: string | null;
         };
     } & {
         id: bigint;
         insurer_id: bigint;
-        insurer_client_id: bigint;
-        client_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         request_number: string;
         agent_name: string | null;
         insured_amount: Prisma.Decimal | null;
@@ -55,6 +55,9 @@ export declare class InspectionRequestsService {
         comments: string | null;
         client_notified: boolean;
         interview_language: string | null;
+        priority: import(".prisma/client").$Enums.Priority;
+        insurer_client_id: bigint;
+        client_id: bigint;
         status: import(".prisma/client").$Enums.InspectionStatus;
         assigned_investigator_user_id: bigint | null;
         assigned_at: Date | null;
@@ -63,7 +66,6 @@ export declare class InspectionRequestsService {
         scheduled_end_at: Date | null;
         completed_at: Date | null;
         closed_at: Date | null;
-        priority: import(".prisma/client").$Enums.Priority;
         cancellation_reason: string | null;
         insurer_decision: import(".prisma/client").$Enums.DecisionStatus;
         insurer_decision_reason: string | null;
@@ -74,8 +76,6 @@ export declare class InspectionRequestsService {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     })[]>;
     getById(context: RequestContext, id: number): Promise<{
         report_template: {
@@ -88,14 +88,15 @@ export declare class InspectionRequestsService {
         } | null;
         insurer: {
             id: bigint;
+            is_active: boolean;
             created_at: Date;
             updated_at: Date | null;
             name: string;
             legal_id: string | null;
-            is_active: boolean;
         };
         client: {
             id: bigint;
+            email: string | null;
             created_at: Date;
             updated_at: Date | null;
             first_name: string;
@@ -103,13 +104,12 @@ export declare class InspectionRequestsService {
             dob: Date | null;
             id_type: import(".prisma/client").$Enums.IdType | null;
             id_number: string | null;
-            email: string | null;
             phone_mobile: string | null;
             phone_home: string | null;
-            phone_work: string | null;
             employer_name: string | null;
             employer_tax_id: string | null;
             profession: string | null;
+            phone_work: string | null;
         };
         inspection_report: ({
             sections: ({
@@ -132,9 +132,9 @@ export declare class InspectionRequestsService {
             })[];
         } & {
             id: bigint;
-            created_by_user_id: bigint | null;
             created_at: Date;
             updated_at: Date | null;
+            created_by_user_id: bigint | null;
             inspection_request_id: bigint;
             interview_started_at: Date | null;
             interview_ended_at: Date | null;
@@ -145,8 +145,8 @@ export declare class InspectionRequestsService {
         }) | null;
         id: bigint;
         insurer_id: bigint;
-        insurer_client_id: bigint;
-        client_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         request_number: string;
         agent_name: string | null;
         insured_amount: Prisma.Decimal | null;
@@ -158,6 +158,9 @@ export declare class InspectionRequestsService {
         comments: string | null;
         client_notified: boolean;
         interview_language: string | null;
+        priority: import(".prisma/client").$Enums.Priority;
+        insurer_client_id: bigint;
+        client_id: bigint;
         status: import(".prisma/client").$Enums.InspectionStatus;
         assigned_investigator_user_id: bigint | null;
         assigned_at: Date | null;
@@ -166,7 +169,6 @@ export declare class InspectionRequestsService {
         scheduled_end_at: Date | null;
         completed_at: Date | null;
         closed_at: Date | null;
-        priority: import(".prisma/client").$Enums.Priority;
         cancellation_reason: string | null;
         insurer_decision: import(".prisma/client").$Enums.DecisionStatus;
         insurer_decision_reason: string | null;
@@ -177,14 +179,12 @@ export declare class InspectionRequestsService {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
     saveReport(context: RequestContext, id: number, payload: SaveReportDto): Promise<{
         id: bigint;
-        created_by_user_id: bigint | null;
         created_at: Date;
         updated_at: Date | null;
+        created_by_user_id: bigint | null;
         inspection_request_id: bigint;
         interview_started_at: Date | null;
         interview_ended_at: Date | null;
@@ -196,8 +196,8 @@ export declare class InspectionRequestsService {
     shareReport(context: RequestContext, id: number): Promise<{
         id: bigint;
         insurer_id: bigint;
-        insurer_client_id: bigint;
-        client_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         request_number: string;
         agent_name: string | null;
         insured_amount: Prisma.Decimal | null;
@@ -209,6 +209,9 @@ export declare class InspectionRequestsService {
         comments: string | null;
         client_notified: boolean;
         interview_language: string | null;
+        priority: import(".prisma/client").$Enums.Priority;
+        insurer_client_id: bigint;
+        client_id: bigint;
         status: import(".prisma/client").$Enums.InspectionStatus;
         assigned_investigator_user_id: bigint | null;
         assigned_at: Date | null;
@@ -217,7 +220,6 @@ export declare class InspectionRequestsService {
         scheduled_end_at: Date | null;
         completed_at: Date | null;
         closed_at: Date | null;
-        priority: import(".prisma/client").$Enums.Priority;
         cancellation_reason: string | null;
         insurer_decision: import(".prisma/client").$Enums.DecisionStatus;
         insurer_decision_reason: string | null;
@@ -228,8 +230,6 @@ export declare class InspectionRequestsService {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
     triggerInvestigation(context: RequestContext, id: number, sources: {
         name: string;
@@ -244,8 +244,8 @@ export declare class InspectionRequestsService {
     }>;
     listInvestigations(context: RequestContext, id: number): Promise<{
         id: bigint;
-        created_by_user_id: bigint | null;
         created_at: Date;
+        created_by_user_id: bigint | null;
         inspection_request_id: bigint;
         source_type: import(".prisma/client").$Enums.InvestigationSource;
         source_name: string | null;
@@ -264,8 +264,8 @@ export declare class InspectionRequestsService {
     create(context: RequestContext, payload: CreateInspectionRequestDto): Promise<{
         id: bigint;
         insurer_id: bigint;
-        insurer_client_id: bigint;
-        client_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         request_number: string;
         agent_name: string | null;
         insured_amount: Prisma.Decimal | null;
@@ -277,6 +277,9 @@ export declare class InspectionRequestsService {
         comments: string | null;
         client_notified: boolean;
         interview_language: string | null;
+        priority: import(".prisma/client").$Enums.Priority;
+        insurer_client_id: bigint;
+        client_id: bigint;
         status: import(".prisma/client").$Enums.InspectionStatus;
         assigned_investigator_user_id: bigint | null;
         assigned_at: Date | null;
@@ -285,7 +288,6 @@ export declare class InspectionRequestsService {
         scheduled_end_at: Date | null;
         completed_at: Date | null;
         closed_at: Date | null;
-        priority: import(".prisma/client").$Enums.Priority;
         cancellation_reason: string | null;
         insurer_decision: import(".prisma/client").$Enums.DecisionStatus;
         insurer_decision_reason: string | null;
@@ -296,14 +298,12 @@ export declare class InspectionRequestsService {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
     updateStatus(context: RequestContext, id: number, payload: UpdateStatusDto): Promise<{
         id: bigint;
         insurer_id: bigint;
-        insurer_client_id: bigint;
-        client_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         request_number: string;
         agent_name: string | null;
         insured_amount: Prisma.Decimal | null;
@@ -315,6 +315,9 @@ export declare class InspectionRequestsService {
         comments: string | null;
         client_notified: boolean;
         interview_language: string | null;
+        priority: import(".prisma/client").$Enums.Priority;
+        insurer_client_id: bigint;
+        client_id: bigint;
         status: import(".prisma/client").$Enums.InspectionStatus;
         assigned_investigator_user_id: bigint | null;
         assigned_at: Date | null;
@@ -323,7 +326,6 @@ export declare class InspectionRequestsService {
         scheduled_end_at: Date | null;
         completed_at: Date | null;
         closed_at: Date | null;
-        priority: import(".prisma/client").$Enums.Priority;
         cancellation_reason: string | null;
         insurer_decision: import(".prisma/client").$Enums.DecisionStatus;
         insurer_decision_reason: string | null;
@@ -334,14 +336,12 @@ export declare class InspectionRequestsService {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
     decide(context: RequestContext, id: number, payload: DecisionDto): Promise<{
         id: bigint;
         insurer_id: bigint;
-        insurer_client_id: bigint;
-        client_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         request_number: string;
         agent_name: string | null;
         insured_amount: Prisma.Decimal | null;
@@ -353,6 +353,9 @@ export declare class InspectionRequestsService {
         comments: string | null;
         client_notified: boolean;
         interview_language: string | null;
+        priority: import(".prisma/client").$Enums.Priority;
+        insurer_client_id: bigint;
+        client_id: bigint;
         status: import(".prisma/client").$Enums.InspectionStatus;
         assigned_investigator_user_id: bigint | null;
         assigned_at: Date | null;
@@ -361,7 +364,6 @@ export declare class InspectionRequestsService {
         scheduled_end_at: Date | null;
         completed_at: Date | null;
         closed_at: Date | null;
-        priority: import(".prisma/client").$Enums.Priority;
         cancellation_reason: string | null;
         insurer_decision: import(".prisma/client").$Enums.DecisionStatus;
         insurer_decision_reason: string | null;
@@ -372,8 +374,6 @@ export declare class InspectionRequestsService {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
     updateClient(context: RequestContext, requestId: number, payload: UpdateClientDto): Promise<{
         report_template: {
@@ -386,14 +386,15 @@ export declare class InspectionRequestsService {
         } | null;
         insurer: {
             id: bigint;
+            is_active: boolean;
             created_at: Date;
             updated_at: Date | null;
             name: string;
             legal_id: string | null;
-            is_active: boolean;
         };
         client: {
             id: bigint;
+            email: string | null;
             created_at: Date;
             updated_at: Date | null;
             first_name: string;
@@ -401,13 +402,12 @@ export declare class InspectionRequestsService {
             dob: Date | null;
             id_type: import(".prisma/client").$Enums.IdType | null;
             id_number: string | null;
-            email: string | null;
             phone_mobile: string | null;
             phone_home: string | null;
-            phone_work: string | null;
             employer_name: string | null;
             employer_tax_id: string | null;
             profession: string | null;
+            phone_work: string | null;
         };
         inspection_report: ({
             sections: ({
@@ -430,9 +430,9 @@ export declare class InspectionRequestsService {
             })[];
         } & {
             id: bigint;
-            created_by_user_id: bigint | null;
             created_at: Date;
             updated_at: Date | null;
+            created_by_user_id: bigint | null;
             inspection_request_id: bigint;
             interview_started_at: Date | null;
             interview_ended_at: Date | null;
@@ -443,8 +443,8 @@ export declare class InspectionRequestsService {
         }) | null;
         id: bigint;
         insurer_id: bigint;
-        insurer_client_id: bigint;
-        client_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         request_number: string;
         agent_name: string | null;
         insured_amount: Prisma.Decimal | null;
@@ -456,6 +456,9 @@ export declare class InspectionRequestsService {
         comments: string | null;
         client_notified: boolean;
         interview_language: string | null;
+        priority: import(".prisma/client").$Enums.Priority;
+        insurer_client_id: bigint;
+        client_id: bigint;
         status: import(".prisma/client").$Enums.InspectionStatus;
         assigned_investigator_user_id: bigint | null;
         assigned_at: Date | null;
@@ -464,7 +467,6 @@ export declare class InspectionRequestsService {
         scheduled_end_at: Date | null;
         completed_at: Date | null;
         closed_at: Date | null;
-        priority: import(".prisma/client").$Enums.Priority;
         cancellation_reason: string | null;
         insurer_decision: import(".prisma/client").$Enums.DecisionStatus;
         insurer_decision_reason: string | null;
@@ -475,8 +477,6 @@ export declare class InspectionRequestsService {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
     private ensureTenancy;
 }

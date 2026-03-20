@@ -11,6 +11,22 @@ export const login = (email: string, password: string) =>
     body: JSON.stringify({ email, password }),
   });
 
+export type ForgotPasswordResponse = { ok: true; debug_reset_token?: string };
+
+export const forgotPassword = (email: string) =>
+  fetch(`${API_URL}/api/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+
+export const resetPassword = (token: string, newPassword: string) =>
+  fetch(`${API_URL}/api/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, new_password: newPassword }),
+  });
+
 const getStoredInsurerId = () => {
   const stored = localStorage.getItem('alara-insurer-id');
   return stored ? Number(stored) : undefined;

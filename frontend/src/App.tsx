@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import DashboardInsurer from './pages/DashboardInsurer';
 import DashboardAlara from './pages/DashboardAlara';
 import RequestsPage from './pages/RequestsPage';
@@ -14,6 +15,7 @@ const App = () => {
   return (
     <Routes>
       <Route path="/" element={<LoginPage />} />
+      <Route path="/recuperar-contrasena" element={<ForgotPasswordPage />} />
 
       <Route
         path="/portal/aseguradora"

@@ -1,6 +1,7 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useState } from 'react';
 import { login } from '../data/api';
+import PasswordFieldWithToggle from '../components/PasswordFieldWithToggle';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -8,7 +9,8 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleLogin = async () => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError('');
     try {
       const response = await login(email, password);
@@ -28,7 +30,7 @@ const LoginPage = () => {
       } else {
         navigate('/portal/alara/dashboard');
       }
-    } catch (err) {
+    } catch {
       setError('No se pudo iniciar sesión. Verifica tus credenciales.');
     }
   };
@@ -39,21 +41,41 @@ const LoginPage = () => {
         <img src="/logo.png" alt="ALARA INSP" />
         <h2>Plataforma de Inspecciones VIP</h2>
         <p>Ingresa tus credenciales para continuar.</p>
-        <div className="login-form">
-          <input
-            type="email"
-            placeholder="Correo"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-          <input
-            type="password"
-            placeholder="Contraseña"
+        <form className="login-form" onSubmit={handleLogin}>
+          <div className="login-field">
+            <label htmlFor="login-email" className="login-field-label">
+              Correo electrónico
+            </label>
+            <input
+              id="login-email"
+              type="email"
+              placeholder="Correo"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+              autoComplete="username"
+            />
+          </div>
+          <PasswordFieldWithToggle
+            id="login-password"
+            label="Contraseña"
             value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            onChange={setPassword}
+            autoComplete="current-password"
+            required
           />
+          <div className="login-forgot-row">
+            <Link to="/recuperar-contrasena" className="login-forgot-link">
+              ¿Olvidó su contraseña?
+            </Link>
+          </div>
           {error && <span className="error-text">{error}</span>}
-        </div>
+          <div className="login-actions login-actions--in-form">
+            <button type="submit" className="primary-button">
+              Iniciar sesión
+            </button>
+          </div>
+        </form>
         <div className="login-hint">
           <h4>Usuarios de prueba</h4>
           <ul>
@@ -70,14 +92,6 @@ const LoginPage = () => {
               <strong>Admin</strong> — admin@alarains.com / Admin123!
             </li>
           </ul>
-        </div>
-        <div className="login-actions">
-          <button
-            className="primary-button"
-            onClick={handleLogin}
-          >
-            Iniciar sesión
-          </button>
         </div>
       </div>
       <div className="login-side">

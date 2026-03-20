@@ -15,7 +15,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
+const forgot_password_dto_1 = require("./dto/forgot-password.dto");
 const login_dto_1 = require("./dto/login.dto");
+const reset_password_dto_1 = require("./dto/reset-password.dto");
 const service_token_dto_1 = require("./dto/service-token.dto");
 const jwt_auth_guard_1 = require("./jwt-auth.guard");
 let AuthController = class AuthController {
@@ -24,6 +26,12 @@ let AuthController = class AuthController {
     }
     async login(payload) {
         return this.authService.login(payload.email, payload.password);
+    }
+    async forgotPassword(payload) {
+        return this.authService.requestPasswordReset(payload.email);
+    }
+    async resetPassword(payload) {
+        return this.authService.resetPassword(payload.token, payload.new_password);
     }
     async serviceToken(req, payload) {
         if (req.userContext?.role !== 'ALARA' && req.userContext?.role !== 'ADMIN') {
@@ -40,6 +48,20 @@ __decorate([
     __metadata("design:paramtypes", [login_dto_1.LoginDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
+__decorate([
+    (0, common_1.Post)('forgot-password'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [forgot_password_dto_1.ForgotPasswordDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "forgotPassword", null);
+__decorate([
+    (0, common_1.Post)('reset-password'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [reset_password_dto_1.ResetPasswordDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "resetPassword", null);
 __decorate([
     (0, common_1.Post)('service-token'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

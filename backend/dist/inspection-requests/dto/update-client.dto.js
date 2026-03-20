@@ -13,6 +13,12 @@ exports.UpdateClientDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 const panama_cedula_validator_1 = require("../../common/validation/panama-cedula.validator");
+function emptyStringToUndefined(value) {
+    if (value == null)
+        return undefined;
+    const s = String(value).trim();
+    return s === '' ? undefined : s;
+}
 const ID_TYPE_MAP = {
     cedula: 'CEDULA',
     cédula: 'CEDULA',
@@ -63,6 +69,7 @@ __decorate([
 ], UpdateClientDto.prototype, "id_number", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => emptyStringToUndefined(value)),
     (0, class_validator_1.IsEmail)(),
     __metadata("design:type", String)
 ], UpdateClientDto.prototype, "email", void 0);

@@ -30,6 +30,12 @@ function normalizeIdType(value) {
     const normalized = ID_TYPE_MAP[s.toLowerCase()];
     return normalized ?? s;
 }
+function emptyStringToUndefined(value) {
+    if (value == null)
+        return undefined;
+    const s = String(value).trim();
+    return s === '' ? undefined : s;
+}
 class ClientInputDto {
 }
 exports.ClientInputDto = ClientInputDto;
@@ -63,6 +69,7 @@ __decorate([
 ], ClientInputDto.prototype, "id_number", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => emptyStringToUndefined(value)),
     (0, class_validator_1.IsEmail)(),
     __metadata("design:type", String)
 ], ClientInputDto.prototype, "email", void 0);
@@ -126,6 +133,7 @@ __decorate([
 ], CreateInspectionRequestDto.prototype, "responsible_phone", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => emptyStringToUndefined(value)),
     (0, class_validator_1.IsEmail)(),
     __metadata("design:type", String)
 ], CreateInspectionRequestDto.prototype, "responsible_email", void 0);

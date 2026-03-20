@@ -471,6 +471,11 @@ a {
   width: 180px;
 }
 
+.login-card--wide {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
 .login-form {
   display: grid;
   gap: 12px;
@@ -480,6 +485,129 @@ a {
   padding: 12px;
   border-radius: 10px;
   border: 1px solid var(--alara-border);
+  width: 100%;
+}
+
+.login-field {
+  display: grid;
+  gap: 6px;
+}
+
+.login-field-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.login-password-field {
+  display: grid;
+  gap: 6px;
+}
+
+.login-password-inner {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.login-password-inner input {
+  padding-right: 48px;
+}
+
+.login-password-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #64748b;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.login-password-toggle:hover {
+  color: var(--alara-primary);
+  background: rgba(44, 212, 248, 0.12);
+}
+
+.login-forgot-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -4px;
+}
+
+.login-forgot-link {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--alara-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.login-forgot-link:hover {
+  color: #163a5c;
+}
+
+.login-actions--in-form {
+  margin-top: 4px;
+}
+
+.login-back-link {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--alara-primary);
+  text-align: center;
+  margin-top: 4px;
+}
+
+.login-link-button {
+  width: 100%;
+  justify-content: center;
+}
+
+.login-token-hint {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.login-dev-token {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  font-size: 0.82rem;
+  color: #78350f;
+  display: grid;
+  gap: 10px;
+}
+
+.login-dev-token code {
+  display: block;
+  padding: 10px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid var(--alara-border);
+  word-break: break-all;
+  font-size: 0.75rem;
+  color: #0f172a;
+}
+
+.login-dev-token__btn {
+  width: 100%;
+}
+
+.form-message--success {
+  color: #15803d;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .error-text {

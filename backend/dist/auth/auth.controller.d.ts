@@ -1,5 +1,7 @@
 import { AuthService } from './auth.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ServiceTokenDto } from './dto/service-token.dto';
 import { Request } from 'express';
 export declare class AuthController {
@@ -14,6 +16,13 @@ export declare class AuthController {
             role: string;
             insurer_id: number | undefined;
         };
+    }>;
+    forgotPassword(payload: ForgotPasswordDto): Promise<{
+        debug_reset_token?: string | undefined;
+        ok: true;
+    }>;
+    resetPassword(payload: ResetPasswordDto): Promise<{
+        ok: true;
     }>;
     serviceToken(req: Request, payload: ServiceTokenDto): Promise<{
         access_token: string;
