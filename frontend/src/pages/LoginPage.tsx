@@ -1,6 +1,6 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { useState } from 'react';
-import { login } from '../data/api';
+import { loginRequest } from '../data/api';
 import PasswordFieldWithToggle from '../components/PasswordFieldWithToggle';
 
 const LoginPage = () => {
@@ -12,26 +12,27 @@ const LoginPage = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    try {
-      const response = await login(email, password);
-      if (!response.ok) {
-        throw new Error('Credenciales inválidas');
+    const result = await loginRequest(email, password);
+    if (!result.ok) {
+      setError(result.message);
+      if (import.meta.env.DEV) {
+        console.warn('[login]', result.reason, result.message);
       }
-      const data = await response.json();
-      localStorage.setItem('alara-token', data.access_token);
-      localStorage.setItem('alara-role', data.user.role);
-      if (data.user.insurer_id) {
-        localStorage.setItem('alara-insurer-id', String(data.user.insurer_id));
-      } else {
-        localStorage.removeItem('alara-insurer-id');
-      }
-      if (data.user.role === 'INSURER') {
-        navigate('/portal/aseguradora/dashboard');
-      } else {
-        navigate('/portal/alara/dashboard');
-      }
-    } catch {
-      setError('No se pudo iniciar sesión. Verifica tus credenciales.');
+      return;
+    }
+
+    const { data } = result;
+    localStorage.setItem('alara-token', data.access_token);
+    localStorage.setItem('alara-role', data.user.role);
+    if (data.user.insurer_id) {
+      localStorage.setItem('alara-insurer-id', String(data.user.insurer_id));
+    } else {
+      localStorage.removeItem('alara-insurer-id');
+    }
+    if (data.user.role === 'INSURER') {
+      navigate('/portal/aseguradora/dashboard');
+    } else {
+      navigate('/portal/alara/dashboard');
     }
   };
 

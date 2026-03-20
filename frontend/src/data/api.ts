@@ -1,11 +1,85 @@
 import { mockAlaraDashboard, mockInsurerDashboard, mockRequests } from './mock';
 
-const API_URL = import.meta.env.VITE_API_URL ?? '';
+/** Base del API sin barra final. Vacío = rutas relativas al mismo origen (solo válido si hay proxy). */
+const normalizedBase = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/$/, '');
 
-export const getApiUrl = () => API_URL;
+export const getApiUrl = () => normalizedBase;
 
+/** Construye URL del API evitando dobles barras y soportando VITE_API_URL con o sin trailing slash. */
+export function buildApiUrl(path: string): string {
+  const p = path.startsWith('/') ? path : `/${path}`;
+  if (!normalizedBase) return p;
+  return `${normalizedBase}${p}`;
+}
+
+export type LoginSuccess = {
+  access_token: string;
+  user: { role: string; insurer_id?: number };
+};
+
+export type LoginResult =
+  | { ok: true; data: LoginSuccess }
+  | { ok: false; reason: 'network' | 'unauthorized' | 'bad_response' | 'invalid_json'; message: string };
+
+/**
+ * Login con parsing seguro: si el host del frontend devuelve 200 + HTML (SPA fallback),
+ * se detecta y se indica configurar VITE_API_URL.
+ */
+export async function loginRequest(email: string, password: string): Promise<LoginResult> {
+  let response: Response;
+  try {
+    response = await fetch(buildApiUrl('/api/auth/login'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+  } catch {
+    return {
+      ok: false,
+      reason: 'network',
+      message: 'No se pudo conectar con el servidor. Comprueba tu red y la URL del API.',
+    };
+  }
+
+  const text = await response.text();
+  let body: unknown;
+  try {
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    const looksLikeHtml = /^\s*</.test(text);
+    return {
+      ok: false,
+      reason: 'invalid_json',
+      message: looksLikeHtml
+        ? 'La respuesta no es JSON (probablemente el HTML del sitio). Define VITE_API_URL con la URL del backend al construir el frontend (p. ej. https://tu-api.railway.app).'
+        : 'El servidor devolvió una respuesta que no se pudo interpretar.',
+    };
+  }
+
+  if (!response.ok) {
+    const msg =
+      body && typeof body === 'object' && body !== null && 'message' in body
+        ? String((body as { message: unknown }).message)
+        : 'Credenciales inválidas';
+    return { ok: false, reason: 'unauthorized', message: msg };
+  }
+
+  const data = body as Partial<LoginSuccess>;
+  if (typeof data?.access_token !== 'string' || !data?.user || typeof data.user.role !== 'string') {
+    return {
+      ok: false,
+      reason: 'bad_response',
+      message:
+        'El servidor respondió 200 pero sin token de acceso. Suele pasar si la petición no llega al API Nest (revisa VITE_API_URL y CORS).',
+    };
+  }
+
+  return { ok: true, data: data as LoginSuccess };
+}
+
+/** @deprecated Prefer loginRequest para mensajes de error claros */
 export const login = (email: string, password: string) =>
-  fetch(`${API_URL}/api/auth/login`, {
+  fetch(buildApiUrl('/api/auth/login'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -14,14 +88,14 @@ export const login = (email: string, password: string) =>
 export type ForgotPasswordResponse = { ok: true; debug_reset_token?: string };
 
 export const forgotPassword = (email: string) =>
-  fetch(`${API_URL}/api/auth/forgot-password`, {
+  fetch(buildApiUrl('/api/auth/forgot-password'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
   });
 
 export const resetPassword = (token: string, newPassword: string) =>
-  fetch(`${API_URL}/api/auth/reset-password`, {
+  fetch(buildApiUrl('/api/auth/reset-password'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, new_password: newPassword }),
@@ -60,24 +134,24 @@ const safeFetch = async <T>(url: string, options?: RequestInit, fallback?: T): P
 };
 
 export const getInsurerDashboard = (insurerId?: number) =>
-  safeFetch(`${API_URL}/api/dashboard/insurer`, { headers: defaultHeaders('INSURER', insurerId) }, mockInsurerDashboard);
+  safeFetch(buildApiUrl('/api/dashboard/insurer'), { headers: defaultHeaders('INSURER', insurerId) }, mockInsurerDashboard);
 
 export const getAlaraDashboard = () =>
-  safeFetch(`${API_URL}/api/dashboard/alara`, { headers: defaultHeaders('ALARA') }, mockAlaraDashboard);
+  safeFetch(buildApiUrl('/api/dashboard/alara'), { headers: defaultHeaders('ALARA') }, mockAlaraDashboard);
 
 export const getInspectionRequests = (role: 'INSURER' | 'ALARA', insurerId?: number) =>
   safeFetch(
-    `${API_URL}/api/inspection-requests`,
+    buildApiUrl('/api/inspection-requests'),
     { headers: defaultHeaders(role, insurerId) },
     mockRequests,
   );
 
 export const getInspectionRequest = (id: number, role: 'INSURER' | 'ALARA', insurerId?: number) =>
-  safeFetch(`${API_URL}/api/inspection-requests/${id}`, { headers: defaultHeaders(role, insurerId) }, null);
+  safeFetch(buildApiUrl(`/api/inspection-requests/${id}`), { headers: defaultHeaders(role, insurerId) }, null);
 
 export const createInspectionRequest = (payload: Record<string, unknown>, insurerId?: number) =>
   safeFetch(
-    `${API_URL}/api/inspection-requests`,
+    buildApiUrl('/api/inspection-requests'),
     {
       method: 'POST',
       headers: defaultHeaders('INSURER', insurerId),
@@ -88,7 +162,7 @@ export const createInspectionRequest = (payload: Record<string, unknown>, insure
 
 export const saveInspectionReport = (id: number, payload: Record<string, unknown>, role: 'ALARA' | 'INSURER') =>
   safeFetch(
-    `${API_URL}/api/inspection-requests/${id}/report`,
+    buildApiUrl(`/api/inspection-requests/${id}/report`),
     {
       method: 'POST',
       headers: defaultHeaders(role),
@@ -99,7 +173,7 @@ export const saveInspectionReport = (id: number, payload: Record<string, unknown
 
 export const shareInspectionReport = (id: number, role: 'ALARA' | 'INSURER') =>
   safeFetch(
-    `${API_URL}/api/inspection-requests/${id}/report/share`,
+    buildApiUrl(`/api/inspection-requests/${id}/report/share`),
     {
       method: 'POST',
       headers: defaultHeaders(role),
@@ -110,7 +184,7 @@ export const shareInspectionReport = (id: number, role: 'ALARA' | 'INSURER') =>
 export type PdfType = 'solicitud' | 'reporte';
 
 export const downloadPdf = async (requestId: number, type: PdfType) => {
-  const url = `${API_URL}/api/inspection-requests/${requestId}/pdf/${type}`;
+  const url = buildApiUrl(`/api/inspection-requests/${requestId}/pdf/${type}`);
   const token = localStorage.getItem('alara-token');
   const response = await fetch(url, {
     headers: {
@@ -135,7 +209,7 @@ export const downloadPdf = async (requestId: number, type: PdfType) => {
 
 export const triggerInvestigation = (id: number, sources: { name: string; url: string }[] = []) =>
   safeFetch(
-    `${API_URL}/api/inspection-requests/${id}/investigate`,
+    buildApiUrl(`/api/inspection-requests/${id}/investigate`),
     {
       method: 'POST',
       headers: defaultHeaders('ALARA'),
@@ -146,7 +220,7 @@ export const triggerInvestigation = (id: number, sources: { name: string; url: s
 
 export const startInspectionCall = (id: number) =>
   safeFetch(
-    `${API_URL}/api/inspection-requests/${id}/call/start`,
+    buildApiUrl(`/api/inspection-requests/${id}/call/start`),
     {
       method: 'POST',
       headers: defaultHeaders('ALARA'),
@@ -156,7 +230,7 @@ export const startInspectionCall = (id: number) =>
 
 export const getInvestigations = (id: number, role: 'ALARA' | 'INSURER') =>
   safeFetch(
-    `${API_URL}/api/inspection-requests/${id}/investigations`,
+    buildApiUrl(`/api/inspection-requests/${id}/investigations`),
     {
       headers: defaultHeaders(role),
     },
@@ -165,7 +239,7 @@ export const getInvestigations = (id: number, role: 'ALARA' | 'INSURER') =>
 
 export const getReportTemplate = (role: 'ALARA' | 'INSURER') =>
   safeFetch(
-    `${API_URL}/api/inspection-requests/report-template/default`,
+    buildApiUrl('/api/inspection-requests/report-template/default'),
     { headers: defaultHeaders(role) },
     null,
   );
@@ -192,7 +266,7 @@ export const updateInspectionRequestClient = (
   insurerId?: number,
 ) =>
   safeFetch(
-    `${API_URL}/api/inspection-requests/${id}/client`,
+    buildApiUrl(`/api/inspection-requests/${id}/client`),
     {
       method: 'PATCH',
       headers: defaultHeaders(role, insurerId),
