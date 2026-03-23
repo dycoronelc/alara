@@ -3,12 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   downloadPdf,
   getInspectionRequest,
+  getInspectionRequestDocuments,
   getInvestigations,
   saveInspectionReport,
   shareInspectionReport,
   startInspectionCall,
   triggerInvestigation,
   updateInspectionRequestClient,
+  type RequestDocument,
   type UpdateClientPayload,
 } from '../data/api';
 import StatusBadge from '../components/StatusBadge';
@@ -96,7 +98,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   );
   const [reportMessage, setReportMessage] = useState('');
   const [investigations, setInvestigations] = useState<any[]>([]);
-  const [documents, setDocuments] = useState<File[]>([]);
+  const [documents, setDocuments] = useState<RequestDocument[]>([]);
   const [investigationMessage, setInvestigationMessage] = useState('');
   const [uafSearchMode, setUafSearchMode] = useState<'cedula' | 'nombre' | 'ambos'>('ambos');
   const [callMessage, setCallMessage] = useState('');
@@ -190,6 +192,14 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
     getInvestigations(Number(id), role)
       .then((resp) => setInvestigations(resp as any[]))
       .catch(() => setInvestigations([]));
+  }, [activeTab, id, portal]);
+
+  useEffect(() => {
+    if (!id || activeTab !== 'documentacion') return;
+    const role = portal === 'aseguradora' ? 'INSURER' : 'ALARA';
+    getInspectionRequestDocuments(Number(id), role)
+      .then((resp) => setDocuments(resp as RequestDocument[]))
+      .catch(() => setDocuments([]));
   }, [activeTab, id, portal]);
 
   const handleInvestigate = async () => {
@@ -863,33 +873,20 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       {activeTab === 'documentacion' && (
         <div className="info-card">
           <h4>Documentación</h4>
-          <p>Sube, visualiza y gestiona todos los documentos del expediente.</p>
-          <div className="form-actions">
-            <input
-              type="file"
-              multiple
-              onChange={(event) => {
-                const files = event.target.files ? Array.from(event.target.files) : [];
-                setDocuments((prev) => [...prev, ...files]);
-              }}
-            />
-          </div>
+          <p>Documentos registrados para este trámite.</p>
           <div className="list-block">
-            {documents.map((file, index) => (
-              <div key={`${file.name}-${index}`} className="list-row">
+            {documents.map((file) => (
+              <div key={String(file.id)} className="list-row">
                 <div>
-                  <strong>{file.name}</strong>
-                  <span>{Math.round(file.size / 1024)} KB</span>
+                  <strong>{file.filename}</strong>
+                  <span>
+                    {(Number(file.file_size_bytes) / 1024).toFixed(1)} KB · {file.doc_type} ·{' '}
+                    {new Date(file.uploaded_at).toLocaleString()}
+                  </span>
                 </div>
-                <button
-                  className="ghost-button"
-                  onClick={() => setDocuments(documents.filter((_, idx) => idx !== index))}
-                >
-                  Quitar
-                </button>
               </div>
             ))}
-            {!documents.length && <p>No hay documentos cargados.</p>}
+            {!documents.length && <p>No hay documentos registrados.</p>}
           </div>
         </div>
       )}

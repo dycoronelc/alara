@@ -97,6 +97,29 @@ let DocumentsService = class DocumentsService {
             userId: effectiveUserId,
         });
     }
+    async listByInspectionRequest(inspectionRequestId, context) {
+        const request = await this.prisma.inspectionRequest.findUnique({
+            where: { id: inspectionRequestId },
+            select: { insurer_id: true },
+        });
+        if (!request) {
+            throw new common_1.NotFoundException('Solicitud no encontrada');
+        }
+        this.ensureTenancy(context, request.insurer_id);
+        return this.prisma.document.findMany({
+            where: { inspection_request_id: inspectionRequestId },
+            orderBy: { uploaded_at: 'desc' },
+            select: {
+                id: true,
+                doc_type: true,
+                filename: true,
+                mime_type: true,
+                file_size_bytes: true,
+                storage_provider: true,
+                uploaded_at: true,
+            },
+        });
+    }
     async persistPdf(params) {
         await fs_1.promises.mkdir(this.storageDir, { recursive: true });
         const storageKey = `${Date.now()}_${params.filename}`;

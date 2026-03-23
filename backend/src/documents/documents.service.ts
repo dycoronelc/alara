@@ -99,6 +99,31 @@ export class DocumentsService {
     });
   }
 
+  async listByInspectionRequest(inspectionRequestId: number, context?: RequestContext) {
+    const request = await this.prisma.inspectionRequest.findUnique({
+      where: { id: inspectionRequestId },
+      select: { insurer_id: true },
+    });
+    if (!request) {
+      throw new NotFoundException('Solicitud no encontrada');
+    }
+    this.ensureTenancy(context, request.insurer_id);
+
+    return this.prisma.document.findMany({
+      where: { inspection_request_id: inspectionRequestId },
+      orderBy: { uploaded_at: 'desc' },
+      select: {
+        id: true,
+        doc_type: true,
+        filename: true,
+        mime_type: true,
+        file_size_bytes: true,
+        storage_provider: true,
+        uploaded_at: true,
+      },
+    });
+  }
+
   private async persistPdf(params: {
     buffer: Buffer;
     filename: string;

@@ -167,6 +167,23 @@ export const getInspectionRequests = (role: 'INSURER' | 'ALARA', insurerId?: num
 export const getInspectionRequest = (id: number, role: 'INSURER' | 'ALARA', insurerId?: number) =>
   safeFetch(buildApiUrl(`/api/inspection-requests/${id}`), { headers: defaultHeaders(role, insurerId) }, null);
 
+export type RequestDocument = {
+  id: number | string;
+  doc_type: string;
+  filename: string;
+  mime_type: string;
+  file_size_bytes: number | string;
+  storage_provider: string;
+  uploaded_at: string;
+};
+
+export const getInspectionRequestDocuments = (id: number, role: 'INSURER' | 'ALARA', insurerId?: number) =>
+  safeFetch<RequestDocument[]>(
+    buildApiUrl(`/api/inspection-requests/${id}/documents`),
+    { headers: defaultHeaders(role, insurerId) },
+    [],
+  );
+
 export const createInspectionRequest = (payload: Record<string, unknown>, insurerId?: number) =>
   safeFetch(
     buildApiUrl('/api/inspection-requests'),

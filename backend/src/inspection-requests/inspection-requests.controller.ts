@@ -21,6 +21,7 @@ import { DecisionDto } from './dto/decision.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { DocumentsService } from '../documents/documents.service';
 import { SaveReportDto } from './dto/save-report.dto';
+import { RequestMailService } from './request-mail.service';
 
 @Controller('inspection-requests')
 @UseGuards(JwtAuthGuard)
@@ -30,6 +31,7 @@ export class InspectionRequestsController {
   constructor(
     private readonly service: InspectionRequestsService,
     private readonly documentsService: DocumentsService,
+    private readonly requestMailService: RequestMailService,
   ) {}
 
   @Get()
@@ -48,16 +50,33 @@ export class InspectionRequestsController {
   async create(@Req() req: Request, @Body() payload: CreateInspectionRequestDto) {
     const created = await this.service.create(req.userContext!, payload);
     try {
-      await this.documentsService.generateRequestPdf(
+      const generated = await this.documentsService.generateRequestPdf(
         Number(created.id),
         req.userContext?.userId ?? 0,
         req.userContext,
       );
+      try {
+        await this.requestMailService.sendRequestCreatedPdf({
+          requestNumber: created.request_number,
+          pdfFilename: generated.document.filename,
+          pdfBuffer: generated.buffer,
+        });
+      } catch (mailErr) {
+        this.logger.warn(
+          'No se pudo enviar correo con PDF de solicitud',
+          (mailErr as Error)?.message ?? mailErr,
+        );
+      }
     } catch (err) {
       // No fallar la creación si el PDF falla (ej. FK uploaded_by_user_id); la solicitud ya se guardó
       this.logger.warn('No se pudo generar el PDF de la solicitud', (err as Error)?.message ?? err);
     }
     return created;
+  }
+
+  @Get(':id/documents')
+  async listDocuments(@Req() req: Request, @Param('id', ParseIntPipe) id: number) {
+    return this.documentsService.listByInspectionRequest(id, req.userContext);
   }
 
   @Post(':id/status')

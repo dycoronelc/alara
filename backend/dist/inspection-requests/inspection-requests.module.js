@@ -11,6 +11,7 @@ const common_1 = require("@nestjs/common");
 const documents_module_1 = require("../documents/documents.module");
 const inspection_requests_controller_1 = require("./inspection-requests.controller");
 const inspection_requests_service_1 = require("./inspection-requests.service");
+const request_mail_service_1 = require("./request-mail.service");
 let InspectionRequestsModule = class InspectionRequestsModule {
 };
 exports.InspectionRequestsModule = InspectionRequestsModule;
@@ -18,7 +19,7 @@ exports.InspectionRequestsModule = InspectionRequestsModule = __decorate([
     (0, common_1.Module)({
         imports: [documents_module_1.DocumentsModule],
         controllers: [inspection_requests_controller_1.InspectionRequestsController],
-        providers: [inspection_requests_service_1.InspectionRequestsService],
+        providers: [inspection_requests_service_1.InspectionRequestsService, request_mail_service_1.RequestMailService],
     })
 ], InspectionRequestsModule);
 //# sourceMappingURL=inspection-requests.module.js.map

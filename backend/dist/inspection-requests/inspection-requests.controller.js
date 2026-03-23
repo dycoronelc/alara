@@ -23,10 +23,12 @@ const decision_dto_1 = require("./dto/decision.dto");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const documents_service_1 = require("../documents/documents.service");
 const save_report_dto_1 = require("./dto/save-report.dto");
+const request_mail_service_1 = require("./request-mail.service");
 let InspectionRequestsController = InspectionRequestsController_1 = class InspectionRequestsController {
-    constructor(service, documentsService) {
+    constructor(service, documentsService, requestMailService) {
         this.service = service;
         this.documentsService = documentsService;
+        this.requestMailService = requestMailService;
         this.logger = new common_1.Logger(InspectionRequestsController_1.name);
     }
     async list(req, status, search) {
@@ -38,12 +40,25 @@ let InspectionRequestsController = InspectionRequestsController_1 = class Inspec
     async create(req, payload) {
         const created = await this.service.create(req.userContext, payload);
         try {
-            await this.documentsService.generateRequestPdf(Number(created.id), req.userContext?.userId ?? 0, req.userContext);
+            const generated = await this.documentsService.generateRequestPdf(Number(created.id), req.userContext?.userId ?? 0, req.userContext);
+            try {
+                await this.requestMailService.sendRequestCreatedPdf({
+                    requestNumber: created.request_number,
+                    pdfFilename: generated.document.filename,
+                    pdfBuffer: generated.buffer,
+                });
+            }
+            catch (mailErr) {
+                this.logger.warn('No se pudo enviar correo con PDF de solicitud', mailErr?.message ?? mailErr);
+            }
         }
         catch (err) {
             this.logger.warn('No se pudo generar el PDF de la solicitud', err?.message ?? err);
         }
         return created;
+    }
+    async listDocuments(req, id) {
+        return this.documentsService.listByInspectionRequest(id, req.userContext);
     }
     async updateStatus(req, id, payload) {
         return this.service.updateStatus(req.userContext, id, payload);
@@ -114,6 +129,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, create_inspection_request_dto_1.CreateInspectionRequestDto]),
     __metadata("design:returntype", Promise)
 ], InspectionRequestsController.prototype, "create", null);
+__decorate([
+    (0, common_1.Get)(':id/documents'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number]),
+    __metadata("design:returntype", Promise)
+], InspectionRequestsController.prototype, "listDocuments", null);
 __decorate([
     (0, common_1.Post)(':id/status'),
     __param(0, (0, common_1.Req)()),
@@ -220,6 +243,7 @@ exports.InspectionRequestsController = InspectionRequestsController = Inspection
     (0, common_1.Controller)('inspection-requests'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [inspection_requests_service_1.InspectionRequestsService,
-        documents_service_1.DocumentsService])
+        documents_service_1.DocumentsService,
+        request_mail_service_1.RequestMailService])
 ], InspectionRequestsController);
 //# sourceMappingURL=inspection-requests.controller.js.map

@@ -11,7 +11,8 @@ const initialState = {
   request_number: '',
   agent_name: '',
   insured_amount: '',
-  has_amount_in_force: false,
+  has_amount_in_force: '',
+  amount_in_force: '',
   address_line: '',
   city: '',
   country: '',
@@ -19,16 +20,14 @@ const initialState = {
   id_type: '',
   id_number: '',
   employer_name: '',
-  employer_tax_id: '',
   profession: '',
-  tasks: '',
   phone_home: '',
   phone_work: '',
   phone_mobile: '',
   email: '',
   marital_status: '',
   comments: '',
-  client_notified: false,
+  client_notified: '',
   interview_language: '',
 };
 
@@ -37,7 +36,7 @@ const NewRequestPage = () => {
   const [message, setMessage] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  const updateField = (key: string, value: string | boolean) => {
+  const updateField = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -50,6 +49,9 @@ const NewRequestPage = () => {
     if (!form.request_number?.trim()) errors.request_number = 'Requerido';
     if (!form.first_name?.trim()) errors.first_name = 'Requerido';
     if (!form.last_name?.trim()) errors.last_name = 'Requerido';
+    if (form.amount_in_force && !/^\d+(\.\d+)?$/.test(form.amount_in_force.trim())) {
+      errors.amount_in_force = 'Debe ser numérico';
+    }
     if (form.id_type === 'CEDULA' && form.id_number?.trim() && !isPanamaCedula(form.id_number)) {
       errors.id_number = 'Formato de cédula de Panamá no válido. ' + PANAMA_CEDULA_HINT;
     }
@@ -63,7 +65,7 @@ const NewRequestPage = () => {
       request_number: form.request_number,
       agent_name: form.agent_name,
       insured_amount: form.insured_amount ? Number(form.insured_amount) : undefined,
-      has_amount_in_force: form.has_amount_in_force,
+      has_amount_in_force: form.has_amount_in_force === 'Si',
       responsible_name: form.responsible_name,
       responsible_phone: form.responsible_phone,
       responsible_email: form.responsible_email,
@@ -73,12 +75,15 @@ const NewRequestPage = () => {
         form.address_line ? `Dirección: ${form.address_line}` : '',
         form.city ? `Ciudad: ${form.city}` : '',
         form.country ? `País: ${form.country}` : '',
-        form.tasks ? `Tareas: ${form.tasks}` : '',
+        form.has_amount_in_force === 'Si' && form.amount_in_force
+          ? `Monto en vigencia: ${form.amount_in_force}`
+          : '',
         form.phone_work ? `Teléfono Laboral: ${form.phone_work}` : '',
       ]
         .filter(Boolean)
         .join(' | '),
-      client_notified: form.client_notified,
+      client_notified:
+        form.client_notified === 'Si' ? true : form.client_notified === 'No' ? false : undefined,
       interview_language: form.interview_language,
       client: {
         first_name: form.first_name,
@@ -90,7 +95,6 @@ const NewRequestPage = () => {
         phone_mobile: form.phone_mobile || undefined,
         phone_home: form.phone_home || undefined,
         employer_name: form.employer_name || undefined,
-        employer_tax_id: form.employer_tax_id || undefined,
         profession: form.profession || undefined,
       },
     };
@@ -158,6 +162,7 @@ const NewRequestPage = () => {
                 <option value="">Seleccione...</option>
                 <option value="CEDULA">Cédula</option>
                 <option value="PASSPORT">Pasaporte</option>
+                <option value="OTRO">Otro</option>
               </select>
             </label>
             <label className={`form-field ${fieldErrors.id_number ? 'has-error' : ''}`}>
@@ -211,16 +216,8 @@ const NewRequestPage = () => {
               <input value={form.employer_name} onChange={(e) => updateField('employer_name', e.target.value)} />
             </label>
             <label className="form-field">
-              <span>CUIT / NIT / RUC de Empresa</span>
-              <input value={form.employer_tax_id} onChange={(e) => updateField('employer_tax_id', e.target.value)} />
-            </label>
-            <label className="form-field">
-              <span>Profesión</span>
+              <span>Profesión/Ocupación</span>
               <input value={form.profession} onChange={(e) => updateField('profession', e.target.value)} />
-            </label>
-            <label className="form-field">
-              <span>Tareas</span>
-              <input value={form.tasks} onChange={(e) => updateField('tasks', e.target.value)} />
             </label>
           </div>
         </div>
@@ -241,14 +238,28 @@ const NewRequestPage = () => {
               <span>Monto Asegurado (USD)</span>
               <input value={form.insured_amount} onChange={(e) => updateField('insured_amount', e.target.value)} />
             </label>
-            <label className="form-field checkbox-field">
+            <label className={`form-field ${fieldErrors.has_amount_in_force ? 'has-error' : ''}`}>
               <span>¿Posee Monto en Vigencia?</span>
-              <input
-                type="checkbox"
-                checked={form.has_amount_in_force}
-                onChange={(e) => updateField('has_amount_in_force', e.target.checked)}
-              />
+              <select
+                value={form.has_amount_in_force}
+                onChange={(e) => updateField('has_amount_in_force', e.target.value)}
+              >
+                <option value="">Seleccione...</option>
+                <option value="Si">Si</option>
+                <option value="No">No</option>
+              </select>
             </label>
+            {form.has_amount_in_force === 'Si' && (
+              <label className={`form-field ${fieldErrors.amount_in_force ? 'has-error' : ''}`}>
+                <span>¿Cuál es ese monto?</span>
+                <input
+                  value={form.amount_in_force}
+                  onChange={(e) => updateField('amount_in_force', e.target.value.replace(/[^\d.]/g, ''))}
+                  inputMode="decimal"
+                />
+                {fieldErrors.amount_in_force && <span className="field-error">{fieldErrors.amount_in_force}</span>}
+              </label>
+            )}
             <label className="form-field">
               <span>Estado Civil</span>
               <select value={form.marital_status} onChange={(e) => updateField('marital_status', e.target.value)}>
@@ -257,6 +268,7 @@ const NewRequestPage = () => {
                 <option value="Casado">Casado</option>
                 <option value="Divorciado">Divorciado</option>
                 <option value="Viudo">Viudo</option>
+                <option value="Unido">Unido</option>
                 <option value="Otro">Otro</option>
               </select>
             </label>
@@ -275,13 +287,13 @@ const NewRequestPage = () => {
                 <option value="Hindi">Hindi</option>
               </select>
             </label>
-            <label className="form-field checkbox-field">
+            <label className="form-field">
               <span>¿El cliente ha sido avisado?</span>
-              <input
-                type="checkbox"
-                checked={form.client_notified}
-                onChange={(e) => updateField('client_notified', e.target.checked)}
-              />
+              <select value={form.client_notified} onChange={(e) => updateField('client_notified', e.target.value)}>
+                <option value="">Seleccione...</option>
+                <option value="Si">Si</option>
+                <option value="No">No</option>
+              </select>
             </label>
             <label className="form-field">
               <span>Indicaciones / Comentarios</span>

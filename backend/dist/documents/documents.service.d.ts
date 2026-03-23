@@ -45,6 +45,15 @@ export declare class DocumentsService {
             uploaded_by_user_id: bigint | null;
         };
     }>;
+    listByInspectionRequest(inspectionRequestId: number, context?: RequestContext): Promise<{
+        id: bigint;
+        doc_type: import(".prisma/client").$Enums.DocumentType;
+        filename: string;
+        mime_type: string;
+        file_size_bytes: bigint;
+        storage_provider: import(".prisma/client").$Enums.StorageProvider;
+        uploaded_at: Date;
+    }[]>;
     private persistPdf;
     private ensureTenancy;
 }
