@@ -15,5 +15,6 @@ export declare class SaveReportDto {
     summary?: string;
     additional_comments?: string;
     sections: ReportSectionDto[];
+    generate_report_pdf?: boolean;
 }
 export {};

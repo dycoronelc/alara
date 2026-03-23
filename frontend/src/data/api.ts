@@ -184,6 +184,33 @@ export const getInspectionRequestDocuments = (id: number, role: 'INSURER' | 'ALA
     [],
   );
 
+/** Abre el documento almacenado (PDF, etc.) en una pestaña nueva; requiere JWT. */
+export async function openInspectionRequestDocument(
+  requestId: number,
+  documentId: number,
+  role: 'INSURER' | 'ALARA',
+  insurerId?: number,
+): Promise<void> {
+  const token = localStorage.getItem('alara-token');
+  const effectiveInsurerId = insurerId ?? getStoredInsurerId();
+  const url = buildApiUrl(`/api/inspection-requests/${requestId}/documents/${documentId}/file`);
+  const response = await fetch(url, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      'x-user-role': role,
+      'x-user-id': '1',
+      ...(effectiveInsurerId ? { 'x-insurer-id': String(effectiveInsurerId) } : {}),
+    },
+  });
+  if (!response.ok) {
+    throw new Error('No se pudo abrir el documento');
+  }
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  window.open(objectUrl, '_blank', 'noopener,noreferrer');
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 120_000);
+}
+
 export const createInspectionRequest = (payload: Record<string, unknown>, insurerId?: number) =>
   safeFetch(
     buildApiUrl('/api/inspection-requests'),
@@ -289,6 +316,9 @@ export type UpdateClientPayload = {
   phone_mobile?: string;
   phone_home?: string;
   phone_work?: string;
+  address_line?: string;
+  city?: string;
+  country?: string;
   employer_name?: string;
   employer_tax_id?: string;
   profession?: string;

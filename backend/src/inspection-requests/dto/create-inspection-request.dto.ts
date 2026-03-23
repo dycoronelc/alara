@@ -76,6 +76,22 @@ export class ClientInputDto {
 
   @IsOptional()
   @IsString()
+  phone_work?: string;
+
+  @IsOptional()
+  @IsString()
+  address_line?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @IsOptional()
+  @IsString()
   employer_name?: string;
 
   @IsOptional()
@@ -103,6 +119,12 @@ export class CreateInspectionRequestDto {
   @IsOptional()
   @IsBoolean()
   has_amount_in_force?: boolean;
+
+  @IsOptional()
+  @ValidateIf((o: CreateInspectionRequestDto) => o.has_amount_in_force === true)
+  @Type(() => Number)
+  @IsNumber()
+  amount_in_force?: number;
 
   @IsString()
   @IsNotEmpty()

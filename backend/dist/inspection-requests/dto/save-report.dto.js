@@ -80,4 +80,9 @@ __decorate([
     (0, class_transformer_1.Type)(() => ReportSectionDto),
     __metadata("design:type", Array)
 ], SaveReportDto.prototype, "sections", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], SaveReportDto.prototype, "generate_report_pdf", void 0);
 //# sourceMappingURL=save-report.dto.js.map

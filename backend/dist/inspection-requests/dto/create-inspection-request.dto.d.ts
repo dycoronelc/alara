@@ -7,6 +7,10 @@ export declare class ClientInputDto {
     email?: string;
     phone_mobile?: string;
     phone_home?: string;
+    phone_work?: string;
+    address_line?: string;
+    city?: string;
+    country?: string;
     employer_name?: string;
     employer_tax_id?: string;
     profession?: string;
@@ -16,6 +20,7 @@ export declare class CreateInspectionRequestDto {
     agent_name?: string;
     insured_amount?: number;
     has_amount_in_force?: boolean;
+    amount_in_force?: number;
     responsible_name: string;
     responsible_phone?: string;
     responsible_email?: string;

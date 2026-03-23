@@ -68,6 +68,18 @@ export class UpdateClientDto {
 
   @IsOptional()
   @IsString()
+  address_line?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @IsOptional()
+  @IsString()
   employer_name?: string;
 
   @IsOptional()

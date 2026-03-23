@@ -93,7 +93,7 @@ class PdfService {
                     { key: 'doctor_name', label: 'Nombre del Médico Personal' },
                     { key: 'medical_coverage', label: 'Cobertura Médica' },
                     { key: 'last_consult', label: 'Fecha Última Consulta Médica' },
-                    { key: 'last_checkup', label: 'Fecha Último Check-up' },
+                    { key: 'consultation_reason', label: 'Motivo de la Consulta' },
                     { key: 'doctor_contact', label: 'Nombre, Dirección del Médico Consultado' },
                     { key: 'studies', label: 'Estudios realizados' },
                     { key: 'results', label: 'Resultados Obtenidos' },
@@ -227,6 +227,7 @@ class PdfService {
                     { key: 'bank_name', label: 'Banco de origen de fondos' },
                     { key: 'funds_origin', label: 'Origen de fondos' },
                     { key: 'previous_rejected', label: '¿Solicitud rechazada anteriormente?' },
+                    { key: 'previous_rejection_reason', label: 'Motivo del Rechazo' },
                     { key: 'replaces_policy', label: '¿Reemplaza póliza actual?' },
                 ],
             },
@@ -315,6 +316,9 @@ class PdfService {
             this.addKeyValue(doc, 'Monto asegurado', request.insured_amount.toString());
         }
         this.addKeyValue(doc, 'Monto vigente', request.has_amount_in_force ? 'Sí' : 'No');
+        if (request.has_amount_in_force && request.amount_in_force != null && request.amount_in_force !== '') {
+            this.addKeyValue(doc, 'Monto en vigencia', String(request.amount_in_force));
+        }
         this.addKeyValue(doc, 'Estado civil', request.marital_status ?? null);
         this.addKeyValue(doc, 'Idioma entrevista', request.interview_language ?? null);
         this.addKeyValue(doc, 'Cliente avisado', request.client_notified ? 'Sí' : 'No');
@@ -328,14 +332,12 @@ class PdfService {
         this.addKeyValue(doc, 'Email', request.client.email ?? null);
         this.addKeyValue(doc, 'Teléfono residencial', request.client.phone_home ?? null);
         this.addKeyValue(doc, 'Teléfono celular', request.client.phone_mobile ?? null);
-        this.addKeyValue(doc, 'Teléfono laboral', null);
-        this.addKeyValue(doc, 'Dirección', null);
-        this.addKeyValue(doc, 'Ciudad', null);
-        this.addKeyValue(doc, 'País', null);
+        this.addKeyValue(doc, 'Teléfono laboral', request.client.phone_work ?? null);
+        this.addKeyValue(doc, 'Dirección', request.client.address_line ?? null);
+        this.addKeyValue(doc, 'Ciudad', request.client.city ?? null);
+        this.addKeyValue(doc, 'País', request.client.country ?? null);
         this.addKeyValue(doc, 'Empresa/Empleador', request.client.employer_name ?? null);
-        this.addKeyValue(doc, 'CUIT/NIT/RUC', request.client.employer_tax_id ?? null);
-        this.addKeyValue(doc, 'Profesión', request.client.profession ?? null);
-        this.addKeyValue(doc, 'Tareas', null);
+        this.addKeyValue(doc, 'Profesión/Ocupación', request.client.profession ?? null);
         this.addSectionTitle(doc, 'Indicaciones / Comentarios');
         this.addKeyValue(doc, 'Comentarios', request.comments ?? null);
         this.addFooter(doc);

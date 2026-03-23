@@ -1,5 +1,6 @@
 import { defaultReportSections } from './defaultReportSections';
 import type { ReportFieldDef, ReportSectionDef } from './fieldTypes';
+import { DEPRECATED_REPORT_FIELD_KEYS } from './fieldTypes';
 
 /**
  * Combina la plantilla del API con la definición por código: mantiene orden/campos nuevos del default
@@ -29,7 +30,7 @@ export function mergeReportTemplate(remote: ReportSectionDef[] | undefined): Rep
 
     const baseKeys = new Set(b.fields.map((f) => f.key));
     r.fields.forEach((f) => {
-      if (!baseKeys.has(f.key)) {
+      if (!baseKeys.has(f.key) && !DEPRECATED_REPORT_FIELD_KEYS.has(f.key)) {
         mergedFields.push(f);
       }
     });

@@ -8,6 +8,9 @@ export declare class UpdateClientDto {
     phone_mobile?: string;
     phone_home?: string;
     phone_work?: string;
+    address_line?: string;
+    city?: string;
+    country?: string;
     employer_name?: string;
     employer_tax_id?: string;
     profession?: string;

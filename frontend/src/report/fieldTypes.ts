@@ -7,7 +7,18 @@ export type ReportFieldDef = {
   label: string;
   type?: ReportFieldUiType;
   options?: ReportFieldOption[];
+  /** Si se define, el campo solo se muestra cuando `key` tiene uno de `values` (p. ej. Sí/No). */
+  visibleWhen?: { key: string; values: string[] };
 };
+
+/** Claves obsoletas en plantillas remotas que ya no deben añadirse al fusionar. */
+export const DEPRECATED_REPORT_FIELD_KEYS = new Set<string>(['last_checkup']);
+
+export function isReportFieldVisible(field: ReportFieldDef, values: Record<string, string>): boolean {
+  if (!field.visibleWhen) return true;
+  const v = (values[field.visibleWhen.key] ?? '').trim();
+  return field.visibleWhen.values.includes(v);
+}
 
 export type ReportSectionDef = { code?: string; title: string; fields: ReportFieldDef[] };
 
@@ -104,6 +115,8 @@ export const TEXTAREA_KEYS = new Set<string>([
   'insurance_reason',
   'simultaneous_policy',
   'funds_origin',
+  'consultation_reason',
+  'previous_rejection_reason',
   'earned_concept',
   'unearned_concept',
   'goods',
@@ -119,7 +132,6 @@ export const DATE_KEYS = new Set<string>([
   'dob',
   'company_start',
   'last_consult',
-  'last_checkup',
   'tobacco_last',
   'insurance_date',
 ]);

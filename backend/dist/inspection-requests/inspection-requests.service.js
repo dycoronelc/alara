@@ -380,13 +380,30 @@ let InspectionRequestsService = class InspectionRequestsService {
                 id_number: payload.client.id_number ?? undefined,
             },
         });
-        const client = existingClient ??
-            (await this.prisma.client.create({
-                data: {
-                    ...payload.client,
-                    dob: payload.client.dob ? new Date(payload.client.dob) : undefined,
-                },
-            }));
+        const c = payload.client;
+        const clientScalar = {
+            first_name: c.first_name,
+            last_name: c.last_name,
+            dob: c.dob ? new Date(c.dob) : null,
+            id_type: c.id_type ?? undefined,
+            id_number: c.id_number ?? undefined,
+            email: c.email ?? undefined,
+            phone_mobile: c.phone_mobile ?? undefined,
+            phone_home: c.phone_home ?? undefined,
+            phone_work: c.phone_work ?? undefined,
+            employer_name: c.employer_name ?? undefined,
+            employer_tax_id: c.employer_tax_id ?? undefined,
+            profession: c.profession ?? undefined,
+            address_line: c.address_line?.trim() ? c.address_line.trim() : undefined,
+            city: c.city?.trim() ? c.city.trim() : undefined,
+            country: c.country?.trim() ? c.country.trim() : undefined,
+        };
+        const client = existingClient
+            ? await this.prisma.client.update({
+                where: { id: existingClient.id },
+                data: clientScalar,
+            })
+            : await this.prisma.client.create({ data: clientScalar });
         const insurerClient = (await this.prisma.insurerClient.findFirst({
             where: { insurer_id: context.insurerId, client_id: client.id },
         })) ??
@@ -409,6 +426,9 @@ let InspectionRequestsService = class InspectionRequestsService {
             throw new common_1.ConflictException(`Ya existe una solicitud con el número "${payload.request_number}" para esta aseguradora. Usa otro número de solicitud.`);
         }
         try {
+            const hasAmt = payload.has_amount_in_force === true;
+            const amtRaw = payload.amount_in_force;
+            const amountInForce = hasAmt && amtRaw != null && !Number.isNaN(Number(amtRaw)) ? Number(amtRaw) : null;
             return await this.prisma.inspectionRequest.create({
                 data: {
                     insurer_id: context.insurerId,
@@ -418,6 +438,7 @@ let InspectionRequestsService = class InspectionRequestsService {
                     agent_name: payload.agent_name,
                     insured_amount: payload.insured_amount,
                     has_amount_in_force: payload.has_amount_in_force ?? false,
+                    amount_in_force: amountInForce,
                     responsible_name: payload.responsible_name,
                     responsible_phone: payload.responsible_phone,
                     responsible_email: payload.responsible_email,
@@ -565,6 +586,12 @@ let InspectionRequestsService = class InspectionRequestsService {
             data.phone_home = payload.phone_home;
         if (payload.phone_work !== undefined)
             data.phone_work = payload.phone_work;
+        if (payload.address_line !== undefined)
+            data.address_line = payload.address_line;
+        if (payload.city !== undefined)
+            data.city = payload.city;
+        if (payload.country !== undefined)
+            data.country = payload.country;
         if (payload.employer_name !== undefined)
             data.employer_name = payload.employer_name;
         if (payload.employer_tax_id !== undefined)

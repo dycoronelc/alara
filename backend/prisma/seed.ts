@@ -93,7 +93,7 @@ async function main() {
           { key: 'doctor_name', label: 'Nombre del Médico Personal', type: 'TEXT', value: '' },
           { key: 'medical_coverage', label: 'Cobertura Médica', type: 'TEXT', value: '' },
           { key: 'last_consult', label: 'Fecha Última Consulta Médica', type: 'TEXT', value: '' },
-          { key: 'last_checkup', label: 'Fecha Último Check-up', type: 'TEXT', value: '' },
+          { key: 'consultation_reason', label: 'Motivo de la Consulta', type: 'TEXT', value: '' },
           { key: 'doctor_contact', label: 'Nombre, Dirección del Médico Consultado', type: 'TEXT', value: '' },
           { key: 'studies', label: 'Estudios realizados', type: 'TEXT', value: '' },
           { key: 'results', label: 'Resultados Obtenidos', type: 'TEXT', value: '' },
@@ -247,6 +247,7 @@ async function main() {
           { key: 'bank_name', label: 'Banco de origen de fondos', type: 'TEXT', value: '' },
           { key: 'funds_origin', label: 'Origen de fondos', type: 'TEXT', value: '' },
           { key: 'previous_rejected', label: '¿Le han Rechazado alguna Solicitud anteriormente?', type: 'TEXT', value: '' },
+          { key: 'previous_rejection_reason', label: 'Motivo del Rechazo', type: 'TEXT', value: '' },
           { key: 'replaces_policy', label: '¿Este Seguro Reemplaza una Póliza Actual?', type: 'TEXT', value: '' }
         ]
       },

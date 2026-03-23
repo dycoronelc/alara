@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   downloadPdf,
   getInspectionRequest,
   getInspectionRequestDocuments,
+  openInspectionRequestDocument,
   getInvestigations,
   saveInspectionReport,
   shareInspectionReport,
@@ -18,13 +19,27 @@ import InvestigationsUafSection from '../components/InvestigationsUafSection';
 import ReportFormField from '../components/ReportFormField';
 import { defaultReportSections } from '../report/defaultReportSections';
 import { mergeReportTemplate } from '../report/mergeReportTemplate';
-import { DATE_KEYS, mapApiFieldToDef, toApiFieldType, type ReportSectionDef } from '../report/fieldTypes';
-import { isoLikeToDdMmYyyy, isValidDdMmYyyy } from '../utils/ddMmYyyyDate';
+import {
+  DATE_KEYS,
+  isReportFieldVisible,
+  mapApiFieldToDef,
+  toApiFieldType,
+  type ReportSectionDef,
+} from '../report/fieldTypes';
+import { ageInYearsFromDdMmYyyy, isoLikeToDdMmYyyy, isValidDdMmYyyy } from '../utils/ddMmYyyyDate';
 import { isPanamaCedula, PANAMA_CEDULA_HINT } from '../utils/panamaCedula';
 
 type RequestDetailProps = {
   portal: 'aseguradora' | 'alara';
 };
+
+function idTypeLabel(t?: string) {
+  if (!t) return '—';
+  if (t === 'CEDULA') return 'Cédula';
+  if (t === 'PASSPORT') return 'Pasaporte';
+  if (t === 'OTRO') return 'Otro';
+  return t;
+}
 
 type ClientInfo = {
   first_name?: string;
@@ -56,6 +71,7 @@ type RequestDetail = {
   agent_name?: string;
   insured_amount?: string | number;
   has_amount_in_force?: boolean;
+  amount_in_force?: string | number;
   marital_status?: string;
   interview_language?: string;
   priority?: string;
@@ -97,8 +113,13 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
     'PENDIENTE',
   );
   const [reportMessage, setReportMessage] = useState('');
+  const [reportSaveBusy, setReportSaveBusy] = useState(false);
+  const [hasLocalReportDraft, setHasLocalReportDraft] = useState(false);
+  const reportMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [investigations, setInvestigations] = useState<any[]>([]);
   const [documents, setDocuments] = useState<RequestDocument[]>([]);
+  const [docOpenError, setDocOpenError] = useState('');
+  const [openingDocId, setOpeningDocId] = useState<string | number | null>(null);
   const [investigationMessage, setInvestigationMessage] = useState('');
   const [uafSearchMode, setUafSearchMode] = useState<'cedula' | 'nombre' | 'ambos'>('ambos');
   const [callMessage, setCallMessage] = useState('');
@@ -158,6 +179,29 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   }, [id, portal]);
 
   const reportSections = useMemo(() => templateSections, [templateSections]);
+
+  const solicitudDobDdMm = useMemo(
+    () => (data?.client?.dob ? isoLikeToDdMmYyyy(data.client.dob) : ''),
+    [data?.client?.dob],
+  );
+  const solicitudDobAge = useMemo(() => {
+    if (!solicitudDobDdMm || !isValidDdMmYyyy(solicitudDobDdMm)) return null;
+    return ageInYearsFromDdMmYyyy(solicitudDobDdMm);
+  }, [solicitudDobDdMm]);
+  /** Registros antiguos: monto solo en texto de comentarios. */
+  const legacyMontoVigenciaFromComments = useMemo(() => {
+    const c = data?.comments;
+    if (!c) return '';
+    const m = String(c).match(/Monto en vigencia:\s*([\d.]+)/i);
+    return m ? m[1] : '';
+  }, [data?.comments]);
+  const montoVigenciaDisplay = useMemo(() => {
+    const raw = data?.amount_in_force;
+    if (raw !== null && raw !== undefined && String(raw).trim() !== '') {
+      return String(raw);
+    }
+    return legacyMontoVigenciaFromComments;
+  }, [data?.amount_in_force, legacyMontoVigenciaFromComments]);
   const initialReportValues = useMemo(() => {
     if (!data) return {};
     return {
@@ -196,11 +240,26 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
 
   useEffect(() => {
     if (!id || activeTab !== 'documentacion') return;
+    setDocOpenError('');
     const role = portal === 'aseguradora' ? 'INSURER' : 'ALARA';
     getInspectionRequestDocuments(Number(id), role)
       .then((resp) => setDocuments(resp as RequestDocument[]))
       .catch(() => setDocuments([]));
   }, [activeTab, id, portal]);
+
+  const handleOpenDocument = async (file: RequestDocument) => {
+    if (!id) return;
+    setDocOpenError('');
+    setOpeningDocId(file.id);
+    const role = portal === 'aseguradora' ? 'INSURER' : 'ALARA';
+    try {
+      await openInspectionRequestDocument(Number(id), Number(file.id), role);
+    } catch {
+      setDocOpenError('No se pudo abrir el documento. Inténtalo de nuevo.');
+    } finally {
+      setOpeningDocId(null);
+    }
+  };
 
   const handleInvestigate = async () => {
     if (!id) return;
@@ -249,12 +308,93 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
     }
   }, [initialReportValues, data?.inspection_report]);
 
+  const reportDraftStorageKey = id && portal === 'alara' ? `alara-report-draft:${id}` : '';
+
   const updateReportValue = (key: string, value: string) => {
-    setReportValues((prev) => ({ ...prev, [key]: value }));
+    setReportValues((prev) => {
+      const next = { ...prev, [key]: value };
+      if (key === 'previous_rejected' && value !== 'Sí') {
+        next.previous_rejection_reason = '';
+      }
+      return next;
+    });
   };
 
-  const handleSaveReport = async () => {
+  const persistReportDraft = useCallback(() => {
+    if (!reportDraftStorageKey) return;
+    try {
+      localStorage.setItem(
+        reportDraftStorageKey,
+        JSON.stringify({
+          reportValues,
+          reportSummary,
+          reportComments,
+          reportOutcome,
+          v: 1,
+        }),
+      );
+      setHasLocalReportDraft(true);
+    } catch {
+      // ignore quota / private mode
+    }
+  }, [reportDraftStorageKey, reportValues, reportSummary, reportComments, reportOutcome]);
+
+  useEffect(() => {
+    if (!reportDraftStorageKey || activeTab !== 'reporte') return;
+    const t = window.setTimeout(persistReportDraft, 1600);
+    return () => window.clearTimeout(t);
+  }, [reportDraftStorageKey, activeTab, persistReportDraft]);
+
+  useEffect(() => {
+    if (!id || activeTab !== 'reporte' || portal !== 'alara') {
+      setHasLocalReportDraft(false);
+      return;
+    }
+    try {
+      setHasLocalReportDraft(!!localStorage.getItem(`alara-report-draft:${id}`));
+    } catch {
+      setHasLocalReportDraft(false);
+    }
+  }, [id, activeTab, portal]);
+
+  const handleRecoverReportDraft = () => {
+    if (!reportDraftStorageKey) return;
+    try {
+      const raw = localStorage.getItem(reportDraftStorageKey);
+      if (!raw) return;
+      const d = JSON.parse(raw) as {
+        reportValues?: Record<string, string>;
+        reportSummary?: string;
+        reportComments?: string;
+        reportOutcome?: string;
+      };
+      if (d.reportValues && typeof d.reportValues === 'object') {
+        setReportValues((prev) => ({ ...prev, ...d.reportValues }));
+      }
+      if (d.reportSummary !== undefined) setReportSummary(d.reportSummary);
+      if (d.reportComments !== undefined) setReportComments(d.reportComments);
+      if (
+        d.reportOutcome &&
+        ['PENDIENTE', 'FAVORABLE', 'NO_FAVORABLE', 'INCONCLUSO'].includes(d.reportOutcome)
+      ) {
+        setReportOutcome(
+          d.reportOutcome as 'PENDIENTE' | 'FAVORABLE' | 'NO_FAVORABLE' | 'INCONCLUSO',
+        );
+      }
+      setReportMessage('Borrador local recuperado.');
+      if (reportMessageTimerRef.current) window.clearTimeout(reportMessageTimerRef.current);
+      reportMessageTimerRef.current = window.setTimeout(() => setReportMessage(''), 5000);
+    } catch {
+      setReportMessage('No se pudo leer el borrador local.');
+    }
+  };
+
+  const handleSaveReport = async (generateReportPdf: boolean) => {
     if (!id) return;
+    if (reportMessageTimerRef.current) {
+      window.clearTimeout(reportMessageTimerRef.current);
+      reportMessageTimerRef.current = null;
+    }
     setReportMessage('');
     const invalidDates: string[] = [];
     reportSections.forEach((section) => {
@@ -276,6 +416,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       outcome: reportOutcome,
       summary: reportSummary || undefined,
       additional_comments: reportComments || undefined,
+      generate_report_pdf: generateReportPdf,
       sections: reportSections.map((section, index) => ({
         code: section.code ?? section.title.toUpperCase().replace(/\s+/g, '_'),
         title: section.title,
@@ -289,15 +430,30 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       })),
     };
 
+    setReportSaveBusy(true);
     try {
       await saveInspectionReport(Number(id), payload, portal === 'alara' ? 'ALARA' : 'INSURER');
-      setReportMessage('Reporte guardado y PDF generado.');
-      setShowReportForm(false);
+      if (reportDraftStorageKey) {
+        try {
+          localStorage.removeItem(reportDraftStorageKey);
+        } catch {
+          /* ignore */
+        }
+        setHasLocalReportDraft(false);
+      }
+      setReportMessage(
+        generateReportPdf
+          ? 'Guardado y finalizado. Se generó el PDF del reporte. Puedes seguir editando si lo necesitas.'
+          : 'Guardado correctamente. Puedes seguir editando (el PDF se genera al usar Guardar y Finalizar).',
+      );
       const role = portal === 'aseguradora' ? 'INSURER' : 'ALARA';
       const refreshed = await getInspectionRequest(Number(id), role);
       setData(refreshed);
+      reportMessageTimerRef.current = window.setTimeout(() => setReportMessage(''), 8000);
     } catch (error) {
       setReportMessage('No se pudo guardar el reporte.');
+    } finally {
+      setReportSaveBusy(false);
     }
   };
 
@@ -326,6 +482,9 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       phone_mobile: c?.phone_mobile ?? '',
       phone_home: c?.phone_home ?? '',
       phone_work: c?.phone_work ?? '',
+      address_line: c?.address_line ?? '',
+      city: c?.city ?? '',
+      country: c?.country ?? '',
       employer_name: c?.employer_name ?? '',
       employer_tax_id: c?.employer_tax_id ?? '',
       profession: c?.profession ?? '',
@@ -361,6 +520,9 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       phone_mobile: clientForm.phone_mobile || undefined,
       phone_home: clientForm.phone_home || undefined,
       phone_work: clientForm.phone_work || undefined,
+      address_line: clientForm.address_line || undefined,
+      city: clientForm.city || undefined,
+      country: clientForm.country || undefined,
       employer_name: clientForm.employer_name || undefined,
       employer_tax_id: clientForm.employer_tax_id || undefined,
       profession: clientForm.profession || undefined,
@@ -468,7 +630,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                 <strong>{data.client?.email ?? '—'}</strong>
               </li>
               <li>
-                <span>Profesión</span>
+                <span>Profesión/Ocupación</span>
                 <strong>{data.client?.profession ?? '—'}</strong>
               </li>
             </ul>
@@ -608,6 +770,27 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                     />
                   </label>
                   <label className="form-field">
+                    <span>Dirección</span>
+                    <input
+                      value={clientForm.address_line ?? ''}
+                      onChange={(e) => setClientForm((f) => ({ ...f, address_line: e.target.value }))}
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span>Ciudad</span>
+                    <input
+                      value={clientForm.city ?? ''}
+                      onChange={(e) => setClientForm((f) => ({ ...f, city: e.target.value }))}
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span>País</span>
+                    <input
+                      value={clientForm.country ?? ''}
+                      onChange={(e) => setClientForm((f) => ({ ...f, country: e.target.value }))}
+                    />
+                  </label>
+                  <label className="form-field">
                     <span>Empresa</span>
                     <input
                       value={clientForm.employer_name ?? ''}
@@ -622,7 +805,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                     />
                   </label>
                   <label className="form-field">
-                    <span>Profesión</span>
+                    <span>Profesión/Ocupación</span>
                     <input
                       value={clientForm.profession ?? ''}
                       onChange={(e) => setClientForm((f) => ({ ...f, profession: e.target.value }))}
@@ -666,11 +849,27 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                   <strong>{data.client?.phone_home ?? '—'}</strong>
                 </div>
                 <div>
+                  <span>Teléfono laboral</span>
+                  <strong>{data.client?.phone_work ?? '—'}</strong>
+                </div>
+                <div>
+                  <span>Dirección</span>
+                  <strong>{data.client?.address_line ?? '—'}</strong>
+                </div>
+                <div>
+                  <span>Ciudad</span>
+                  <strong>{data.client?.city ?? '—'}</strong>
+                </div>
+                <div>
+                  <span>País</span>
+                  <strong>{data.client?.country ?? '—'}</strong>
+                </div>
+                <div>
                   <span>Empresa</span>
                   <strong>{data.client?.employer_name ?? '—'}</strong>
                 </div>
                 <div>
-                  <span>Profesión</span>
+                  <span>Profesión/Ocupación</span>
                   <strong>{data.client?.profession ?? '—'}</strong>
                 </div>
               </div>
@@ -685,7 +884,8 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       )}
 
       {activeTab === 'solicitud' && (
-        <div className="info-card">
+        <div className="info-card solicitud-tab-detail">
+          <h4 className="solicitud-tab-detail__title">Aseguradora y trámite</h4>
           <div className="details-grid">
             <div>
               <span>Aseguradora</span>
@@ -696,68 +896,78 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
               <strong>{data.request_number ?? '—'}</strong>
             </div>
             <div>
-              <span>Responsable</span>
-              <strong>{data.responsible_name}</strong>
-            </div>
-            <div>
-              <span>Teléfono responsable</span>
-              <strong>{data.responsible_phone ?? '—'}</strong>
-            </div>
-            <div>
-              <span>Email responsable</span>
-              <strong>{data.responsible_email ?? '—'}</strong>
-            </div>
-            <div>
-              <span>Agente</span>
-              <strong>{data.agent_name ?? '—'}</strong>
-            </div>
-            <div>
-              <span>Monto asegurado</span>
-              <strong>{data.insured_amount ?? '—'}</strong>
-            </div>
-            <div>
-              <span>Monto vigente</span>
-              <strong>{data.has_amount_in_force ? 'Sí' : 'No'}</strong>
-            </div>
-            <div>
-              <span>Estado civil</span>
-              <strong>{data.client?.marital_status ?? data.marital_status ?? '—'}</strong>
-            </div>
-            <div>
-              <span>Idioma entrevista</span>
-              <strong>{data.interview_language ?? '—'}</strong>
-            </div>
-            <div>
-              <span>Cliente avisado</span>
-              <strong>{data.client_notified ? 'Sí' : 'No'}</strong>
-            </div>
-            <div>
               <span>Prioridad</span>
               <strong>{data.priority ?? 'NORMAL'}</strong>
             </div>
             <div>
               <span>Agendada inicio</span>
-              <strong>{data.scheduled_start_at ?? '—'}</strong>
+              <strong>
+                {data.scheduled_start_at
+                  ? new Date(data.scheduled_start_at).toLocaleString()
+                  : '—'}
+              </strong>
             </div>
             <div>
               <span>Agendada fin</span>
-              <strong>{data.scheduled_end_at ?? '—'}</strong>
+              <strong>
+                {data.scheduled_end_at ? new Date(data.scheduled_end_at).toLocaleString() : '—'}
+              </strong>
             </div>
-            <div className="details-wide">
-              <span>Comentarios</span>
-              <strong>{data.comments ?? '—'}</strong>
+          </div>
+
+          <h4 className="solicitud-tab-detail__title">Datos del responsable</h4>
+          <div className="details-grid">
+            <div>
+              <span>Persona responsable del pedido</span>
+              <strong>{data.responsible_name}</strong>
             </div>
             <div>
-              <span>Dirección</span>
-              <strong>{data.client?.address_line ?? '—'}</strong>
+              <span>Número de teléfono del responsable</span>
+              <strong>{data.responsible_phone ?? '—'}</strong>
             </div>
             <div>
-              <span>Ciudad</span>
-              <strong>{data.client?.city ?? '—'}</strong>
+              <span>Mail del responsable</span>
+              <strong>{data.responsible_email ?? '—'}</strong>
+            </div>
+          </div>
+
+          <h4 className="solicitud-tab-detail__title">Datos del propuesto asegurado</h4>
+          <div className="details-grid">
+            <div>
+              <span>Nombres</span>
+              <strong>{data.client?.first_name ?? '—'}</strong>
             </div>
             <div>
-              <span>País</span>
-              <strong>{data.client?.country ?? '—'}</strong>
+              <span>Apellidos</span>
+              <strong>{data.client?.last_name ?? '—'}</strong>
+            </div>
+            <div>
+              <span>Fecha de nacimiento (dd/mm/aaaa)</span>
+              <strong>
+                {solicitudDobDdMm || '—'}
+                {solicitudDobAge !== null && solicitudDobAge >= 0 && (
+                  <span className="solicitud-tab-detail__age"> · Edad: {solicitudDobAge}{' '}
+                  {solicitudDobAge === 1 ? 'año' : 'años'}</span>
+                )}
+                {solicitudDobAge !== null && solicitudDobAge < 0 && (
+                  <span className="solicitud-tab-detail__age solicitud-tab-detail__age--warn">
+                    {' '}
+                    · Fecha futura
+                  </span>
+                )}
+              </strong>
+            </div>
+            <div>
+              <span>Tipo de documento</span>
+              <strong>{idTypeLabel(data.client?.id_type)}</strong>
+            </div>
+            <div>
+              <span>Número de documento</span>
+              <strong>{data.client?.id_number?.trim() ? data.client.id_number : '—'}</strong>
+            </div>
+            <div>
+              <span>Email</span>
+              <strong>{data.client?.email ?? '—'}</strong>
             </div>
             <div>
               <span>Teléfono residencial</span>
@@ -772,31 +982,73 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
               <strong>{data.client?.phone_mobile ?? '—'}</strong>
             </div>
             <div>
-              <span>Email</span>
-              <strong>{data.client?.email ?? '—'}</strong>
+              <span>Dirección</span>
+              <strong>{data.client?.address_line ?? '—'}</strong>
             </div>
             <div>
-              <span>Empresa/Empleador</span>
+              <span>Ciudad</span>
+              <strong>{data.client?.city ?? '—'}</strong>
+            </div>
+            <div>
+              <span>País</span>
+              <strong>{data.client?.country ?? '—'}</strong>
+            </div>
+          </div>
+
+          <h4 className="solicitud-tab-detail__title">Datos laborales</h4>
+          <div className="details-grid">
+            <div>
+              <span>Nombre de la Empresa / Empleador</span>
               <strong>{data.client?.employer_name ?? '—'}</strong>
             </div>
             <div>
-              <span>CUIT / NIT / RUC</span>
-              <strong>{data.client?.employer_tax_id ?? '—'}</strong>
-            </div>
-            <div>
-              <span>Profesión</span>
+              <span>Profesión/Ocupación</span>
               <strong>{data.client?.profession ?? '—'}</strong>
             </div>
+          </div>
+
+          <h4 className="solicitud-tab-detail__title">Datos de la solicitud</h4>
+          <div className="details-grid">
             <div>
-              <span>Tareas</span>
-              <strong>{data.client?.tasks ?? '—'}</strong>
+              <span>Nombre del Agente</span>
+              <strong>{data.agent_name ?? '—'}</strong>
+            </div>
+            <div>
+              <span>Monto asegurado (USD)</span>
+              <strong>{data.insured_amount ?? '—'}</strong>
+            </div>
+            <div>
+              <span>¿Posee monto en vigencia?</span>
+              <strong>{data.has_amount_in_force ? 'Sí' : 'No'}</strong>
+            </div>
+            {data.has_amount_in_force ? (
+              <div>
+                <span>Monto en vigencia</span>
+                <strong>{montoVigenciaDisplay || '—'}</strong>
+              </div>
+            ) : null}
+            <div>
+              <span>Estado civil</span>
+              <strong>{data.client?.marital_status ?? data.marital_status ?? '—'}</strong>
+            </div>
+            <div>
+              <span>Idioma para la entrevista</span>
+              <strong>{data.interview_language ?? '—'}</strong>
+            </div>
+            <div>
+              <span>¿El cliente ha sido avisado?</span>
+              <strong>{data.client_notified ? 'Sí' : 'No'}</strong>
+            </div>
+            <div className="details-wide">
+              <span>Indicaciones / comentarios</span>
+              <strong>{data.comments ?? '—'}</strong>
             </div>
           </div>
         </div>
       )}
 
       {activeTab === 'reporte' && (
-        <div className="info-card">
+        <div className="info-card report-tab-card">
           {showReportForm && (
             <div className="report-form">
               <div className="form-section">
@@ -832,22 +1084,28 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                 <div key={section.code ?? section.title} className="form-section">
                   <h4>{section.title}</h4>
                   <div className="form-grid">
-                    {section.fields.map((field) => (
-                      <label key={field.key} className="form-field">
-                        <span>{field.label}</span>
-                        <ReportFormField
-                          field={field}
-                          value={reportValues[field.key] ?? ''}
-                          onChange={updateReportValue}
-                        />
-                      </label>
-                    ))}
+                    {section.fields
+                      .filter((field) => isReportFieldVisible(field, reportValues))
+                      .map((field) => (
+                        <label key={field.key} className="form-field">
+                          <span>{field.label}</span>
+                          <ReportFormField
+                            field={field}
+                            value={reportValues[field.key] ?? ''}
+                            onChange={updateReportValue}
+                          />
+                        </label>
+                      ))}
                   </div>
                 </div>
               ))}
               <div className="form-actions">
-                <button className="primary-button" onClick={handleSaveReport}>
-                  Guardar reporte
+                <button
+                  className="primary-button"
+                  onClick={() => handleSaveReport(true)}
+                  disabled={reportSaveBusy}
+                >
+                  {reportSaveBusy ? 'Guardando…' : 'Guardar y Finalizar'}
                 </button>
                 {portal === 'alara' && data.status === 'REALIZADA' && !data.report_shared_at && (
                   <button className="ghost-button" onClick={handleShareReport}>
@@ -867,6 +1125,28 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
               </div>
             </div>
           )}
+
+          {showReportForm && portal === 'alara' && (
+            <div className="report-floating-save" role="region" aria-label="Guardado del reporte">
+              <button
+                type="button"
+                className="primary-button report-floating-save__btn"
+                onClick={() => handleSaveReport(false)}
+                disabled={reportSaveBusy}
+              >
+                {reportSaveBusy ? 'Guardando…' : 'Guardar'}
+              </button>
+              {hasLocalReportDraft && (
+                <button
+                  type="button"
+                  className="ghost-button report-floating-save__draft"
+                  onClick={handleRecoverReportDraft}
+                >
+                  Recuperar borrador local
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -874,12 +1154,21 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
         <div className="info-card">
           <h4>Documentación</h4>
           <p>Documentos registrados para este trámite.</p>
+          {docOpenError && <p className="form-message form-message--error">{docOpenError}</p>}
           <div className="list-block">
             {documents.map((file) => (
-              <div key={String(file.id)} className="list-row">
+              <div key={String(file.id)} className="list-row list-row--document">
                 <div>
-                  <strong>{file.filename}</strong>
-                  <span>
+                  <button
+                    type="button"
+                    className="doc-filename-link"
+                    onClick={() => handleOpenDocument(file)}
+                    disabled={openingDocId === file.id}
+                    title="Abrir o descargar documento"
+                  >
+                    {openingDocId === file.id ? 'Abriendo…' : file.filename}
+                  </button>
+                  <span className="doc-meta">
                     {(Number(file.file_size_bytes) / 1024).toFixed(1)} KB · {file.doc_type} ·{' '}
                     {new Date(file.uploaded_at).toLocaleString()}
                   </span>

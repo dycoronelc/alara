@@ -124,6 +124,46 @@ export class DocumentsService {
     });
   }
 
+  /** Lee el binario del documento vinculado a la solicitud (misma regla de tenancy que el listado). */
+  async getDocumentFile(
+    inspectionRequestId: number,
+    documentId: number,
+    context?: RequestContext,
+  ): Promise<{ buffer: Buffer; filename: string; mimeType: string }> {
+    const request = await this.prisma.inspectionRequest.findUnique({
+      where: { id: inspectionRequestId },
+      select: { insurer_id: true },
+    });
+    if (!request) {
+      throw new NotFoundException('Solicitud no encontrada');
+    }
+    this.ensureTenancy(context, request.insurer_id);
+
+    const doc = await this.prisma.document.findFirst({
+      where: {
+        id: BigInt(documentId),
+        inspection_request_id: BigInt(inspectionRequestId),
+      },
+    });
+    if (!doc) {
+      throw new NotFoundException('Documento no encontrado');
+    }
+    if (doc.storage_provider !== 'LOCAL' || !doc.storage_key) {
+      throw new NotFoundException('Archivo no disponible');
+    }
+    const filepath = join(this.storageDir, doc.storage_key);
+    try {
+      const buffer = await fs.readFile(filepath);
+      return {
+        buffer,
+        filename: doc.filename,
+        mimeType: doc.mime_type || 'application/octet-stream',
+      };
+    } catch {
+      throw new NotFoundException('Archivo no encontrado en almacenamiento');
+    }
+  }
+
   private async persistPdf(params: {
     buffer: Buffer;
     filename: string;

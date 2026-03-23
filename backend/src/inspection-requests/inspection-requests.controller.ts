@@ -79,6 +79,23 @@ export class InspectionRequestsController {
     return this.documentsService.listByInspectionRequest(id, req.userContext);
   }
 
+  @Get(':id/documents/:documentId/file')
+  async downloadStoredDocument(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('documentId', ParseIntPipe) documentId: number,
+  ) {
+    const { buffer, filename, mimeType } = await this.documentsService.getDocumentFile(
+      id,
+      documentId,
+      req.userContext,
+    );
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${filename.replace(/"/g, '')}"`);
+    return res.send(buffer);
+  }
+
   @Post(':id/status')
   async updateStatus(
     @Req() req: Request,
@@ -113,7 +130,9 @@ export class InspectionRequestsController {
     @Body() payload: SaveReportDto,
   ) {
     const report = await this.service.saveReport(req.userContext!, id, payload);
-    await this.documentsService.generateReportPdf(id, req.userContext?.userId ?? 0, req.userContext);
+    if (payload.generate_report_pdf === true) {
+      await this.documentsService.generateReportPdf(id, req.userContext?.userId ?? 0, req.userContext);
+    }
     return report;
   }
 

@@ -60,6 +60,12 @@ let InspectionRequestsController = InspectionRequestsController_1 = class Inspec
     async listDocuments(req, id) {
         return this.documentsService.listByInspectionRequest(id, req.userContext);
     }
+    async downloadStoredDocument(req, res, id, documentId) {
+        const { buffer, filename, mimeType } = await this.documentsService.getDocumentFile(id, documentId, req.userContext);
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Content-Disposition', `inline; filename="${filename.replace(/"/g, '')}"`);
+        return res.send(buffer);
+    }
     async updateStatus(req, id, payload) {
         return this.service.updateStatus(req.userContext, id, payload);
     }
@@ -71,7 +77,9 @@ let InspectionRequestsController = InspectionRequestsController_1 = class Inspec
     }
     async saveReport(req, id, payload) {
         const report = await this.service.saveReport(req.userContext, id, payload);
-        await this.documentsService.generateReportPdf(id, req.userContext?.userId ?? 0, req.userContext);
+        if (payload.generate_report_pdf === true) {
+            await this.documentsService.generateReportPdf(id, req.userContext?.userId ?? 0, req.userContext);
+        }
         return report;
     }
     async shareReport(req, id) {
@@ -137,6 +145,16 @@ __decorate([
     __metadata("design:paramtypes", [Object, Number]),
     __metadata("design:returntype", Promise)
 ], InspectionRequestsController.prototype, "listDocuments", null);
+__decorate([
+    (0, common_1.Get)(':id/documents/:documentId/file'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Res)()),
+    __param(2, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(3, (0, common_1.Param)('documentId', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object, Number, Number]),
+    __metadata("design:returntype", Promise)
+], InspectionRequestsController.prototype, "downloadStoredDocument", null);
 __decorate([
     (0, common_1.Post)(':id/status'),
     __param(0, (0, common_1.Req)()),

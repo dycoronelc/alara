@@ -7,6 +7,7 @@ type InspectionRequestPayload = {
     agent_name?: string | null;
     insured_amount?: any;
     has_amount_in_force: boolean;
+    amount_in_force?: any;
     marital_status?: string | null;
     interview_language?: string | null;
     client_notified?: boolean | null;
@@ -25,6 +26,10 @@ type InspectionRequestPayload = {
         email?: string | null;
         phone_home?: string | null;
         phone_mobile?: string | null;
+        phone_work?: string | null;
+        address_line?: string | null;
+        city?: string | null;
+        country?: string | null;
         employer_name?: string | null;
         employer_tax_id?: string | null;
         profession?: string | null;

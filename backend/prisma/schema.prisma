@@ -230,6 +230,9 @@ model Client {
   employer_name String?   @db.VarChar(200)
   employer_tax_id String? @db.VarChar(50)
   profession    String?   @db.VarChar(150)
+  address_line  String?   @db.VarChar(255)
+  city          String?   @db.VarChar(120)
+  country       String?   @db.VarChar(80)
   created_at    DateTime  @default(now())
   updated_at    DateTime? @updatedAt
 
@@ -286,6 +289,7 @@ model InspectionRequest {
   agent_name                 String?         @db.VarChar(200)
   insured_amount             Decimal?        @db.Decimal(18, 2)
   has_amount_in_force        Boolean         @default(false)
+  amount_in_force            Decimal?        @db.Decimal(18, 2)
   responsible_name           String          @db.VarChar(200)
   responsible_phone          String?         @db.VarChar(30)
   responsible_email          String?         @db.VarChar(255)

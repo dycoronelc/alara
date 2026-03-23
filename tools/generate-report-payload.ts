@@ -44,6 +44,7 @@ const body = {
   outcome: 'FAVORABLE' as const,
   summary: 'Resumen ejecutivo simulado del reporte VIP.',
   additional_comments: 'Comentarios adicionales de prueba.',
+  generate_report_pdf: true,
   sections,
 };
 

@@ -120,6 +120,40 @@ let DocumentsService = class DocumentsService {
             },
         });
     }
+    async getDocumentFile(inspectionRequestId, documentId, context) {
+        const request = await this.prisma.inspectionRequest.findUnique({
+            where: { id: inspectionRequestId },
+            select: { insurer_id: true },
+        });
+        if (!request) {
+            throw new common_1.NotFoundException('Solicitud no encontrada');
+        }
+        this.ensureTenancy(context, request.insurer_id);
+        const doc = await this.prisma.document.findFirst({
+            where: {
+                id: BigInt(documentId),
+                inspection_request_id: BigInt(inspectionRequestId),
+            },
+        });
+        if (!doc) {
+            throw new common_1.NotFoundException('Documento no encontrado');
+        }
+        if (doc.storage_provider !== 'LOCAL' || !doc.storage_key) {
+            throw new common_1.NotFoundException('Archivo no disponible');
+        }
+        const filepath = (0, path_1.join)(this.storageDir, doc.storage_key);
+        try {
+            const buffer = await fs_1.promises.readFile(filepath);
+            return {
+                buffer,
+                filename: doc.filename,
+                mimeType: doc.mime_type || 'application/octet-stream',
+            };
+        }
+        catch {
+            throw new common_1.NotFoundException('Archivo no encontrado en almacenamiento');
+        }
+    }
     async persistPdf(params) {
         await fs_1.promises.mkdir(this.storageDir, { recursive: true });
         const storageKey = `${Date.now()}_${params.filename}`;

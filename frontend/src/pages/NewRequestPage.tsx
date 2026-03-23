@@ -82,22 +82,15 @@ const NewRequestPage = () => {
       agent_name: form.agent_name,
       insured_amount: form.insured_amount ? Number(form.insured_amount) : undefined,
       has_amount_in_force: form.has_amount_in_force === 'Si',
+      amount_in_force:
+        form.has_amount_in_force === 'Si' && form.amount_in_force.trim()
+          ? Number(form.amount_in_force.replace(/,/g, ''))
+          : undefined,
       responsible_name: form.responsible_name,
       responsible_phone: form.responsible_phone,
       responsible_email: form.responsible_email,
       marital_status: form.marital_status,
-      comments: [
-        form.comments,
-        form.address_line ? `Dirección: ${form.address_line}` : '',
-        form.city ? `Ciudad: ${form.city}` : '',
-        form.country ? `País: ${form.country}` : '',
-        form.has_amount_in_force === 'Si' && form.amount_in_force
-          ? `Monto en vigencia: ${form.amount_in_force}`
-          : '',
-        form.phone_work ? `Teléfono Laboral: ${form.phone_work}` : '',
-      ]
-        .filter(Boolean)
-        .join(' | '),
+      comments: form.comments.trim() || undefined,
       client_notified:
         form.client_notified === 'Si' ? true : form.client_notified === 'No' ? false : undefined,
       interview_language: form.interview_language,
@@ -110,6 +103,10 @@ const NewRequestPage = () => {
         email: form.email || undefined,
         phone_mobile: form.phone_mobile || undefined,
         phone_home: form.phone_home || undefined,
+        phone_work: form.phone_work || undefined,
+        address_line: form.address_line || undefined,
+        city: form.city || undefined,
+        country: form.country || undefined,
         employer_name: form.employer_name || undefined,
         profession: form.profession || undefined,
       },

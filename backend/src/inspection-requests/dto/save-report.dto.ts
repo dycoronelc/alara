@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsNotEmpty,
   IsOptional,
@@ -61,4 +62,12 @@ export class SaveReportDto {
   @ValidateNested({ each: true })
   @Type(() => ReportSectionDto)
   sections!: ReportSectionDto[];
+
+  /**
+   * Si es true, tras persistir el reporte se genera/actualiza el PDF del reporte.
+   * Guardados intermedios deben enviar false u omitir el campo.
+   */
+  @IsOptional()
+  @IsBoolean()
+  generate_report_pdf?: boolean;
 }

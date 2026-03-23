@@ -2,6 +2,7 @@
   "outcome": "FAVORABLE",
   "summary": "Resumen ejecutivo simulado del reporte VIP.",
   "additional_comments": "Comentarios adicionales de prueba.",
+  "generate_report_pdf": true,
   "sections": [
     {
       "code": "DATOS_PERSONALES",
@@ -191,10 +192,10 @@
           "value": "15/06/1990"
         },
         {
-          "key": "last_checkup",
-          "label": "Fecha Último Check-up",
-          "type": "DATE",
-          "value": "15/06/1990"
+          "key": "consultation_reason",
+          "label": "Motivo de la Consulta",
+          "type": "TEXT",
+          "value": "Control de rutina"
         },
         {
           "key": "doctor_contact",
@@ -799,6 +800,12 @@
           "label": "¿Le han Rechazado alguna Solicitud anteriormente?",
           "type": "BOOL",
           "value": "No"
+        },
+        {
+          "key": "previous_rejection_reason",
+          "label": "Motivo del Rechazo",
+          "type": "TEXT",
+          "value": ""
         },
         {
           "key": "replaces_policy",
