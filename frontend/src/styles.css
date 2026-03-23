@@ -1183,3 +1183,37 @@ a {
 .inactivity-modal .primary-button {
   min-width: 200px;
 }
+
+/* Modal de confirmación (misma base que inactividad) */
+.system-modal-overlay {
+  cursor: default;
+}
+
+.system-modal h2 {
+  color: var(--alara-primary);
+}
+
+.dob-with-age {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.dob-with-age input {
+  flex: 1 1 140px;
+  min-width: 0;
+  max-width: 200px;
+}
+
+.dob-age-badge {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--alara-primary);
+  white-space: nowrap;
+}
+
+.dob-age-badge--warn {
+  color: #b45309;
+  font-weight: 500;
+}

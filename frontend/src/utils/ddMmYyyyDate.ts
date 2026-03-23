@@ -32,3 +32,31 @@ export function normalizeDdMmYyyyInput(raw: string): string {
   if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
+
+/** Convierte dd/mm/aaaa válido a yyyy-mm-dd (API / input type date). */
+export function ddMmYyyyToIso(s: string): string | null {
+  const t = s.trim();
+  if (!isValidDdMmYyyy(t)) return null;
+  const m = t.match(DDMMYYYY)!;
+  const d = m[1];
+  const mo = m[2];
+  const y = m[3];
+  return `${y}-${mo}-${d}`;
+}
+
+/** Edad en años cumplidos a la fecha de hoy. */
+export function ageInYearsFromDdMmYyyy(s: string): number | null {
+  if (!isValidDdMmYyyy(s)) return null;
+  const m = s.trim().match(DDMMYYYY)!;
+  const day = Number(m[1]);
+  const month = Number(m[2]) - 1;
+  const year = Number(m[3]);
+  const birth = new Date(year, month, day);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const md = today.getMonth() - birth.getMonth();
+  if (md < 0 || (md === 0 && today.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+  return age;
+}

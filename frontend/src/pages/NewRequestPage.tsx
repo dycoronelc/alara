@@ -1,5 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { createInspectionRequest } from '../data/api';
+import {
+  ageInYearsFromDdMmYyyy,
+  ddMmYyyyToIso,
+  isValidDdMmYyyy,
+  normalizeDdMmYyyyInput,
+} from '../utils/ddMmYyyyDate';
 import { isPanamaCedula, PANAMA_CEDULA_HINT } from '../utils/panamaCedula';
 
 const initialState = {
@@ -35,6 +41,13 @@ const NewRequestPage = () => {
   const [form, setForm] = useState(initialState);
   const [message, setMessage] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+
+  const dobAge = useMemo(() => {
+    const v = form.dob.trim();
+    if (!v) return null;
+    return ageInYearsFromDdMmYyyy(v);
+  }, [form.dob]);
 
   const updateField = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -54,6 +67,9 @@ const NewRequestPage = () => {
     }
     if (form.id_type === 'CEDULA' && form.id_number?.trim() && !isPanamaCedula(form.id_number)) {
       errors.id_number = 'Formato de cédula de Panamá no válido. ' + PANAMA_CEDULA_HINT;
+    }
+    if (form.dob.trim() && !isValidDdMmYyyy(form.dob)) {
+      errors.dob = 'Use formato dd/mm/aaaa';
     }
     if (Object.keys(errors).length) {
       setFieldErrors(errors);
@@ -88,7 +104,7 @@ const NewRequestPage = () => {
       client: {
         first_name: form.first_name,
         last_name: form.last_name,
-        dob: form.dob || undefined,
+        dob: form.dob.trim() ? ddMmYyyyToIso(form.dob) ?? undefined : undefined,
         id_type: form.id_type || undefined,
         id_number: form.id_number || undefined,
         email: form.email || undefined,
@@ -101,8 +117,9 @@ const NewRequestPage = () => {
 
     try {
       await createInspectionRequest(payload);
-      setMessage('Solicitud creada correctamente.');
+      setMessage('');
       setForm(initialState);
+      setSuccessModalOpen(true);
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string | string[] } } };
       const msg = err.response?.data?.message;
@@ -152,9 +169,31 @@ const NewRequestPage = () => {
               <input value={form.last_name} onChange={(e) => updateField('last_name', e.target.value)} />
               {fieldErrors.last_name && <span className="field-error">{fieldErrors.last_name}</span>}
             </label>
-            <label className="form-field">
-              <span>Fecha de Nacimiento</span>
-              <input type="date" value={form.dob} onChange={(e) => updateField('dob', e.target.value)} />
+            <label className={`form-field ${fieldErrors.dob ? 'has-error' : ''}`}>
+              <span>Fecha de Nacimiento (dd/mm/aaaa)</span>
+              <div className="dob-with-age">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="dd/mm/aaaa"
+                  maxLength={10}
+                  autoComplete="bday"
+                  value={form.dob}
+                  onChange={(e) => updateField('dob', normalizeDdMmYyyyInput(e.target.value))}
+                  aria-invalid={Boolean(fieldErrors.dob)}
+                />
+                {dobAge !== null && dobAge >= 0 && (
+                  <span className="dob-age-badge" aria-live="polite">
+                    Edad: {dobAge} {dobAge === 1 ? 'año' : 'años'}
+                  </span>
+                )}
+                {dobAge !== null && dobAge < 0 && (
+                  <span className="dob-age-badge dob-age-badge--warn" aria-live="polite">
+                    Fecha futura
+                  </span>
+                )}
+              </div>
+              {fieldErrors.dob && <span className="field-error">{fieldErrors.dob}</span>}
             </label>
             <label className="form-field">
               <span>Tipo de Documento</span>
@@ -309,6 +348,23 @@ const NewRequestPage = () => {
           {message && <span className="form-message">{message}</span>}
         </div>
       </div>
+
+      {successModalOpen && (
+        <div
+          className="inactivity-overlay system-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="new-request-success-title"
+        >
+          <div className="inactivity-modal system-modal">
+            <h2 id="new-request-success-title">Éxito</h2>
+            <p>Solicitud creada correctamente.</p>
+            <button type="button" className="primary-button" onClick={() => setSuccessModalOpen(false)}>
+              Aceptar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
