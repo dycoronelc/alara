@@ -1,30 +1,36 @@
 # Migraciones SQL manuales (MySQL)
 
-## Error: `amount_in_force` does not exist
+## Errores tipo: `The column ... does not exist`
 
-Si el backend registra `500` en:
+El deploy incluye un **Prisma Client** generado desde `schema.prisma`. Si la base de datos en Railway (u otro) **no tiene** alguna de esas columnas, cualquier `findMany` / `findUnique` que toque esa tabla devuelve **500**. El listado de solicitudes puede quedar vacío o mostrar datos viejos en caché.
 
-- `GET /api/inspection-requests`
-- `GET /api/dashboard/alara`
-- `GET /api/inspection-requests/:id`
+### Arreglo recomendado (una sola vez, idempotente)
 
-y el mensaje de Prisma dice que falta la columna `inspection_requests.amount_in_force`, la base de datos **no** se actualizó tras un deploy que ya incluye ese campo en `schema.prisma`.
+Ejecutar en la base conectada a `DATABASE_URL`:
 
-**Solución:** ejecutar en la base **de producción** el archivo:
+**[`alara_sync_prisma_columns_mysql.sql`](./alara_sync_prisma_columns_mysql.sql)**
 
-`client_address_amount_in_force_mysql.sql`
+- Añade, si faltan: `inspection_requests.amount_in_force`, columnas de dirección y contacto en `clients`, y columnas de reset de contraseña + índice en `users`.
+- Puedes ejecutarlo **varias veces**: no falla si la columna ya existe.
 
-Hasta hacerlo, Prisma no puede leer filas de `inspection_requests` y el listado falla (a veces el front solo muestra datos viejos en caché o un subconjunto).
+### Errores que ya vimos en producción
 
-### Si una columna ya existe
+| Mensaje en log | Tabla / columna |
+|----------------|-----------------|
+| `inspection_requests.amount_in_force` | Falta en `inspection_requests` |
+| `clients.address_line` | Falta en `clients` (y posiblemente `city`, `country`, `phone_work`, etc.) |
 
-MySQL devolverá error `1060 Duplicate column name`. En ese caso, ejecuta solo las sentencias `ALTER` que falten (por ejemplo solo la de `amount_in_force`).
+### Documentación de auditoría
 
-### Alternativa con Prisma (desarrollo local)
+Lista de columnas a revisar frente a Prisma: **[`../docs/PRISMA-MYSQL-COLUMN-AUDIT.md`](../docs/PRISMA-MYSQL-COLUMN-AUDIT.md)**
+
+### Desarrollo local
 
 ```bash
 cd backend
 npx prisma db push
 ```
 
-En producción suele preferirse SQL explícito o migraciones gestionadas por tu plataforma.
+### Nota sobre `client_address_amount_in_force_mysql.sql`
+
+Ese archivo quedó **sustituido** por el script de sync anterior: ejecutar solo `amount_in_force` sin las columnas de `clients` deja la API rota al incluir relación `client`.

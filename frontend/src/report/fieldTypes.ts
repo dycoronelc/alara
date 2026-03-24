@@ -12,7 +12,11 @@ export type ReportFieldDef = {
 };
 
 /** Claves obsoletas en plantillas remotas que ya no deben añadirse al fusionar. */
-export const DEPRECATED_REPORT_FIELD_KEYS = new Set<string>(['last_checkup']);
+export const DEPRECATED_REPORT_FIELD_KEYS = new Set<string>([
+  'last_checkup',
+  'pa_name',
+  'document',
+]);
 
 export function isReportFieldVisible(field: ReportFieldDef, values: Record<string, string>): boolean {
   if (!field.visibleWhen) return true;
@@ -27,7 +31,15 @@ export const MARITAL_STATUS_OPTIONS: ReportFieldOption[] = [
   { value: 'Casado', label: 'Casado' },
   { value: 'Divorciado', label: 'Divorciado' },
   { value: 'Viudo', label: 'Viudo' },
+  { value: 'Unido', label: 'Unido' },
   { value: 'Otro', label: 'Otro' },
+];
+
+/** Mismos valores que la solicitud / Prisma IdType */
+export const ID_TYPE_REPORT_OPTIONS: ReportFieldOption[] = [
+  { value: 'CEDULA', label: 'Cédula' },
+  { value: 'PASSPORT', label: 'Pasaporte' },
+  { value: 'OTRO', label: 'Otro' },
 ];
 
 export const EMPLOYEE_OR_PARTNER_OPTIONS: ReportFieldOption[] = [
@@ -139,6 +151,7 @@ export const DATE_KEYS = new Set<string>([
 const SELECT_BY_KEY: Record<string, ReportFieldOption[]> = {
   marital_status: MARITAL_STATUS_OPTIONS,
   employee_or_partner: EMPLOYEE_OR_PARTNER_OPTIONS,
+  id_type: ID_TYPE_REPORT_OPTIONS,
 };
 
 export function mapApiFieldToDef(field: {

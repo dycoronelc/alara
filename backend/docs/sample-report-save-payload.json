@@ -10,10 +10,28 @@
       "order": 0,
       "fields": [
         {
-          "key": "pa_name",
-          "label": "Propuesto Asegurado",
+          "key": "first_name",
+          "label": "Nombres",
           "type": "TEXT",
-          "value": "Valor simulado: pa_name"
+          "value": "Juan"
+        },
+        {
+          "key": "last_name",
+          "label": "Apellidos",
+          "type": "TEXT",
+          "value": "Pérez"
+        },
+        {
+          "key": "id_type",
+          "label": "Tipo de documento",
+          "type": "ENUM",
+          "value": "CEDULA"
+        },
+        {
+          "key": "id_number",
+          "label": "Número de documento",
+          "type": "TEXT",
+          "value": "8-888-8888"
         },
         {
           "key": "home_address",
@@ -50,12 +68,6 @@
           "label": "Fecha de Nacimiento",
           "type": "DATE",
           "value": "15/06/1990"
-        },
-        {
-          "key": "document",
-          "label": "Tipo y No. Documento",
-          "type": "TEXT",
-          "value": "Valor simulado: document"
         },
         {
           "key": "nationality",

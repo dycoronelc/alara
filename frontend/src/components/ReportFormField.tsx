@@ -1,6 +1,7 @@
 import type { ReportFieldDef } from '../report/fieldTypes';
 import {
   EMPLOYEE_OR_PARTNER_OPTIONS,
+  ID_TYPE_REPORT_OPTIONS,
   MARITAL_STATUS_OPTIONS,
   SI_NO_OPTIONS,
 } from '../report/fieldTypes';
@@ -16,6 +17,7 @@ function optionsForSelect(field: ReportFieldDef) {
   if (field.options?.length) return field.options;
   if (field.key === 'marital_status') return MARITAL_STATUS_OPTIONS;
   if (field.key === 'employee_or_partner') return EMPLOYEE_OR_PARTNER_OPTIONS;
+  if (field.key === 'id_type') return ID_TYPE_REPORT_OPTIONS;
   return [];
 }
 

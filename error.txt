@@ -1,51 +1,14 @@
-    at $n.handleAndLogRequestError (/app/node_modules/@prisma/client/runtime/library.js:121:6623)
-[Nest] 49  - 03/23/2026, 4:00:00 PM   ERROR [HTTP] GET /api/dashboard/alara → 500
-PrismaClientKnownRequestError: 
-    at async DashboardService.alaraDashboard (/app/dist/dashboard/dashboard.service.js:44:26)
-Invalid `prisma.inspectionRequest.findMany()` invocation:
-[Nest] 49  - 03/23/2026, 4:00:02 PM   ERROR [HTTP] GET /api/inspection-requests → 500
-The column `alara_insp.inspection_requests.amount_in_force` does not exist in the current database.
-PrismaClientKnownRequestError: 
-    at $n.handleRequestError (/app/node_modules/@prisma/client/runtime/library.js:121:7315)
-Invalid `prisma.inspectionRequest.findMany()` invocation:
-    at $n.handleAndLogRequestError (/app/node_modules/@prisma/client/runtime/library.js:121:6623)
-The column `alara_insp.inspection_requests.amount_in_force` does not exist in the current database.
-    at $n.handleRequestError (/app/node_modules/@prisma/client/runtime/library.js:121:7315)
-    at $n.request (/app/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at async l (/app/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at $n.request (/app/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at async l (/app/node_modules/@prisma/client/runtime/library.js:130:9633)
-Invalid `prisma.inspectionRequest.findUnique()` invocation:
-Invalid `prisma.inspectionRequest.findMany()` invocation:
-The column `alara_insp.inspection_requests.amount_in_force` does not exist in the current database.
-    at $n.handleRequestError (/app/node_modules/@prisma/client/runtime/library.js:121:7315)
-The column `alara_insp.inspection_requests.amount_in_force` does not exist in the current database.
-[Nest] 49  - 03/23/2026, 4:00:17 PM   ERROR [HTTP] GET /api/inspection-requests/1024 → 500
-    at $n.handleAndLogRequestError (/app/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.handleRequestError (/app/node_modules/@prisma/client/runtime/library.js:121:7315)
-PrismaClientKnownRequestError: 
-    at $n.request (/app/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at $n.handleAndLogRequestError (/app/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at async l (/app/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at async InspectionRequestsService.getById (/app/dist/inspection-requests/inspection-requests.service.js:60:25)
-[Nest] 49  - 03/23/2026, 4:00:19 PM   ERROR [HTTP] GET /api/inspection-requests → 500
-PrismaClientKnownRequestError: 
-    at $n.request (/app/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at async l (/app/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at async l (/app/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at async DashboardService.alaraDashboard (/app/dist/dashboard/dashboard.service.js:44:26)
-[Nest] 49  - 03/23/2026, 4:00:24 PM   ERROR [HTTP] GET /api/dashboard/alara → 500
+[Nest] 49  - 03/23/2026, 4:08:37 PM   ERROR [HTTP] GET /api/inspection-requests → 500
 PrismaClientKnownRequestError: 
 Invalid `prisma.inspectionRequest.findMany()` invocation:
-The column `alara_insp.inspection_requests.amount_in_force` does not exist in the current database.
+The column `alara_insp.clients.address_line` does not exist in the current database.
     at $n.handleRequestError (/app/node_modules/@prisma/client/runtime/library.js:121:7315)
     at $n.handleAndLogRequestError (/app/node_modules/@prisma/client/runtime/library.js:121:6623)
     at $n.request (/app/node_modules/@prisma/client/runtime/library.js:121:6307)
     at async l (/app/node_modules/@prisma/client/runtime/library.js:130:9633)
-[Nest] 49  - 03/23/2026, 4:00:25 PM   ERROR [HTTP] GET /api/inspection-requests → 500
-PrismaClientKnownRequestError: 
+[Nest] 49  - 03/23/2026, 4:08:51 PM   ERROR [HTTP] GET /api/inspection-requests → 500
 Invalid `prisma.inspectionRequest.findMany()` invocation:
-The column `alara_insp.inspection_requests.amount_in_force` does not exist in the current database.
     at $n.handleRequestError (/app/node_modules/@prisma/client/runtime/library.js:121:7315)
     at $n.handleAndLogRequestError (/app/node_modules/@prisma/client/runtime/library.js:121:6623)
     at $n.request (/app/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at async l (/app/node_modules/@prisma/client/runtime/library.js:130:9633)

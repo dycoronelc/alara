@@ -104,14 +104,16 @@ export class PdfService {
       {
         title: 'Datos personales',
         fields: [
-          { key: 'pa_name', label: 'Propuesto Asegurado' },
+          { key: 'first_name', label: 'Nombres' },
+          { key: 'last_name', label: 'Apellidos' },
+          { key: 'id_type', label: 'Tipo de documento' },
+          { key: 'id_number', label: 'Número de documento' },
           { key: 'home_address', label: 'Domicilio Particular' },
           { key: 'residence_time', label: 'Tiempo de Residencia' },
           { key: 'foreign_residence', label: 'Residencia en el extranjero (Dónde / cuándo)' },
           { key: 'mobile', label: 'Celular' },
           { key: 'email', label: 'E-mail' },
           { key: 'dob', label: 'Fecha de Nacimiento' },
-          { key: 'document', label: 'Tipo y No. Documento' },
           { key: 'nationality', label: 'Nacionalidad' },
           { key: 'marital_status', label: 'Estado Civil' },
           { key: 'spouse_name', label: 'Nombre del Cónyuge' },

@@ -19,6 +19,7 @@ import InvestigationsUafSection from '../components/InvestigationsUafSection';
 import ReportFormField from '../components/ReportFormField';
 import { defaultReportSections } from '../report/defaultReportSections';
 import { mergeReportTemplate } from '../report/mergeReportTemplate';
+import { migrateLegacyDatosPersonales } from '../report/migrateLegacyReportValues';
 import {
   DATE_KEYS,
   isReportFieldVisible,
@@ -204,14 +205,20 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   }, [data?.amount_in_force, legacyMontoVigenciaFromComments]);
   const initialReportValues = useMemo(() => {
     if (!data) return {};
+    const c = data.client;
+    const marital = c?.marital_status ?? data.marital_status ?? '';
     return {
-      pa_name: data.client ? `${data.client.first_name ?? ''} ${data.client.last_name ?? ''}`.trim() : '',
-      email: data.client?.email ?? '',
-      mobile: data.client?.phone_mobile ?? '',
-      dob: isoLikeToDdMmYyyy(data.client?.dob),
-      document: `${data.client?.id_type ?? ''} ${data.client?.id_number ?? ''}`.trim(),
-      profession_studies: data.client?.profession ?? '',
-      employer: data.client?.employer_name ?? '',
+      first_name: c?.first_name ?? '',
+      last_name: c?.last_name ?? '',
+      id_type: c?.id_type ?? '',
+      id_number: c?.id_number ?? '',
+      home_address: c?.address_line ?? '',
+      email: c?.email ?? '',
+      mobile: c?.phone_mobile ?? '',
+      dob: isoLikeToDdMmYyyy(c?.dob),
+      marital_status: marital,
+      profession_studies: c?.profession ?? '',
+      employer: c?.employer_name ?? '',
     };
   }, [data]);
 
@@ -300,6 +307,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
         });
       });
     }
+    migrateLegacyDatosPersonales(existingValues);
     setReportValues(existingValues);
     setReportSummary(data?.inspection_report?.summary ?? '');
     setReportComments(data?.inspection_report?.additional_comments ?? '');
