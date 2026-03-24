@@ -15,23 +15,23 @@ export declare class InspectionRequestsService {
         search?: string;
     }): Promise<({
         insurer: {
-            name: string;
             id: bigint;
             created_at: Date;
             updated_at: Date | null;
+            name: string;
             legal_id: string | null;
             is_active: boolean;
         };
         client: {
+            first_name: string;
+            last_name: string;
+            id_type: import(".prisma/client").$Enums.IdType | null;
+            id_number: string | null;
             email: string | null;
             dob: Date | null;
             id: bigint;
             created_at: Date;
             updated_at: Date | null;
-            first_name: string;
-            last_name: string;
-            id_type: import(".prisma/client").$Enums.IdType | null;
-            id_number: string | null;
             phone_mobile: string | null;
             phone_home: string | null;
             phone_work: string | null;
@@ -83,31 +83,31 @@ export declare class InspectionRequestsService {
     })[]>;
     getById(context: RequestContext, id: number): Promise<{
         report_template: {
-            name: string;
             id: bigint;
             created_at: Date;
             updated_at: Date | null;
+            name: string;
             code: string;
             payload: Prisma.JsonValue;
         } | null;
         insurer: {
-            name: string;
             id: bigint;
             created_at: Date;
             updated_at: Date | null;
+            name: string;
             legal_id: string | null;
             is_active: boolean;
         };
         client: {
+            first_name: string;
+            last_name: string;
+            id_type: import(".prisma/client").$Enums.IdType | null;
+            id_number: string | null;
             email: string | null;
             dob: Date | null;
             id: bigint;
             created_at: Date;
             updated_at: Date | null;
-            first_name: string;
-            last_name: string;
-            id_type: import(".prisma/client").$Enums.IdType | null;
-            id_number: string | null;
             phone_mobile: string | null;
             phone_home: string | null;
             phone_work: string | null;
@@ -263,10 +263,10 @@ export declare class InspectionRequestsService {
         is_adverse_record: boolean;
     }[]>;
     getReportTemplate(context: RequestContext, code?: string): Promise<{
-        name: string;
         id: bigint;
         created_at: Date;
         updated_at: Date | null;
+        name: string;
         code: string;
         payload: Prisma.JsonValue;
     }>;
@@ -389,31 +389,31 @@ export declare class InspectionRequestsService {
     }>;
     updateClient(context: RequestContext, requestId: number, payload: UpdateClientDto): Promise<{
         report_template: {
-            name: string;
             id: bigint;
             created_at: Date;
             updated_at: Date | null;
+            name: string;
             code: string;
             payload: Prisma.JsonValue;
         } | null;
         insurer: {
-            name: string;
             id: bigint;
             created_at: Date;
             updated_at: Date | null;
+            name: string;
             legal_id: string | null;
             is_active: boolean;
         };
         client: {
+            first_name: string;
+            last_name: string;
+            id_type: import(".prisma/client").$Enums.IdType | null;
+            id_number: string | null;
             email: string | null;
             dob: Date | null;
             id: bigint;
             created_at: Date;
             updated_at: Date | null;
-            first_name: string;
-            last_name: string;
-            id_type: import(".prisma/client").$Enums.IdType | null;
-            id_number: string | null;
             phone_mobile: string | null;
             phone_home: string | null;
             phone_work: string | null;

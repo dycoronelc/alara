@@ -161,7 +161,7 @@ let InspectionRequestsService = class InspectionRequestsService {
                     });
                 }
                 return report;
-            });
+            }, { maxWait: 15000, timeout: 120000 });
         }
         catch (err) {
             const code = err?.code;

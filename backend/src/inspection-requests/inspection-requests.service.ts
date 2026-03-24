@@ -104,7 +104,10 @@ export class InspectionRequestsService {
     const effectiveUserId = await this.resolveEffectiveUserId(context.userId);
 
     try {
-      return await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // Muchas secciones/campos en un solo flujo superan el timeout por defecto (~5s) y Prisma
+      // devuelve "Transaction not found" al seguir usando `tx` tras el cierre.
+      return await this.prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
         const report = await tx.inspectionReport.upsert({
           where: { inspection_request_id: id },
           create: {
@@ -181,7 +184,9 @@ export class InspectionRequestsService {
         }
 
         return report;
-      });
+        },
+        { maxWait: 15_000, timeout: 120_000 },
+      );
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code;
       if (code === 'P2002') {
