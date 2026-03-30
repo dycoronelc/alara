@@ -15,11 +15,11 @@ export declare class InspectionRequestsController {
     constructor(service: InspectionRequestsService, documentsService: DocumentsService, requestMailService: RequestMailService);
     list(req: Request, status?: string, search?: string): Promise<({
         insurer: {
+            name: string;
             id: bigint;
             is_active: boolean;
             created_at: Date;
             updated_at: Date | null;
-            name: string;
             legal_id: string | null;
         };
         client: {
@@ -210,19 +210,19 @@ export declare class InspectionRequestsController {
     }>;
     updateClient(req: Request, id: number, payload: UpdateClientDto): Promise<{
         report_template: {
+            name: string;
             id: bigint;
             created_at: Date;
             updated_at: Date | null;
-            name: string;
             code: string;
             payload: import("@prisma/client/runtime/library").JsonValue;
         } | null;
         insurer: {
+            name: string;
             id: bigint;
             is_active: boolean;
             created_at: Date;
             updated_at: Date | null;
-            name: string;
             legal_id: string | null;
         };
         client: {
@@ -394,28 +394,28 @@ export declare class InspectionRequestsController {
         is_adverse_record: boolean;
     }[]>;
     reportTemplate(req: Request): Promise<{
+        name: string;
         id: bigint;
         created_at: Date;
         updated_at: Date | null;
-        name: string;
         code: string;
         payload: import("@prisma/client/runtime/library").JsonValue;
     }>;
     detail(req: Request, id: number): Promise<{
         report_template: {
+            name: string;
             id: bigint;
             created_at: Date;
             updated_at: Date | null;
-            name: string;
             code: string;
             payload: import("@prisma/client/runtime/library").JsonValue;
         } | null;
         insurer: {
+            name: string;
             id: bigint;
             is_active: boolean;
             created_at: Date;
             updated_at: Date | null;
-            name: string;
             legal_id: string | null;
         };
         client: {

@@ -7,8 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Debe coincidir con roles.code (origen de verdad para el tipo de cuenta).
+// Preferir códigos alineados con `roles.code` (INSURER_USER, …). Los valores
+// INSURER / ALARA / BROKER se mantienen por compatibilidad con BD existentes
+// hasta ejecutar sync_user_type_with_role_codes_mysql.sql en MySQL.
 enum UserType {
+  INSURER
+  ALARA
+  BROKER
   INSURER_USER
   ALARA_USER
   ADMIN

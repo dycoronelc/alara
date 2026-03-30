@@ -4,7 +4,7 @@ export declare class InsurersController {
     private readonly prisma;
     constructor(prisma: PrismaService);
     list(req: Request): import(".prisma/client").Prisma.PrismaPromise<{
-        id: bigint;
         name: string;
+        id: bigint;
     }[]>;
 }

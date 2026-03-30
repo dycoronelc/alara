@@ -7,9 +7,9 @@ function resolveJwtRole(user) {
     const codes = user.roles.map((r) => r.role.code);
     if (codes.includes('ADMIN'))
         return 'ADMIN';
-    if (codes.includes('BROKER_USER'))
+    if (codes.includes('BROKER_USER') || codes.includes('BROKER'))
         return 'BROKER';
-    if (codes.includes('INSURER_USER'))
+    if (codes.includes('INSURER_USER') || codes.includes('INSURER'))
         return 'INSURER';
     if (codes.includes('ALARA_USER'))
         return 'ALARA';
@@ -17,10 +17,13 @@ function resolveJwtRole(user) {
         case 'ADMIN':
             return 'ADMIN';
         case 'BROKER_USER':
+        case 'BROKER':
             return 'BROKER';
         case 'INSURER_USER':
+        case 'INSURER':
             return 'INSURER';
         case 'ALARA_USER':
+        case 'ALARA':
         default:
             return 'ALARA';
     }

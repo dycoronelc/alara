@@ -3,8 +3,8 @@ export declare class RolesService {
     private readonly prisma;
     constructor(prisma: PrismaService);
     findAll(): import(".prisma/client").Prisma.PrismaPromise<{
-        id: bigint;
         name: string;
+        id: bigint;
         code: string;
     }[]>;
 }

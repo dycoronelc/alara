@@ -1,5 +1,6 @@
--- Sincroniza `users.user_type` con los códigos de `roles` (INSURER_USER, ALARA_USER, ADMIN, BROKER_USER).
--- Ejecutar manualmente en MySQL si la BD ya tenía el enum antiguo (INSURER, ALARA, BROKER).
+-- Sincroniza `users.user_type` hacia solo los códigos nuevos (INSURER_USER, ALARA_USER, ADMIN, BROKER_USER).
+-- El backend acepta también valores legacy (INSURER, ALARA, BROKER) en Prisma hasta que ejecutes esto.
+-- Si tu columna MySQL es ENUM, puede incluir ambos conjuntos; tras los UPDATE puedes acotar el ENUM.
 --
 -- 1) Mapear valores viejos → nuevos
 UPDATE users SET user_type = 'INSURER_USER' WHERE user_type = 'INSURER';

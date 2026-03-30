@@ -11,18 +11,21 @@ type UserWithRoles = User & { roles: { role: { code: string } }[] };
 export function resolveJwtRole(user: UserWithRoles): JwtRole {
   const codes = user.roles.map((r) => r.role.code);
   if (codes.includes('ADMIN')) return 'ADMIN';
-  if (codes.includes('BROKER_USER')) return 'BROKER';
-  if (codes.includes('INSURER_USER')) return 'INSURER';
+  if (codes.includes('BROKER_USER') || codes.includes('BROKER')) return 'BROKER';
+  if (codes.includes('INSURER_USER') || codes.includes('INSURER')) return 'INSURER';
   if (codes.includes('ALARA_USER')) return 'ALARA';
 
   switch (user.user_type) {
     case 'ADMIN':
       return 'ADMIN';
     case 'BROKER_USER':
+    case 'BROKER':
       return 'BROKER';
     case 'INSURER_USER':
+    case 'INSURER':
       return 'INSURER';
     case 'ALARA_USER':
+    case 'ALARA':
     default:
       return 'ALARA';
   }
