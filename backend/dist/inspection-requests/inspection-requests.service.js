@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.InspectionRequestsService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const app_roles_1 = require("../common/app-roles");
 const allowedTransitions = {
     SOLICITADA: ['AGENDADA', 'CANCELADA'],
     AGENDADA: ['REALIZADA', 'CANCELADA'],
@@ -35,7 +36,7 @@ let InspectionRequestsService = class InspectionRequestsService {
     }
     async list(context, filters) {
         const where = {};
-        if (context.role === 'INSURER') {
+        if ((0, app_roles_1.isInsurerTenantRole)(context.role)) {
             if (!context.insurerId) {
                 throw new common_1.BadRequestException('insurerId header requerido');
             }
@@ -69,7 +70,7 @@ let InspectionRequestsService = class InspectionRequestsService {
             throw new common_1.NotFoundException('Solicitud no encontrada');
         }
         this.ensureTenancy(context, request);
-        if (context.role === 'INSURER' && !request.report_shared_at) {
+        if ((0, app_roles_1.isInsurerTenantRole)(context.role) && !request.report_shared_at) {
             request.inspection_report = null;
         }
         const template = await this.prisma.reportTemplate.findUnique({
@@ -78,7 +79,7 @@ let InspectionRequestsService = class InspectionRequestsService {
         return { ...request, report_template: template };
     }
     async saveReport(context, id, payload) {
-        if (context.role === 'INSURER') {
+        if ((0, app_roles_1.isInsurerTenantRole)(context.role)) {
             throw new common_1.ForbiddenException('Solo ALARA puede registrar reportes');
         }
         const request = await this.prisma.inspectionRequest.findUnique({ where: { id } });
@@ -172,7 +173,7 @@ let InspectionRequestsService = class InspectionRequestsService {
         }
     }
     async shareReport(context, id) {
-        if (context.role === 'INSURER') {
+        if ((0, app_roles_1.isInsurerTenantRole)(context.role)) {
             throw new common_1.ForbiddenException('Solo ALARA puede compartir reportes');
         }
         const request = await this.prisma.inspectionRequest.findUnique({ where: { id } });
@@ -219,7 +220,7 @@ let InspectionRequestsService = class InspectionRequestsService {
         });
     }
     async triggerInvestigation(context, id, sources) {
-        if (context.role === 'INSURER') {
+        if ((0, app_roles_1.isInsurerTenantRole)(context.role)) {
             throw new common_1.ForbiddenException('Solo ALARA puede investigar');
         }
         const request = await this.prisma.inspectionRequest.findUnique({ where: { id }, include: { client: true } });
@@ -262,7 +263,7 @@ let InspectionRequestsService = class InspectionRequestsService {
         if (!context.userId) {
             throw new common_1.BadRequestException('userId requerido');
         }
-        if (context.role === 'INSURER') {
+        if ((0, app_roles_1.isInsurerTenantRole)(context.role)) {
             throw new common_1.ForbiddenException('Solo ALARA puede iniciar llamadas');
         }
         const request = await this.prisma.inspectionRequest.findUnique({
@@ -349,7 +350,7 @@ let InspectionRequestsService = class InspectionRequestsService {
         });
     }
     async getReportTemplate(context, code = 'INSPECTION_REPORT_V1') {
-        if (context.role === 'INSURER' || context.role === 'ALARA') {
+        if ((0, app_roles_1.isInsurerTenantRole)(context.role) || (0, app_roles_1.isAlaraSideRole)(context.role)) {
             const template = await this.prisma.reportTemplate.findUnique({ where: { code } });
             if (!template) {
                 throw new common_1.NotFoundException('Plantilla no encontrada');
@@ -359,8 +360,8 @@ let InspectionRequestsService = class InspectionRequestsService {
         throw new common_1.ForbiddenException('Acceso no permitido');
     }
     async create(context, payload) {
-        if (context.role !== 'INSURER') {
-            throw new common_1.ForbiddenException('Solo aseguradoras pueden crear solicitudes');
+        if (!(0, app_roles_1.isInsurerTenantRole)(context.role)) {
+            throw new common_1.ForbiddenException('Solo aseguradoras o corredores pueden crear solicitudes');
         }
         if (!context.insurerId) {
             throw new common_1.BadRequestException('insurerId header requerido');
@@ -376,27 +377,27 @@ let InspectionRequestsService = class InspectionRequestsService {
         const createdByUserId = creatingUser && creatingUser.is_active ? Number(creatingUser.id) : undefined;
         const existingClient = await this.prisma.client.findFirst({
             where: {
-                id_type: payload.client.id_type ?? undefined,
-                id_number: payload.client.id_number ?? undefined,
+                id_type: payload.client.id_type,
+                id_number: payload.client.id_number,
             },
         });
         const c = payload.client;
         const clientScalar = {
             first_name: c.first_name,
             last_name: c.last_name,
-            dob: c.dob ? new Date(c.dob) : null,
-            id_type: c.id_type ?? undefined,
-            id_number: c.id_number ?? undefined,
-            email: c.email ?? undefined,
-            phone_mobile: c.phone_mobile ?? undefined,
-            phone_home: c.phone_home ?? undefined,
-            phone_work: c.phone_work ?? undefined,
-            employer_name: c.employer_name ?? undefined,
+            dob: new Date(c.dob),
+            id_type: c.id_type,
+            id_number: c.id_number,
+            email: c.email,
+            phone_mobile: c.phone_mobile,
+            phone_home: c.phone_home,
+            phone_work: c.phone_work,
+            employer_name: c.employer_name,
             employer_tax_id: c.employer_tax_id ?? undefined,
-            profession: c.profession ?? undefined,
-            address_line: c.address_line?.trim() ? c.address_line.trim() : undefined,
-            city: c.city?.trim() ? c.city.trim() : undefined,
-            country: c.country?.trim() ? c.country.trim() : undefined,
+            profession: c.profession,
+            address_line: c.address_line.trim(),
+            city: c.city.trim(),
+            country: c.country.trim(),
         };
         const client = existingClient
             ? await this.prisma.client.update({
@@ -437,14 +438,14 @@ let InspectionRequestsService = class InspectionRequestsService {
                     request_number: payload.request_number.trim(),
                     agent_name: payload.agent_name,
                     insured_amount: payload.insured_amount,
-                    has_amount_in_force: payload.has_amount_in_force ?? false,
+                    has_amount_in_force: payload.has_amount_in_force,
                     amount_in_force: amountInForce,
                     responsible_name: payload.responsible_name,
                     responsible_phone: payload.responsible_phone,
                     responsible_email: payload.responsible_email,
                     marital_status: payload.marital_status,
                     comments: payload.comments,
-                    client_notified: payload.client_notified ?? false,
+                    client_notified: payload.client_notified,
                     interview_language: payload.interview_language,
                     priority: payload.priority ?? 'NORMAL',
                     ...(createdByUserId != null && {
@@ -476,11 +477,11 @@ let InspectionRequestsService = class InspectionRequestsService {
             throw new common_1.BadRequestException('Transición de estado inválida');
         }
         if (['APROBADA', 'RECHAZADA'].includes(payload.new_status)) {
-            if (context.role !== 'INSURER') {
-                throw new common_1.ForbiddenException('Solo aseguradoras pueden aprobar o rechazar');
+            if (!(0, app_roles_1.isInsurerTenantRole)(context.role)) {
+                throw new common_1.ForbiddenException('Solo aseguradoras o corredores pueden aprobar o rechazar');
             }
         }
-        if (['AGENDADA', 'REALIZADA'].includes(payload.new_status) && context.role === 'INSURER') {
+        if (['AGENDADA', 'REALIZADA'].includes(payload.new_status) && (0, app_roles_1.isInsurerTenantRole)(context.role)) {
             throw new common_1.ForbiddenException('Solo ALARA puede agendar o marcar como realizada');
         }
         return this.prisma.$transaction(async (tx) => {
@@ -514,8 +515,8 @@ let InspectionRequestsService = class InspectionRequestsService {
         });
     }
     async decide(context, id, payload) {
-        if (context.role !== 'INSURER') {
-            throw new common_1.ForbiddenException('Solo aseguradoras pueden decidir');
+        if (!(0, app_roles_1.isInsurerTenantRole)(context.role)) {
+            throw new common_1.ForbiddenException('Solo aseguradoras o corredores pueden decidir');
         }
         if (!context.userId) {
             throw new common_1.BadRequestException('userId requerido');
@@ -605,7 +606,7 @@ let InspectionRequestsService = class InspectionRequestsService {
         return this.getById(context, requestId);
     }
     ensureTenancy(context, request) {
-        if (context.role === 'INSURER' &&
+        if ((0, app_roles_1.isInsurerTenantRole)(context.role) &&
             context.insurerId &&
             BigInt(context.insurerId) !== request.insurer_id) {
             throw new common_1.ForbiddenException('Acceso restringido por aseguradora');

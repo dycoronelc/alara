@@ -153,8 +153,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       }
     }
 
-    const role = portal === 'aseguradora' ? 'INSURER' : 'ALARA';
-    getInspectionRequest(Number(id), role)
+    getInspectionRequest(Number(id), portal)
       .then((resp) => {
         if (resp?.report_template?.payload?.sections?.length) {
           const cachedData = cached ? JSON.parse(cached) : null;
@@ -239,8 +238,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
 
   useEffect(() => {
     if (!id || activeTab !== 'investigaciones') return;
-    const role = portal === 'aseguradora' ? 'INSURER' : 'ALARA';
-    getInvestigations(Number(id), role)
+    getInvestigations(Number(id), portal)
       .then((resp) => setInvestigations(resp as any[]))
       .catch(() => setInvestigations([]));
   }, [activeTab, id, portal]);
@@ -248,8 +246,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   useEffect(() => {
     if (!id || activeTab !== 'documentacion') return;
     setDocOpenError('');
-    const role = portal === 'aseguradora' ? 'INSURER' : 'ALARA';
-    getInspectionRequestDocuments(Number(id), role)
+    getInspectionRequestDocuments(Number(id), portal)
       .then((resp) => setDocuments(resp as RequestDocument[]))
       .catch(() => setDocuments([]));
   }, [activeTab, id, portal]);
@@ -258,9 +255,8 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
     if (!id) return;
     setDocOpenError('');
     setOpeningDocId(file.id);
-    const role = portal === 'aseguradora' ? 'INSURER' : 'ALARA';
     try {
-      await openInspectionRequestDocument(Number(id), Number(file.id), role);
+      await openInspectionRequestDocument(Number(id), Number(file.id), portal);
     } catch {
       setDocOpenError('No se pudo abrir el documento. Inténtalo de nuevo.');
     } finally {
@@ -440,7 +436,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
 
     setReportSaveBusy(true);
     try {
-      await saveInspectionReport(Number(id), payload, portal === 'alara' ? 'ALARA' : 'INSURER');
+      await saveInspectionReport(Number(id), payload, portal);
       if (reportDraftStorageKey) {
         try {
           localStorage.removeItem(reportDraftStorageKey);
@@ -454,8 +450,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
           ? 'Guardado y finalizado. Se generó el PDF del reporte. Puedes seguir editando si lo necesitas.'
           : 'Guardado correctamente. Puedes seguir editando (el PDF se genera al usar Guardar y Finalizar).',
       );
-      const role = portal === 'aseguradora' ? 'INSURER' : 'ALARA';
-      const refreshed = await getInspectionRequest(Number(id), role);
+      const refreshed = await getInspectionRequest(Number(id), portal);
       setData(refreshed);
       reportMessageTimerRef.current = window.setTimeout(() => setReportMessage(''), 8000);
     } catch (error) {
@@ -468,10 +463,9 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const handleShareReport = async () => {
     if (!id) return;
     try {
-      await shareInspectionReport(Number(id), 'ALARA');
+      await shareInspectionReport(Number(id), portal);
       setReportMessage('Reporte enviado a la aseguradora.');
-      const role = portal === 'aseguradora' ? 'INSURER' : 'ALARA';
-      const refreshed = await getInspectionRequest(Number(id), role);
+      const refreshed = await getInspectionRequest(Number(id), portal);
       setData(refreshed);
     } catch (error) {
       setReportMessage('No se pudo enviar el reporte.');
@@ -517,7 +511,6 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       return;
     }
     setClientMessage('');
-    const role = portal === 'aseguradora' ? 'INSURER' : 'ALARA';
     const payload: UpdateClientPayload = {
       first_name: clientForm.first_name || undefined,
       last_name: clientForm.last_name || undefined,
@@ -539,7 +532,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       const refreshed = await updateInspectionRequestClient(
         Number(id),
         payload,
-        role,
+        portal,
         portal === 'aseguradora' ? Number(localStorage.getItem('alara-insurer-id') || 0) || undefined : undefined,
       );
       if (refreshed) {
@@ -589,9 +582,11 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
         <button className={activeTab === 'solicitud' ? 'tab active' : 'tab'} onClick={() => setActiveTab('solicitud')}>
           Solicitud
         </button>
-        <button className={activeTab === 'reporte' ? 'tab active' : 'tab'} onClick={() => setActiveTab('reporte')}>
-          Reporte
-        </button>
+        {portal !== 'aseguradora' && (
+          <button className={activeTab === 'reporte' ? 'tab active' : 'tab'} onClick={() => setActiveTab('reporte')}>
+            Reporte
+          </button>
+        )}
         <button
           className={activeTab === 'documentacion' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('documentacion')}
@@ -1055,7 +1050,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
         </div>
       )}
 
-      {activeTab === 'reporte' && (
+      {portal !== 'aseguradora' && activeTab === 'reporte' && (
         <div className="info-card report-tab-card">
           {showReportForm && (
             <div className="report-form">

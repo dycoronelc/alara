@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards, ForbiddenException } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
@@ -14,6 +14,16 @@ export class AuthController {
   @Post('login')
   async login(@Body() payload: LoginDto) {
     return this.authService.login(payload.email, payload.password);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async me(@Req() req: Request) {
+    const uid = req.userContext?.userId;
+    if (!uid) {
+      throw new UnauthorizedException();
+    }
+    return this.authService.getProfile(uid);
   }
 
   @Post('forgot-password')

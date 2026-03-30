@@ -12,13 +12,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DashboardService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const app_roles_1 = require("../common/app-roles");
 let DashboardService = class DashboardService {
     constructor(prisma) {
         this.prisma = prisma;
     }
     async insurerDashboard(context) {
-        if (context.role !== 'INSURER') {
-            throw new common_1.BadRequestException('Solo aseguradoras');
+        if (!(0, app_roles_1.isInsurerTenantRole)(context.role)) {
+            throw new common_1.BadRequestException('Solo aseguradoras o corredores');
         }
         if (!context.insurerId) {
             throw new common_1.BadRequestException('insurerId header requerido');
@@ -38,7 +39,7 @@ let DashboardService = class DashboardService {
         };
     }
     async alaraDashboard(context) {
-        if (context.role === 'INSURER') {
+        if (!(0, app_roles_1.isAlaraSideRole)(context.role)) {
             throw new common_1.BadRequestException('Solo usuarios ALARA');
         }
         const requests = await this.prisma.inspectionRequest.findMany({

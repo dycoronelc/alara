@@ -1,7 +1,7 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 
-export type UserRole = 'INSURER' | 'ALARA' | 'ADMIN';
+export type UserRole = 'INSURER' | 'ALARA' | 'ADMIN' | 'BROKER';
 
 export interface RequestContext {
   userId?: number;
@@ -29,7 +29,7 @@ export class RequestContextMiddleware implements NestMiddleware {
     }
 
     const roleHeader = String(req.header('x-user-role') ?? 'ALARA');
-    const role = (['INSURER', 'ALARA', 'ADMIN'] as const).includes(
+    const role = (['INSURER', 'ALARA', 'ADMIN', 'BROKER'] as const).includes(
       roleHeader as UserRole,
     )
       ? (roleHeader as UserRole)

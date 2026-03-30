@@ -4,6 +4,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import { sign } from 'jsonwebtoken';
+import { resolveJwtRole } from './resolve-jwt-role';
+import type { JwtRole } from '../common/app-roles';
 
 @Injectable()
 export class AuthService {
@@ -13,7 +15,10 @@ export class AuthService {
 
   async login(email: string, password: string) {
     const trimmed = email.trim();
-    const user = await this.prisma.user.findUnique({ where: { email: trimmed } });
+    const user = await this.prisma.user.findUnique({
+      where: { email: trimmed },
+      include: { roles: { include: { role: true } } },
+    });
     if (!user || !user.is_active) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
@@ -22,33 +27,70 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
+    const role = resolveJwtRole(user);
     const payload = {
       sub: Number(user.id),
-      role: user.user_type === 'INSURER' ? 'INSURER' : 'ALARA',
+      role,
       insurerId: user.insurer_id ? Number(user.insurer_id) : undefined,
     };
 
     return {
       access_token: await this.jwtService.signAsync(payload),
-      user: {
-        id: Number(user.id),
-        full_name: user.full_name,
-        email: user.email,
-        role: payload.role,
-        insurer_id: payload.insurerId,
-      },
+      user: this.serializeUserSession(user, role),
+    };
+  }
+
+  async getProfile(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { roles: { include: { role: true } } },
+    });
+    if (!user || !user.is_active) {
+      throw new UnauthorizedException('Usuario no encontrado');
+    }
+    const role = resolveJwtRole(user);
+    return this.serializeUserSession(user, role);
+  }
+
+  private serializeUserSession(
+    user: {
+      id: bigint;
+      full_name: string;
+      email: string;
+      phone: string | null;
+      insurer_id: bigint | null;
+      alara_office_id: bigint | null;
+      roles: { role: { code: string; name: string } }[];
+    },
+    role: JwtRole,
+  ) {
+    const roleCodes = user.roles.map((r) => r.role.code);
+    return {
+      id: Number(user.id),
+      full_name: user.full_name,
+      email: user.email,
+      phone: user.phone ?? '',
+      role,
+      insurer_id: user.insurer_id ? Number(user.insurer_id) : undefined,
+      alara_office_id: user.alara_office_id ? Number(user.alara_office_id) : undefined,
+      roles: user.roles.map((r) => ({ code: r.role.code, name: r.role.name })),
+      role_codes: roleCodes,
     };
   }
 
   async createServiceToken(userId: number, label?: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { roles: { include: { role: true } } },
+    });
     if (!user || !user.is_active) {
       throw new UnauthorizedException('Usuario inválido');
     }
 
+    const role = resolveJwtRole(user);
     const payload = {
       sub: Number(user.id),
-      role: user.user_type === 'INSURER' ? 'INSURER' : 'ALARA',
+      role,
       insurerId: user.insurer_id ? Number(user.insurer_id) : undefined,
       service: true,
       label: label ?? 'n8n',

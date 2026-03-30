@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import type { JwtRole } from '../common/app-roles';
 
 export type JwtPayload = {
   sub: number;
-  role: 'INSURER' | 'ALARA' | 'ADMIN';
+  role: JwtRole;
   insurerId?: number;
 };
 

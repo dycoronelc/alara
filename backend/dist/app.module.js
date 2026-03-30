@@ -8,7 +8,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
+const core_1 = require("@nestjs/core");
 const request_context_middleware_1 = require("./common/request-context.middleware");
+const user_context_from_jwt_interceptor_1 = require("./common/user-context-from-jwt.interceptor");
 const auth_module_1 = require("./auth/auth.module");
 const documents_module_1 = require("./documents/documents.module");
 const webhooks_module_1 = require("./webhooks/webhooks.module");
@@ -16,6 +18,8 @@ const dashboard_module_1 = require("./dashboard/dashboard.module");
 const health_module_1 = require("./health/health.module");
 const inspection_requests_module_1 = require("./inspection-requests/inspection-requests.module");
 const prisma_module_1 = require("./prisma/prisma.module");
+const roles_module_1 = require("./roles/roles.module");
+const users_module_1 = require("./users/users.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer.apply(request_context_middleware_1.RequestContextMiddleware).forRoutes('*');
@@ -32,7 +36,10 @@ exports.AppModule = AppModule = __decorate([
             webhooks_module_1.WebhooksModule,
             inspection_requests_module_1.InspectionRequestsModule,
             dashboard_module_1.DashboardModule,
+            roles_module_1.RolesModule,
+            users_module_1.UsersModule,
         ],
+        providers: [{ provide: core_1.APP_INTERCEPTOR, useClass: user_context_from_jwt_interceptor_1.UserContextFromJwtInterceptor }],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

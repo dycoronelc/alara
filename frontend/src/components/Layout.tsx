@@ -27,6 +27,8 @@ const Layout = ({ portal, title, navItems, primaryAction }: LayoutProps) => {
     localStorage.removeItem('alara-token');
     localStorage.removeItem('alara-role');
     localStorage.removeItem('alara-insurer-id');
+    localStorage.removeItem('alara-user-id');
+    localStorage.removeItem('alara-user');
     navigate('/', { replace: true });
   }, [navigate]);
 
@@ -116,6 +118,8 @@ const Layout = ({ portal, title, navItems, primaryAction }: LayoutProps) => {
                       localStorage.removeItem('alara-token');
                       localStorage.removeItem('alara-role');
                       localStorage.removeItem('alara-insurer-id');
+                      localStorage.removeItem('alara-user-id');
+                      localStorage.removeItem('alara-user');
                       navigate('/', { replace: true });
                     }}
                   >

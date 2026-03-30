@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestContext } from '../common/request-context.middleware';
+import { isAlaraSideRole, isInsurerTenantRole } from '../common/app-roles';
 
 type StatusCount = { status: string; total: number };
 
@@ -9,8 +10,8 @@ export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   async insurerDashboard(context: RequestContext) {
-    if (context.role !== 'INSURER') {
-      throw new BadRequestException('Solo aseguradoras');
+    if (!isInsurerTenantRole(context.role)) {
+      throw new BadRequestException('Solo aseguradoras o corredores');
     }
     if (!context.insurerId) {
       throw new BadRequestException('insurerId header requerido');
@@ -34,7 +35,7 @@ export class DashboardService {
   }
 
   async alaraDashboard(context: RequestContext) {
-    if (context.role === 'INSURER') {
+    if (!isAlaraSideRole(context.role)) {
       throw new BadRequestException('Solo usuarios ALARA');
     }
 

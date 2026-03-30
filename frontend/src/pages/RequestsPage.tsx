@@ -24,8 +24,7 @@ const RequestsPage = ({ portal }: RequestsPageProps) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const role = portal === 'aseguradora' ? 'INSURER' : 'ALARA';
-    getInspectionRequests(role)
+    getInspectionRequests(portal)
       .then((data) => {
         const mapped = (data as any[]).map((item) => ({
           id: Number(item.id),

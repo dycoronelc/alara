@@ -13,9 +13,30 @@ export declare class AuthController {
             id: number;
             full_name: string;
             email: string;
-            role: string;
+            phone: string;
+            role: import("../common/app-roles").JwtRole;
             insurer_id: number | undefined;
+            alara_office_id: number | undefined;
+            roles: {
+                code: string;
+                name: string;
+            }[];
+            role_codes: string[];
         };
+    }>;
+    me(req: Request): Promise<{
+        id: number;
+        full_name: string;
+        email: string;
+        phone: string;
+        role: import("../common/app-roles").JwtRole;
+        insurer_id: number | undefined;
+        alara_office_id: number | undefined;
+        roles: {
+            code: string;
+            name: string;
+        }[];
+        role_codes: string[];
     }>;
     forgotPassword(payload: ForgotPasswordDto): Promise<{
         debug_reset_token?: string | undefined;

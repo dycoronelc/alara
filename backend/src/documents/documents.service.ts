@@ -4,6 +4,7 @@ import { PdfService } from './pdf.service';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import { RequestContext } from '../common/request-context.middleware';
+import { isInsurerTenantRole } from '../common/app-roles';
 
 @Injectable()
 export class DocumentsService {
@@ -199,7 +200,8 @@ export class DocumentsService {
 
   private ensureTenancy(context: RequestContext | undefined, insurerId: bigint) {
     if (
-      context?.role === 'INSURER' &&
+      context &&
+      isInsurerTenantRole(context.role) &&
       context.insurerId &&
       BigInt(context.insurerId) !== insurerId
     ) {

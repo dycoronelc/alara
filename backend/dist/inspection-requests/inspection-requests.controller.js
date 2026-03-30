@@ -21,6 +21,7 @@ const update_status_dto_1 = require("./dto/update-status.dto");
 const update_client_dto_1 = require("./dto/update-client.dto");
 const decision_dto_1 = require("./dto/decision.dto");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const app_roles_1 = require("../common/app-roles");
 const documents_service_1 = require("../documents/documents.service");
 const save_report_dto_1 = require("./dto/save-report.dto");
 const request_mail_service_1 = require("./request-mail.service");
@@ -92,7 +93,7 @@ let InspectionRequestsController = InspectionRequestsController_1 = class Inspec
         return res.send(buffer);
     }
     async reportPdf(req, res, id) {
-        if (req.userContext?.role === 'INSURER') {
+        if (req.userContext && (0, app_roles_1.isInsurerTenantRole)(req.userContext.role)) {
             const request = await this.service.getById(req.userContext, id);
             if (!request.report_shared_at) {
                 return res.status(403).json({ message: 'Reporte no compartido aún' });

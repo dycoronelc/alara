@@ -30,10 +30,38 @@ export function buildApiUrl(path: string): string {
   return `${normalizedBase}${p}`;
 }
 
+export type SessionUser = {
+  id: number;
+  full_name: string;
+  email: string;
+  phone?: string;
+  role: string;
+  insurer_id?: number;
+  alara_office_id?: number;
+  roles?: { code: string; name: string }[];
+  role_codes?: string[];
+};
+
 export type LoginSuccess = {
   access_token: string;
-  user: { role: string; insurer_id?: number };
+  user: SessionUser;
 };
+
+export type ApiRole = 'INSURER' | 'ALARA' | 'ADMIN' | 'BROKER';
+
+export function getStoredRole(): ApiRole {
+  const r = localStorage.getItem('alara-role');
+  if (r === 'INSURER' || r === 'ALARA' || r === 'ADMIN' || r === 'BROKER') return r;
+  return 'ALARA';
+}
+
+export function getApiRoleForPortal(portal: 'aseguradora' | 'alara'): ApiRole {
+  const r = getStoredRole();
+  if (portal === 'aseguradora') {
+    return r === 'BROKER' ? 'BROKER' : 'INSURER';
+  }
+  return r === 'ADMIN' ? 'ADMIN' : 'ALARA';
+}
 
 export type LoginResult =
   | { ok: true; data: LoginSuccess }
@@ -124,14 +152,19 @@ const getStoredInsurerId = () => {
   return stored ? Number(stored) : undefined;
 };
 
-const defaultHeaders = (role: 'INSURER' | 'ALARA', insurerId?: number) => {
+function getStoredUserId(): string {
+  return localStorage.getItem('alara-user-id') || '0';
+}
+
+const defaultHeaders = (role?: ApiRole, insurerId?: number) => {
   const token = localStorage.getItem('alara-token');
+  const effectiveRole = role ?? getStoredRole();
   const effectiveInsurerId = insurerId ?? getStoredInsurerId();
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    'x-user-role': role,
-    'x-user-id': '1',
+    'x-user-role': effectiveRole,
+    'x-user-id': getStoredUserId(),
     ...(effectiveInsurerId ? { 'x-insurer-id': String(effectiveInsurerId) } : {}),
   };
 };
@@ -152,20 +185,28 @@ const safeFetch = async <T>(url: string, options?: RequestInit, fallback?: T): P
 };
 
 export const getInsurerDashboard = (insurerId?: number) =>
-  safeFetch(buildApiUrl('/api/dashboard/insurer'), { headers: defaultHeaders('INSURER', insurerId) }, mockInsurerDashboard);
+  safeFetch(
+    buildApiUrl('/api/dashboard/insurer'),
+    { headers: defaultHeaders(getApiRoleForPortal('aseguradora'), insurerId) },
+    mockInsurerDashboard,
+  );
 
 export const getAlaraDashboard = () =>
-  safeFetch(buildApiUrl('/api/dashboard/alara'), { headers: defaultHeaders('ALARA') }, mockAlaraDashboard);
+  safeFetch(buildApiUrl('/api/dashboard/alara'), { headers: defaultHeaders(getApiRoleForPortal('alara')) }, mockAlaraDashboard);
 
-export const getInspectionRequests = (role: 'INSURER' | 'ALARA', insurerId?: number) =>
+export const getInspectionRequests = (portal: 'aseguradora' | 'alara', insurerId?: number) =>
   safeFetch(
     buildApiUrl('/api/inspection-requests'),
-    { headers: defaultHeaders(role, insurerId) },
+    { headers: defaultHeaders(getApiRoleForPortal(portal), insurerId) },
     mockRequests,
   );
 
-export const getInspectionRequest = (id: number, role: 'INSURER' | 'ALARA', insurerId?: number) =>
-  safeFetch(buildApiUrl(`/api/inspection-requests/${id}`), { headers: defaultHeaders(role, insurerId) }, null);
+export const getInspectionRequest = (
+  id: number,
+  portal: 'aseguradora' | 'alara',
+  insurerId?: number,
+) =>
+  safeFetch(buildApiUrl(`/api/inspection-requests/${id}`), { headers: defaultHeaders(getApiRoleForPortal(portal), insurerId) }, null);
 
 export type RequestDocument = {
   id: number | string;
@@ -177,10 +218,14 @@ export type RequestDocument = {
   uploaded_at: string;
 };
 
-export const getInspectionRequestDocuments = (id: number, role: 'INSURER' | 'ALARA', insurerId?: number) =>
+export const getInspectionRequestDocuments = (
+  id: number,
+  portal: 'aseguradora' | 'alara',
+  insurerId?: number,
+) =>
   safeFetch<RequestDocument[]>(
     buildApiUrl(`/api/inspection-requests/${id}/documents`),
-    { headers: defaultHeaders(role, insurerId) },
+    { headers: defaultHeaders(getApiRoleForPortal(portal), insurerId) },
     [],
   );
 
@@ -188,17 +233,18 @@ export const getInspectionRequestDocuments = (id: number, role: 'INSURER' | 'ALA
 export async function openInspectionRequestDocument(
   requestId: number,
   documentId: number,
-  role: 'INSURER' | 'ALARA',
+  portal: 'aseguradora' | 'alara',
   insurerId?: number,
 ): Promise<void> {
   const token = localStorage.getItem('alara-token');
   const effectiveInsurerId = insurerId ?? getStoredInsurerId();
+  const role = getApiRoleForPortal(portal);
   const url = buildApiUrl(`/api/inspection-requests/${requestId}/documents/${documentId}/file`);
   const response = await fetch(url, {
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       'x-user-role': role,
-      'x-user-id': '1',
+      'x-user-id': getStoredUserId(),
       ...(effectiveInsurerId ? { 'x-insurer-id': String(effectiveInsurerId) } : {}),
     },
   });
@@ -216,29 +262,33 @@ export const createInspectionRequest = (payload: Record<string, unknown>, insure
     buildApiUrl('/api/inspection-requests'),
     {
       method: 'POST',
-      headers: defaultHeaders('INSURER', insurerId),
+      headers: defaultHeaders(getApiRoleForPortal('aseguradora'), insurerId),
       body: JSON.stringify(payload),
     },
     null,
   );
 
-export const saveInspectionReport = (id: number, payload: Record<string, unknown>, role: 'ALARA' | 'INSURER') =>
+export const saveInspectionReport = (
+  id: number,
+  payload: Record<string, unknown>,
+  portal: 'aseguradora' | 'alara',
+) =>
   safeFetch(
     buildApiUrl(`/api/inspection-requests/${id}/report`),
     {
       method: 'POST',
-      headers: defaultHeaders(role),
+      headers: defaultHeaders(getApiRoleForPortal(portal)),
       body: JSON.stringify(payload),
     },
     null,
   );
 
-export const shareInspectionReport = (id: number, role: 'ALARA' | 'INSURER') =>
+export const shareInspectionReport = (id: number, portal: 'aseguradora' | 'alara') =>
   safeFetch(
     buildApiUrl(`/api/inspection-requests/${id}/report/share`),
     {
       method: 'POST',
-      headers: defaultHeaders(role),
+      headers: defaultHeaders(getApiRoleForPortal(portal)),
     },
     null,
   );
@@ -274,7 +324,7 @@ export const triggerInvestigation = (id: number, sources: { name: string; url: s
     buildApiUrl(`/api/inspection-requests/${id}/investigate`),
     {
       method: 'POST',
-      headers: defaultHeaders('ALARA'),
+      headers: defaultHeaders(getApiRoleForPortal('alara')),
       body: JSON.stringify({ sources }),
     },
     null,
@@ -285,24 +335,24 @@ export const startInspectionCall = (id: number) =>
     buildApiUrl(`/api/inspection-requests/${id}/call/start`),
     {
       method: 'POST',
-      headers: defaultHeaders('ALARA'),
+      headers: defaultHeaders(getApiRoleForPortal('alara')),
     },
     null,
   );
 
-export const getInvestigations = (id: number, role: 'ALARA' | 'INSURER') =>
+export const getInvestigations = (id: number, portal: 'aseguradora' | 'alara') =>
   safeFetch(
     buildApiUrl(`/api/inspection-requests/${id}/investigations`),
     {
-      headers: defaultHeaders(role),
+      headers: defaultHeaders(getApiRoleForPortal(portal)),
     },
     [],
   );
 
-export const getReportTemplate = (role: 'ALARA' | 'INSURER') =>
+export const getReportTemplate = (portal: 'aseguradora' | 'alara') =>
   safeFetch(
     buildApiUrl('/api/inspection-requests/report-template/default'),
-    { headers: defaultHeaders(role) },
+    { headers: defaultHeaders(getApiRoleForPortal(portal)) },
     null,
   );
 
@@ -327,14 +377,49 @@ export type UpdateClientPayload = {
 export const updateInspectionRequestClient = (
   id: number,
   payload: UpdateClientPayload,
-  role: 'ALARA' | 'INSURER',
+  portal: 'aseguradora' | 'alara',
   insurerId?: number,
 ) =>
   safeFetch(
     buildApiUrl(`/api/inspection-requests/${id}/client`),
     {
       method: 'PATCH',
-      headers: defaultHeaders(role, insurerId),
+      headers: defaultHeaders(getApiRoleForPortal(portal), insurerId),
+      body: JSON.stringify(payload),
+    },
+    null,
+  );
+
+export type RoleRow = { id: string | number; code: string; name: string };
+
+export const fetchRoles = () =>
+  safeFetch<RoleRow[]>(buildApiUrl('/api/roles'), { headers: defaultHeaders() }, []);
+
+export type UserRow = {
+  id: number;
+  email: string;
+  phone: string;
+  full_name: string;
+  user_type: string;
+  is_active: boolean;
+  insurer: { id: number; name: string } | null;
+  roles: { code: string; name: string }[];
+};
+
+export const fetchUsers = () =>
+  safeFetch<UserRow[]>(buildApiUrl('/api/users'), { headers: defaultHeaders() }, []);
+
+export type InsurerOption = { id: string | number; name: string };
+
+export const fetchInsurersForAdmin = () =>
+  safeFetch<InsurerOption[]>(buildApiUrl('/api/insurers'), { headers: defaultHeaders() }, []);
+
+export const createUserAdmin = (payload: Record<string, unknown>) =>
+  safeFetch(
+    buildApiUrl('/api/users'),
+    {
+      method: 'POST',
+      headers: defaultHeaders(),
       body: JSON.stringify(payload),
     },
     null,

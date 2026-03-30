@@ -19,6 +19,7 @@ import { UpdateStatusDto } from './dto/update-status.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { DecisionDto } from './dto/decision.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { isInsurerTenantRole } from '../common/app-roles';
 import { DocumentsService } from '../documents/documents.service';
 import { SaveReportDto } from './dto/save-report.dto';
 import { RequestMailService } from './request-mail.service';
@@ -163,7 +164,7 @@ export class InspectionRequestsController {
     @Res() res: Response,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    if (req.userContext?.role === 'INSURER') {
+    if (req.userContext && isInsurerTenantRole(req.userContext.role)) {
       const request = await this.service.getById(req.userContext!, id);
       if (!request.report_shared_at) {
         return res.status(403).json({ message: 'Reporte no compartido aún' });

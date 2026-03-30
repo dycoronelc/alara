@@ -27,6 +27,13 @@ let AuthController = class AuthController {
     async login(payload) {
         return this.authService.login(payload.email, payload.password);
     }
+    async me(req) {
+        const uid = req.userContext?.userId;
+        if (!uid) {
+            throw new common_1.UnauthorizedException();
+        }
+        return this.authService.getProfile(uid);
+    }
     async forgotPassword(payload) {
         return this.authService.requestPasswordReset(payload.email);
     }
@@ -48,6 +55,14 @@ __decorate([
     __metadata("design:paramtypes", [login_dto_1.LoginDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
+__decorate([
+    (0, common_1.Get)('me'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "me", null);
 __decorate([
     (0, common_1.Post)('forgot-password'),
     __param(0, (0, common_1.Body)()),

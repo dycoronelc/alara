@@ -20,7 +20,7 @@ let RequestContextMiddleware = class RequestContextMiddleware {
             return next();
         }
         const roleHeader = String(req.header('x-user-role') ?? 'ALARA');
-        const role = ['INSURER', 'ALARA', 'ADMIN'].includes(roleHeader)
+        const role = ['INSURER', 'ALARA', 'ADMIN', 'BROKER'].includes(roleHeader)
             ? roleHeader
             : 'ALARA';
         const userId = Number(req.header('x-user-id') ?? 0) || undefined;

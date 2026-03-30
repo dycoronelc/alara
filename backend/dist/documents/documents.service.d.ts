@@ -13,6 +13,7 @@ export declare class DocumentsService {
             id: bigint;
             insurer_id: bigint;
             client_id: bigint | null;
+            inspection_request_id: bigint | null;
             doc_type: import(".prisma/client").$Enums.DocumentType;
             filename: string;
             mime_type: string;
@@ -22,7 +23,6 @@ export declare class DocumentsService {
             storage_url: string | null;
             sha256: string | null;
             uploaded_at: Date;
-            inspection_request_id: bigint | null;
             uploaded_by_user_id: bigint | null;
         };
     }>;
@@ -32,6 +32,7 @@ export declare class DocumentsService {
             id: bigint;
             insurer_id: bigint;
             client_id: bigint | null;
+            inspection_request_id: bigint | null;
             doc_type: import(".prisma/client").$Enums.DocumentType;
             filename: string;
             mime_type: string;
@@ -41,7 +42,6 @@ export declare class DocumentsService {
             storage_url: string | null;
             sha256: string | null;
             uploaded_at: Date;
-            inspection_request_id: bigint | null;
             uploaded_by_user_id: bigint | null;
         };
     }>;

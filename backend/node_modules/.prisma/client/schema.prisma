@@ -10,6 +10,7 @@ datasource db {
 enum UserType {
   INSURER
   ALARA
+  BROKER
 }
 
 enum AddressType {

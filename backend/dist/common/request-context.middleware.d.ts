@@ -1,6 +1,6 @@
 import { NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-export type UserRole = 'INSURER' | 'ALARA' | 'ADMIN';
+export type UserRole = 'INSURER' | 'ALARA' | 'ADMIN' | 'BROKER';
 export interface RequestContext {
     userId?: number;
     insurerId?: number;

@@ -8,6 +8,7 @@ import {
 import { Prisma, InspectionRequest } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestContext } from '../common/request-context.middleware';
+import { isAlaraSideRole, isInsurerTenantRole } from '../common/app-roles';
 import { CreateInspectionRequestDto } from './dto/create-inspection-request.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
@@ -40,7 +41,7 @@ export class InspectionRequestsService {
   async list(context: RequestContext, filters: { status?: InspectionRequest['status']; search?: string }) {
     const where: Prisma.InspectionRequestWhereInput = {};
 
-    if (context.role === 'INSURER') {
+    if (isInsurerTenantRole(context.role)) {
       if (!context.insurerId) {
         throw new BadRequestException('insurerId header requerido');
       }
@@ -80,7 +81,7 @@ export class InspectionRequestsService {
     }
 
     this.ensureTenancy(context, request);
-    if (context.role === 'INSURER' && !request.report_shared_at) {
+    if (isInsurerTenantRole(context.role) && !request.report_shared_at) {
       request.inspection_report = null;
     }
     const template = await this.prisma.reportTemplate.findUnique({
@@ -90,7 +91,7 @@ export class InspectionRequestsService {
   }
 
   async saveReport(context: RequestContext, id: number, payload: SaveReportDto) {
-    if (context.role === 'INSURER') {
+    if (isInsurerTenantRole(context.role)) {
       throw new ForbiddenException('Solo ALARA puede registrar reportes');
     }
 
@@ -199,7 +200,7 @@ export class InspectionRequestsService {
   }
 
   async shareReport(context: RequestContext, id: number) {
-    if (context.role === 'INSURER') {
+    if (isInsurerTenantRole(context.role)) {
       throw new ForbiddenException('Solo ALARA puede compartir reportes');
     }
 
@@ -259,7 +260,7 @@ export class InspectionRequestsService {
     id: number,
     sources: { name: string; url: string }[],
   ) {
-    if (context.role === 'INSURER') {
+    if (isInsurerTenantRole(context.role)) {
       throw new ForbiddenException('Solo ALARA puede investigar');
     }
 
@@ -309,7 +310,7 @@ export class InspectionRequestsService {
     if (!context.userId) {
       throw new BadRequestException('userId requerido');
     }
-    if (context.role === 'INSURER') {
+    if (isInsurerTenantRole(context.role)) {
       throw new ForbiddenException('Solo ALARA puede iniciar llamadas');
     }
 
@@ -413,7 +414,7 @@ export class InspectionRequestsService {
   }
 
   async getReportTemplate(context: RequestContext, code = 'INSPECTION_REPORT_V1') {
-    if (context.role === 'INSURER' || context.role === 'ALARA') {
+    if (isInsurerTenantRole(context.role) || isAlaraSideRole(context.role)) {
       const template = await this.prisma.reportTemplate.findUnique({ where: { code } });
       if (!template) {
         throw new NotFoundException('Plantilla no encontrada');
@@ -424,8 +425,8 @@ export class InspectionRequestsService {
   }
 
   async create(context: RequestContext, payload: CreateInspectionRequestDto) {
-    if (context.role !== 'INSURER') {
-      throw new ForbiddenException('Solo aseguradoras pueden crear solicitudes');
+    if (!isInsurerTenantRole(context.role)) {
+      throw new ForbiddenException('Solo aseguradoras o corredores pueden crear solicitudes');
     }
     if (!context.insurerId) {
       throw new BadRequestException('insurerId header requerido');
@@ -443,8 +444,8 @@ export class InspectionRequestsService {
 
     const existingClient = await this.prisma.client.findFirst({
       where: {
-        id_type: payload.client.id_type ?? undefined,
-        id_number: payload.client.id_number ?? undefined,
+        id_type: payload.client.id_type,
+        id_number: payload.client.id_number,
       },
     });
 
@@ -452,19 +453,19 @@ export class InspectionRequestsService {
     const clientScalar: Prisma.ClientCreateInput = {
       first_name: c.first_name,
       last_name: c.last_name,
-      dob: c.dob ? new Date(c.dob) : null,
-      id_type: c.id_type ?? undefined,
-      id_number: c.id_number ?? undefined,
-      email: c.email ?? undefined,
-      phone_mobile: c.phone_mobile ?? undefined,
-      phone_home: c.phone_home ?? undefined,
-      phone_work: c.phone_work ?? undefined,
-      employer_name: c.employer_name ?? undefined,
+      dob: new Date(c.dob),
+      id_type: c.id_type,
+      id_number: c.id_number,
+      email: c.email,
+      phone_mobile: c.phone_mobile,
+      phone_home: c.phone_home,
+      phone_work: c.phone_work,
+      employer_name: c.employer_name,
       employer_tax_id: c.employer_tax_id ?? undefined,
-      profession: c.profession ?? undefined,
-      address_line: c.address_line?.trim() ? c.address_line.trim() : undefined,
-      city: c.city?.trim() ? c.city.trim() : undefined,
-      country: c.country?.trim() ? c.country.trim() : undefined,
+      profession: c.profession,
+      address_line: c.address_line.trim(),
+      city: c.city.trim(),
+      country: c.country.trim(),
     };
 
     const client = existingClient
@@ -514,14 +515,14 @@ export class InspectionRequestsService {
           request_number: payload.request_number.trim(),
           agent_name: payload.agent_name,
           insured_amount: payload.insured_amount,
-          has_amount_in_force: payload.has_amount_in_force ?? false,
+          has_amount_in_force: payload.has_amount_in_force,
           amount_in_force: amountInForce,
           responsible_name: payload.responsible_name,
           responsible_phone: payload.responsible_phone,
           responsible_email: payload.responsible_email,
           marital_status: payload.marital_status,
           comments: payload.comments,
-          client_notified: payload.client_notified ?? false,
+          client_notified: payload.client_notified,
           interview_language: payload.interview_language,
           priority: payload.priority ?? 'NORMAL',
           ...(createdByUserId != null && {
@@ -558,12 +559,12 @@ export class InspectionRequestsService {
     }
 
     if (['APROBADA', 'RECHAZADA'].includes(payload.new_status)) {
-      if (context.role !== 'INSURER') {
-        throw new ForbiddenException('Solo aseguradoras pueden aprobar o rechazar');
+      if (!isInsurerTenantRole(context.role)) {
+        throw new ForbiddenException('Solo aseguradoras o corredores pueden aprobar o rechazar');
       }
     }
 
-    if (['AGENDADA', 'REALIZADA'].includes(payload.new_status) && context.role === 'INSURER') {
+    if (['AGENDADA', 'REALIZADA'].includes(payload.new_status) && isInsurerTenantRole(context.role)) {
       throw new ForbiddenException('Solo ALARA puede agendar o marcar como realizada');
     }
 
@@ -601,8 +602,8 @@ export class InspectionRequestsService {
   }
 
   async decide(context: RequestContext, id: number, payload: DecisionDto) {
-    if (context.role !== 'INSURER') {
-      throw new ForbiddenException('Solo aseguradoras pueden decidir');
+    if (!isInsurerTenantRole(context.role)) {
+      throw new ForbiddenException('Solo aseguradoras o corredores pueden decidir');
     }
     if (!context.userId) {
       throw new BadRequestException('userId requerido');
@@ -688,7 +689,7 @@ export class InspectionRequestsService {
 
   private ensureTenancy(context: RequestContext, request: InspectionRequest) {
     if (
-      context.role === 'INSURER' &&
+      isInsurerTenantRole(context.role) &&
       context.insurerId &&
       BigInt(context.insurerId) !== request.insurer_id
     ) {

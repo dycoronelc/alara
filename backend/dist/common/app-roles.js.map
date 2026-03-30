@@ -1,0 +1,1 @@
+{"version":3,"file":"app-roles.js","sourceRoot":"","sources":["../../src/common/app-roles.ts"],"names":[],"mappings":";;AAGA,kDAEC;AAED,0CAEC;AAND,SAAgB,mBAAmB,CAAC,IAAY;IAC9C,OAAO,IAAI,KAAK,SAAS,IAAI,IAAI,KAAK,QAAQ,CAAC;AACjD,CAAC;AAED,SAAgB,eAAe,CAAC,IAAY;IAC1C,OAAO,IAAI,KAAK,OAAO,IAAI,IAAI,KAAK,OAAO,CAAC;AAC9C,CAAC"}

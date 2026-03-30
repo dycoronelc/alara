@@ -15,6 +15,7 @@ const prisma_service_1 = require("../prisma/prisma.service");
 const pdf_service_1 = require("./pdf.service");
 const fs_1 = require("fs");
 const path_1 = require("path");
+const app_roles_1 = require("../common/app-roles");
 let DocumentsService = class DocumentsService {
     constructor(prisma, pdfService) {
         this.prisma = prisma;
@@ -177,7 +178,8 @@ let DocumentsService = class DocumentsService {
         return { buffer: params.buffer, document };
     }
     ensureTenancy(context, insurerId) {
-        if (context?.role === 'INSURER' &&
+        if (context &&
+            (0, app_roles_1.isInsurerTenantRole)(context.role) &&
             context.insurerId &&
             BigInt(context.insurerId) !== insurerId) {
             throw new common_1.NotFoundException('Documento no disponible');

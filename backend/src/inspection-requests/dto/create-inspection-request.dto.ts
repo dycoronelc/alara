@@ -25,12 +25,13 @@ function normalizeIdType(value: unknown): 'CEDULA' | 'PASSPORT' | 'OTRO' | undef
   if (value == null || value === '') return undefined;
   const s = String(value).trim();
   const upper = s.toUpperCase();
-  if (upper === 'CEDULA' || upper === 'PASSPORT' || upper === 'OTRO') return upper as 'CEDULA' | 'PASSPORT' | 'OTRO';
+  if (upper === 'CEDULA' || upper === 'PASSPORT' || upper === 'OTRO') {
+    return upper as 'CEDULA' | 'PASSPORT' | 'OTRO';
+  }
   const normalized = ID_TYPE_MAP[s.toLowerCase()];
-  return normalized ?? (s as 'CEDULA' | 'PASSPORT' | 'OTRO');
+  return normalized;
 }
 
-/** Convierte cadena vacía en undefined para que @IsOptional() y @IsEmail() no fallen. */
 function emptyStringToUndefined(value: unknown): string | undefined {
   if (value == null) return undefined;
   const s = String(value).trim();
@@ -46,61 +47,58 @@ export class ClientInputDto {
   @IsNotEmpty()
   last_name!: string;
 
-  @IsOptional()
   @IsDateString()
-  dob?: string;
+  dob!: string;
 
-  @IsOptional()
   @Transform(({ value }) => normalizeIdType(value))
   @IsEnum(['CEDULA', 'PASSPORT', 'OTRO'])
-  id_type?: 'CEDULA' | 'PASSPORT' | 'OTRO';
+  id_type!: 'CEDULA' | 'PASSPORT' | 'OTRO';
 
-  @ValidateIf((o: ClientInputDto) => o.id_type === 'CEDULA')
-  @IsOptional()
   @IsString()
+  @IsNotEmpty()
+  @ValidateIf((o: ClientInputDto) => o.id_type === 'CEDULA')
   @IsPanamaCedula()
-  id_number?: string;
+  id_number!: string;
+
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  phone_mobile!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  phone_home!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  phone_work!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  address_line!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  city!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  country!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  employer_name!: string;
 
   @IsOptional()
   @Transform(({ value }) => emptyStringToUndefined(value))
-  @IsEmail()
-  email?: string;
-
-  @IsOptional()
-  @IsString()
-  phone_mobile?: string;
-
-  @IsOptional()
-  @IsString()
-  phone_home?: string;
-
-  @IsOptional()
-  @IsString()
-  phone_work?: string;
-
-  @IsOptional()
-  @IsString()
-  address_line?: string;
-
-  @IsOptional()
-  @IsString()
-  city?: string;
-
-  @IsOptional()
-  @IsString()
-  country?: string;
-
-  @IsOptional()
-  @IsString()
-  employer_name?: string;
-
-  @IsOptional()
   @IsString()
   employer_tax_id?: string;
 
-  @IsOptional()
   @IsString()
-  profession?: string;
+  @IsNotEmpty()
+  profession!: string;
 }
 
 export class CreateInspectionRequestDto {
@@ -108,19 +106,17 @@ export class CreateInspectionRequestDto {
   @IsNotEmpty()
   request_number!: string;
 
-  @IsOptional()
   @IsString()
-  agent_name?: string;
+  @IsNotEmpty()
+  agent_name!: string;
 
-  @IsOptional()
+  @Type(() => Number)
   @IsNumber()
-  insured_amount?: number;
+  insured_amount!: number;
 
-  @IsOptional()
   @IsBoolean()
-  has_amount_in_force?: boolean;
+  has_amount_in_force!: boolean;
 
-  @IsOptional()
   @ValidateIf((o: CreateInspectionRequestDto) => o.has_amount_in_force === true)
   @Type(() => Number)
   @IsNumber()
@@ -130,30 +126,28 @@ export class CreateInspectionRequestDto {
   @IsNotEmpty()
   responsible_name!: string;
 
-  @IsOptional()
   @IsString()
-  responsible_phone?: string;
+  @IsNotEmpty()
+  responsible_phone!: string;
 
-  @IsOptional()
   @Transform(({ value }) => emptyStringToUndefined(value))
   @IsEmail()
-  responsible_email?: string;
+  responsible_email!: string;
 
-  @IsOptional()
   @IsString()
-  marital_status?: string;
+  @IsNotEmpty()
+  marital_status!: string;
 
-  @IsOptional()
   @IsString()
-  comments?: string;
+  @IsNotEmpty()
+  comments!: string;
 
-  @IsOptional()
   @IsBoolean()
-  client_notified?: boolean;
+  client_notified!: boolean;
 
-  @IsOptional()
   @IsString()
-  interview_language?: string;
+  @IsNotEmpty()
+  interview_language!: string;
 
   @IsOptional()
   @IsEnum(['NORMAL', 'ALTA'])

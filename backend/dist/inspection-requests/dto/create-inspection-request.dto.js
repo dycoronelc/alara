@@ -25,10 +25,11 @@ function normalizeIdType(value) {
         return undefined;
     const s = String(value).trim();
     const upper = s.toUpperCase();
-    if (upper === 'CEDULA' || upper === 'PASSPORT' || upper === 'OTRO')
+    if (upper === 'CEDULA' || upper === 'PASSPORT' || upper === 'OTRO') {
         return upper;
+    }
     const normalized = ID_TYPE_MAP[s.toLowerCase()];
-    return normalized ?? s;
+    return normalized;
 }
 function emptyStringToUndefined(value) {
     if (value == null)
@@ -50,72 +51,69 @@ __decorate([
     __metadata("design:type", String)
 ], ClientInputDto.prototype, "last_name", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
 ], ClientInputDto.prototype, "dob", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Transform)(({ value }) => normalizeIdType(value)),
     (0, class_validator_1.IsEnum)(['CEDULA', 'PASSPORT', 'OTRO']),
     __metadata("design:type", String)
 ], ClientInputDto.prototype, "id_type", void 0);
 __decorate([
-    (0, class_validator_1.ValidateIf)((o) => o.id_type === 'CEDULA'),
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.ValidateIf)((o) => o.id_type === 'CEDULA'),
     (0, panama_cedula_validator_1.IsPanamaCedula)(),
     __metadata("design:type", String)
 ], ClientInputDto.prototype, "id_number", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_transformer_1.Transform)(({ value }) => emptyStringToUndefined(value)),
     (0, class_validator_1.IsEmail)(),
     __metadata("design:type", String)
 ], ClientInputDto.prototype, "email", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], ClientInputDto.prototype, "phone_mobile", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], ClientInputDto.prototype, "phone_home", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], ClientInputDto.prototype, "phone_work", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], ClientInputDto.prototype, "address_line", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], ClientInputDto.prototype, "city", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], ClientInputDto.prototype, "country", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], ClientInputDto.prototype, "employer_name", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => emptyStringToUndefined(value)),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], ClientInputDto.prototype, "employer_tax_id", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], ClientInputDto.prototype, "profession", void 0);
 class CreateInspectionRequestDto {
@@ -127,22 +125,20 @@ __decorate([
     __metadata("design:type", String)
 ], CreateInspectionRequestDto.prototype, "request_number", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreateInspectionRequestDto.prototype, "agent_name", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], CreateInspectionRequestDto.prototype, "insured_amount", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], CreateInspectionRequestDto.prototype, "has_amount_in_force", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.ValidateIf)((o) => o.has_amount_in_force === true),
     (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
@@ -154,34 +150,32 @@ __decorate([
     __metadata("design:type", String)
 ], CreateInspectionRequestDto.prototype, "responsible_name", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreateInspectionRequestDto.prototype, "responsible_phone", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Transform)(({ value }) => emptyStringToUndefined(value)),
     (0, class_validator_1.IsEmail)(),
     __metadata("design:type", String)
 ], CreateInspectionRequestDto.prototype, "responsible_email", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreateInspectionRequestDto.prototype, "marital_status", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreateInspectionRequestDto.prototype, "comments", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], CreateInspectionRequestDto.prototype, "client_notified", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreateInspectionRequestDto.prototype, "interview_language", void 0);
 __decorate([

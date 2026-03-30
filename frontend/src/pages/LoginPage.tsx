@@ -24,12 +24,21 @@ const LoginPage = () => {
     const { data } = result;
     localStorage.setItem('alara-token', data.access_token);
     localStorage.setItem('alara-role', data.user.role);
+    localStorage.setItem('alara-user-id', String(data.user.id));
+    localStorage.setItem(
+      'alara-user',
+      JSON.stringify({
+        full_name: data.user.full_name,
+        email: data.user.email,
+        phone: data.user.phone ?? '',
+      }),
+    );
     if (data.user.insurer_id) {
       localStorage.setItem('alara-insurer-id', String(data.user.insurer_id));
     } else {
       localStorage.removeItem('alara-insurer-id');
     }
-    if (data.user.role === 'INSURER') {
+    if (data.user.role === 'INSURER' || data.user.role === 'BROKER') {
       navigate('/portal/aseguradora/dashboard');
     } else {
       navigate('/portal/alara/dashboard');
