@@ -18,7 +18,7 @@ import { SaveReportDto } from './dto/save-report.dto';
 const allowedTransitions: Record<InspectionRequest['status'], InspectionRequest['status'][]> = {
   SOLICITADA: ['AGENDADA', 'CANCELADA'],
   AGENDADA: ['REALIZADA', 'CANCELADA'],
-  REALIZADA: ['APROBADA', 'RECHAZADA'],
+  REALIZADA: ['APROBADA', 'RECHAZADA', 'CANCELADA'],
   CANCELADA: [],
   APROBADA: [],
   RECHAZADA: [],

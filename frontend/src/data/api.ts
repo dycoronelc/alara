@@ -323,6 +323,7 @@ export const updateInspectionRequestStatus = (
     scheduled_start_at?: string;
     scheduled_end_at?: string;
     note?: string;
+    cancellation_reason?: string;
   },
   portal: 'aseguradora' | 'alara',
   insurerId?: number,

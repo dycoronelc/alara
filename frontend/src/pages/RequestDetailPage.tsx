@@ -16,6 +16,7 @@ import {
   type UpdateClientPayload,
 } from '../data/api';
 import StatusBadge from '../components/StatusBadge';
+import CancelInspectionRequestModal from '../components/CancelInspectionRequestModal';
 import InvestigationsUafSection from '../components/InvestigationsUafSection';
 import ReportFormField from '../components/ReportFormField';
 import { defaultReportSections } from '../report/defaultReportSections';
@@ -62,6 +63,8 @@ type ClientInfo = {
   tasks?: string;
   marital_status?: string;
 };
+
+const CANCELLABLE_STATUSES = new Set(['SOLICITADA', 'AGENDADA', 'REALIZADA']);
 
 type RequestDetail = {
   id: number;
@@ -117,6 +120,9 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   );
   const [reportMessage, setReportMessage] = useState('');
   const [reportSaveBusy, setReportSaveBusy] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const [hasLocalReportDraft, setHasLocalReportDraft] = useState(false);
   const reportMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [investigations, setInvestigations] = useState<any[]>([]);
@@ -302,6 +308,30 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       setScheduleMessage('No se pudo agendar. Verifica permisos o la fecha y hora.');
     } finally {
       setScheduleBusy(false);
+    }
+  };
+
+  const handleConfirmCancelRequest = async (reason: string) => {
+    if (!id) return;
+    setCancelBusy(true);
+    setCancelError(null);
+    try {
+      await updateInspectionRequestStatus(
+        Number(id),
+        {
+          new_status: 'CANCELADA',
+          note: reason || 'Solicitud cancelada',
+          ...(reason ? { cancellation_reason: reason } : {}),
+        },
+        portal,
+      );
+      const resp = await getInspectionRequest(Number(id), portal);
+      setData(resp);
+      setCancelModalOpen(false);
+    } catch {
+      setCancelError('No se pudo cancelar. Verifica el estado o los permisos.');
+    } finally {
+      setCancelBusy(false);
     }
   };
 
@@ -609,7 +639,21 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
             <h2>Expediente {data.request_number}</h2>
             <p>{data.insurer?.name ?? 'Aseguradora'} · Responsable: {data.responsible_name}</p>
           </div>
-          <StatusBadge status={data.status} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {CANCELLABLE_STATUSES.has(data.status) && (
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => {
+                  setCancelError(null);
+                  setCancelModalOpen(true);
+                }}
+              >
+                Cancelar solicitud
+              </button>
+            )}
+            <StatusBadge status={data.status} />
+          </div>
         </div>
       </div>
 
@@ -1336,6 +1380,15 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
           ))}
         </div>
       </div>
+
+      <CancelInspectionRequestModal
+        open={cancelModalOpen}
+        requestLabel={`${data.request_number} · ${data.client ? `${data.client.first_name ?? ''} ${data.client.last_name ?? ''}`.trim() : 'Cliente'}`}
+        busy={cancelBusy}
+        error={cancelError}
+        onClose={() => !cancelBusy && setCancelModalOpen(false)}
+        onConfirm={handleConfirmCancelRequest}
+      />
     </div>
   );
 };

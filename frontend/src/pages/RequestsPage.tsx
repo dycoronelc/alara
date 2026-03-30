@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StatusBadge from '../components/StatusBadge';
-import { getInspectionRequests } from '../data/api';
+import CancelInspectionRequestModal from '../components/CancelInspectionRequestModal';
+import { getInspectionRequests, updateInspectionRequestStatus } from '../data/api';
+
+const CANCELLABLE_STATUSES = new Set(['SOLICITADA', 'AGENDADA', 'REALIZADA']);
 
 type RequestItem = {
   id: number;
@@ -21,9 +24,12 @@ const RequestsPage = ({ portal }: RequestsPageProps) => {
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('TODOS');
+  const [cancelTarget, setCancelTarget] = useState<{ id: number; label: string } | null>(null);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
+  const loadRequests = useCallback(() => {
     getInspectionRequests(portal)
       .then((data) => {
         const mapped = (data as any[]).map((item) => ({
@@ -39,6 +45,33 @@ const RequestsPage = ({ portal }: RequestsPageProps) => {
       })
       .catch(() => setRequests([]));
   }, [portal]);
+
+  useEffect(() => {
+    loadRequests();
+  }, [loadRequests]);
+
+  const handleConfirmCancelFromList = async (reason: string) => {
+    if (!cancelTarget) return;
+    setCancelBusy(true);
+    setCancelError(null);
+    try {
+      await updateInspectionRequestStatus(
+        cancelTarget.id,
+        {
+          new_status: 'CANCELADA',
+          note: reason || 'Solicitud cancelada',
+          ...(reason ? { cancellation_reason: reason } : {}),
+        },
+        portal,
+      );
+      setCancelTarget(null);
+      loadRequests();
+    } catch {
+      setCancelError('No se pudo cancelar. Verifica el estado o los permisos.');
+    } finally {
+      setCancelBusy(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     return requests.filter((item) => {
@@ -97,12 +130,29 @@ const RequestsPage = ({ portal }: RequestsPageProps) => {
                   <StatusBadge status={item.status} />
                 </td>
                 <td>
-                  <button
-                    className="ghost-button"
-                    onClick={() => navigate(`/portal/${portal}/solicitudes/${item.id}`)}
-                  >
-                    Ver
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <button
+                      className="ghost-button"
+                      onClick={() => navigate(`/portal/${portal}/solicitudes/${item.id}`)}
+                    >
+                      Ver
+                    </button>
+                    {CANCELLABLE_STATUSES.has(item.status) && (
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={() => {
+                          setCancelError(null);
+                          setCancelTarget({
+                            id: item.id,
+                            label: `${item.request_number} · ${item.client_name}`,
+                          });
+                        }}
+                      >
+                        Cancelar
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -116,6 +166,15 @@ const RequestsPage = ({ portal }: RequestsPageProps) => {
           </tbody>
         </table>
       </div>
+
+      <CancelInspectionRequestModal
+        open={cancelTarget != null}
+        requestLabel={cancelTarget?.label}
+        busy={cancelBusy}
+        error={cancelError}
+        onClose={() => !cancelBusy && setCancelTarget(null)}
+        onConfirm={handleConfirmCancelFromList}
+      />
     </div>
   );
 };
