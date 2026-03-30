@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import AlaraPortalLayout from './components/AlaraPortalLayout';
 import LoginPage from './pages/LoginPage';
@@ -37,9 +37,11 @@ const App = () => {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<DashboardInsurer />} />
-        <Route path="solicitudes" element={<RequestsPage portal="aseguradora" />} />
-        <Route path="solicitudes/nueva" element={<NewRequestPage />} />
-        <Route path="solicitudes/:id" element={<RequestDetailPage portal="aseguradora" />} />
+        <Route path="solicitudes" element={<Outlet />}>
+          <Route index element={<RequestsPage portal="aseguradora" />} />
+          <Route path="nueva" element={<NewRequestPage />} />
+          <Route path=":id" element={<RequestDetailPage portal="aseguradora" />} />
+        </Route>
         <Route path="calendario" element={<CalendarPage portal="aseguradora" />} />
       </Route>
 

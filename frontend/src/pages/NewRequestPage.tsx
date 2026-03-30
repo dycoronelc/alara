@@ -75,12 +75,22 @@ const NewRequestPage = () => {
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [successUploadNote, setSuccessUploadNote] = useState('');
   const [serviceTypes, setServiceTypes] = useState<InspectionServiceTypeOption[]>([]);
-  const [attachments, setAttachments] = useState<AttachmentRow[]>([]);
+  const [serviceTypesLoad, setServiceTypesLoad] = useState<'loading' | 'ok' | 'error'>('loading');
+  const [attachments, setAttachments] = useState<AttachmentRow[]>(() => [
+    { key: 'att-initial', doc_type: 'CEDULA', file: null },
+  ]);
 
   useEffect(() => {
+    setServiceTypesLoad('loading');
     getInspectionServiceTypes()
-      .then((rows) => setServiceTypes(Array.isArray(rows) ? rows : []))
-      .catch(() => setServiceTypes([]));
+      .then((rows) => {
+        setServiceTypes(Array.isArray(rows) ? rows : []);
+        setServiceTypesLoad('ok');
+      })
+      .catch(() => {
+        setServiceTypes([]);
+        setServiceTypesLoad('error');
+      });
   }, []);
 
   const dobAge = useMemo(() => {
@@ -111,6 +121,17 @@ const NewRequestPage = () => {
   const handleSubmit = async () => {
     setMessage('');
     setFieldErrors({});
+
+    if (serviceTypesLoad === 'loading') {
+      setMessage('Espera a que carguen los tipos de servicio.');
+      return;
+    }
+    if (serviceTypesLoad === 'error' || (serviceTypesLoad === 'ok' && serviceTypes.length === 0)) {
+      setMessage(
+        'No hay tipos de servicio disponibles. Comprueba la conexión, recarga la página o contacta al administrador (migración SQL / base de datos).',
+      );
+      return;
+    }
 
     const t = (v: string) => v?.trim() ?? '';
     const errors: Record<string, string> = {};
@@ -259,7 +280,7 @@ const NewRequestPage = () => {
           ? `La solicitud fue creada, pero no se pudieron subir: ${failedNames.join(', ')}.`
           : '',
       );
-      setAttachments([]);
+      setAttachments([{ key: `att-${Date.now()}`, doc_type: 'CEDULA', file: null }]);
       setForm({ ...initialState, ...readResponsibleFromSession() });
       setSuccessModalOpen(true);
     } catch {
@@ -270,13 +291,10 @@ const NewRequestPage = () => {
   const reqStar = <span className="field-required" aria-label="obligatorio">*</span>;
 
   return (
-    <div className="page">
-      <div className="info-card">
+    <div className="page new-request-page">
+      <div className="info-card new-request-card">
         <h3>Nueva Solicitud de Inspección</h3>
         <p>Todos los campos son obligatorios. Los datos del responsable se cargan desde tu usuario.</p>
-      </div>
-
-      <div className="info-card">
         <div className="form-section">
           <h4>Datos del responsable</h4>
           <div className="form-grid">
@@ -311,19 +329,30 @@ const NewRequestPage = () => {
               <select
                 value={form.service_type_id}
                 onChange={(e) => updateField('service_type_id', e.target.value)}
+                disabled={serviceTypesLoad === 'loading' || serviceTypesLoad === 'error'}
               >
-                <option value="">Seleccione...</option>
+                <option value="">
+                  {serviceTypesLoad === 'loading' ? 'Cargando tipos…' : 'Seleccione...'}
+                </option>
                 {serviceTypes.map((st) => (
                   <option key={st.id} value={String(st.id)}>
                     {st.name}
                   </option>
                 ))}
               </select>
+              {serviceTypesLoad === 'error' && (
+                <span className="field-error">No se pudieron cargar los tipos. Recarga la página.</span>
+              )}
+              {serviceTypesLoad === 'ok' && serviceTypes.length === 0 && (
+                <span className="field-error">No hay tipos configurados en el sistema.</span>
+              )}
               {fieldErrors.service_type_id && <span className="field-error">{fieldErrors.service_type_id}</span>}
             </label>
           </div>
         </div>
+      </div>
 
+      <div className="info-card">
         <div className="form-section">
           <h4>Datos del propuesto asegurado</h4>
           <div className="form-grid">
@@ -440,7 +469,9 @@ const NewRequestPage = () => {
             </label>
           </div>
         </div>
+      </div>
 
+      <div className="info-card">
         <div className="form-section">
           <h4>Datos de la solicitud</h4>
           <div className="form-grid">

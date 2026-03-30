@@ -87,6 +87,8 @@ a {
   display: flex;
   flex-direction: column;
   background: #f6f8fb;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .topbar {
@@ -176,12 +178,23 @@ a {
 
 .content {
   padding: 0 32px 32px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .page {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.new-request-page {
+  padding-bottom: 8px;
+}
+
+.new-request-card {
+  border: 1px solid rgba(29, 79, 124, 0.15);
 }
 
 .stat-grid {
