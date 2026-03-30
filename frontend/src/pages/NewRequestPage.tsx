@@ -8,6 +8,7 @@ import {
 import {
   ageInYearsFromDdMmYyyy,
   ddMmYyyyToIso,
+  ddMmYyyyAndTimeToIso,
   isValidDdMmYyyy,
   normalizeDdMmYyyyInput,
 } from '../utils/ddMmYyyyDate';
@@ -49,7 +50,8 @@ const initialState = {
   marital_status: '',
   comments: '',
   client_notified: '',
-  interview_datetime: '',
+  interview_date: '',
+  interview_time: '',
   interview_language: '',
 };
 
@@ -192,7 +194,9 @@ const NewRequestPage = () => {
     if (!form.interview_language) errors.interview_language = 'Requerido';
     if (!form.client_notified) errors.client_notified = 'Requerido';
     if (form.client_notified === 'Si') {
-      if (!t(form.interview_datetime)) errors.interview_datetime = 'Requerido';
+      if (!t(form.interview_date)) errors.interview_date = 'Requerido';
+      else if (!isValidDdMmYyyy(form.interview_date)) errors.interview_date = 'Use formato dd/mm/aaaa';
+      if (!t(form.interview_time)) errors.interview_time = 'Requerido';
     }
     if (!t(form.comments)) errors.comments = 'Requerido';
 
@@ -211,8 +215,8 @@ const NewRequestPage = () => {
 
     const notified = form.client_notified === 'Si';
     const interviewStartIso =
-      notified && t(form.interview_datetime)
-        ? new Date(form.interview_datetime).toISOString()
+      notified && t(form.interview_date) && t(form.interview_time)
+        ? ddMmYyyyAndTimeToIso(form.interview_date, form.interview_time) ?? undefined
         : undefined;
     const interviewEndIso =
       interviewStartIso != null
@@ -554,7 +558,7 @@ const NewRequestPage = () => {
                   setForm((prev) => ({
                     ...prev,
                     client_notified: v,
-                    ...(v !== 'Si' ? { interview_datetime: '' } : {}),
+                    ...(v !== 'Si' ? { interview_date: '', interview_time: '' } : {}),
                   }));
                 }}
               >
@@ -565,17 +569,34 @@ const NewRequestPage = () => {
               {fieldErrors.client_notified && <span className="field-error">{fieldErrors.client_notified}</span>}
             </label>
             {form.client_notified === 'Si' && (
-              <label className={`form-field ${fieldErrors.interview_datetime ? 'has-error' : ''}`}>
-                <span>Fecha y hora de la entrevista {reqStar}</span>
-                <input
-                  type="datetime-local"
-                  value={form.interview_datetime}
-                  onChange={(e) => updateField('interview_datetime', e.target.value)}
-                />
-                {fieldErrors.interview_datetime && (
-                  <span className="field-error">{fieldErrors.interview_datetime}</span>
-                )}
-              </label>
+              <>
+                <label className={`form-field ${fieldErrors.interview_date ? 'has-error' : ''}`}>
+                  <span>Fecha de la entrevista (dd/mm/aaaa) {reqStar}</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="dd/mm/aaaa"
+                    maxLength={10}
+                    value={form.interview_date}
+                    onChange={(e) => updateField('interview_date', normalizeDdMmYyyyInput(e.target.value))}
+                    aria-invalid={Boolean(fieldErrors.interview_date)}
+                  />
+                  {fieldErrors.interview_date && (
+                    <span className="field-error">{fieldErrors.interview_date}</span>
+                  )}
+                </label>
+                <label className={`form-field ${fieldErrors.interview_time ? 'has-error' : ''}`}>
+                  <span>Hora de la entrevista {reqStar}</span>
+                  <input
+                    type="time"
+                    value={form.interview_time}
+                    onChange={(e) => updateField('interview_time', e.target.value)}
+                  />
+                  {fieldErrors.interview_time && (
+                    <span className="field-error">{fieldErrors.interview_time}</span>
+                  )}
+                </label>
+              </>
             )}
             <label className={`form-field ${fieldErrors.comments ? 'has-error' : ''}`}>
               <span>Indicaciones / Comentarios {reqStar}</span>

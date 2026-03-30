@@ -44,6 +44,28 @@ export function ddMmYyyyToIso(s: string): string | null {
   return `${y}-${mo}-${d}`;
 }
 
+/**
+ * Fecha local (dd/mm/aaaa) + hora (HH:mm de input type="time") → ISO UTC.
+ * Retorna null si la fecha no es válida o la hora no tiene formato HH:mm.
+ */
+export function ddMmYyyyAndTimeToIso(dateDdMmYyyy: string, timeHHmm: string): string | null {
+  const isoDate = ddMmYyyyToIso(dateDdMmYyyy.trim());
+  if (!isoDate) return null;
+  const [yS, moS, dS] = isoDate.split('-');
+  const y = Number(yS);
+  const mo = Number(moS);
+  const d = Number(dS);
+  const tm = timeHHmm.trim();
+  const parts = tm.split(':');
+  if (parts.length < 2) return null;
+  const h = Number(parts[0]);
+  const min = Number(parts[1]);
+  if (!Number.isFinite(h) || !Number.isFinite(min) || h < 0 || h > 23 || min < 0 || min > 59) {
+    return null;
+  }
+  return new Date(y, mo - 1, d, h, min, 0, 0).toISOString();
+}
+
 /** Edad en años cumplidos a la fecha de hoy. */
 export function ageInYearsFromDdMmYyyy(s: string): number | null {
   if (!isValidDdMmYyyy(s)) return null;
