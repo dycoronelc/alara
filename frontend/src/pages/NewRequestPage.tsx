@@ -292,9 +292,16 @@ const NewRequestPage = () => {
 
   return (
     <div className="page new-request-page">
+      <div className="new-request-update-banner" role="status">
+        <strong>Incluye:</strong> tipo de servicio (tras responsable), fecha de entrevista si el cliente fue avisado, y
+        adjuntos al final. Si no ves esto, recarga forzada (Ctrl+F5) o redeploy del frontend con{' '}
+        <code>npm run build</code>.
+      </div>
       <div className="info-card new-request-card">
         <h3>Nueva Solicitud de Inspección</h3>
-        <p>Todos los campos son obligatorios. Los datos del responsable se cargan desde tu usuario.</p>
+        <p>
+          Todos los campos son obligatorios salvo los adjuntos. Los datos del responsable se cargan desde tu usuario.
+        </p>
         <div className="form-section">
           <h4>Datos del responsable</h4>
           <div className="form-grid">
