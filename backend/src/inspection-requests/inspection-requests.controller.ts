@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -10,8 +11,11 @@ import {
   Query,
   Req,
   Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Request, Response } from 'express';
 import { InspectionRequestsService } from './inspection-requests.service';
 import { CreateInspectionRequestDto } from './dto/create-inspection-request.dto';
@@ -45,6 +49,11 @@ export class InspectionRequestsController {
       status: status as any,
       search,
     });
+  }
+
+  @Get('service-types')
+  async listServiceTypes(@Req() req: Request) {
+    return this.service.listServiceTypes(req.userContext!);
   }
 
   @Post()
@@ -95,6 +104,24 @@ export class InspectionRequestsController {
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `inline; filename="${filename.replace(/"/g, '')}"`);
     return res.send(buffer);
+  }
+
+  @Post(':id/documents/upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 10 * 1024 * 1024 },
+    }),
+  )
+  async uploadDocument(
+    @Req() req: Request,
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Body('doc_type') docType: string | undefined,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Archivo requerido');
+    }
+    return this.documentsService.uploadAttachment(id, file, docType, req.userContext);
   }
 
   @Post(':id/status')

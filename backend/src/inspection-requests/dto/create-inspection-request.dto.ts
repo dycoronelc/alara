@@ -2,11 +2,13 @@ import {
   IsBoolean,
   IsEmail,
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
   IsDateString,
+  Min,
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
@@ -102,6 +104,11 @@ export class ClientInputDto {
 }
 
 export class CreateInspectionRequestDto {
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  service_type_id!: number;
+
   @IsString()
   @IsNotEmpty()
   request_number!: string;
@@ -144,6 +151,18 @@ export class CreateInspectionRequestDto {
 
   @IsBoolean()
   client_notified!: boolean;
+
+  /** Obligatorio si `client_notified` es true: inicio de la entrevista (ISO 8601). */
+  @ValidateIf((o: CreateInspectionRequestDto) => o.client_notified === true)
+  @IsDateString()
+  @IsNotEmpty()
+  scheduled_start_at?: string;
+
+  /** Fin de la entrevista; si no se envía, se asume 1 hora después del inicio. */
+  @ValidateIf((o: CreateInspectionRequestDto) => o.client_notified === true)
+  @IsOptional()
+  @IsDateString()
+  scheduled_end_at?: string;
 
   @IsString()
   @IsNotEmpty()

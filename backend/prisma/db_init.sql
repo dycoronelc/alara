@@ -269,6 +269,7 @@ CREATE TABLE IF NOT EXISTS documents (
   doc_type ENUM(
     'SOLICITUD_PDF',
     'REPORTE_PDF',
+    'CEDULA',
     'AUTORIZACION',
     'INVESTIGACION',
     'EVIDENCIA',

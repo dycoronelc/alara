@@ -194,6 +194,20 @@ export const getInsurerDashboard = (insurerId?: number) =>
 export const getAlaraDashboard = () =>
   safeFetch(buildApiUrl('/api/dashboard/alara'), { headers: defaultHeaders(getApiRoleForPortal('alara')) }, mockAlaraDashboard);
 
+export type InspectionServiceTypeOption = {
+  id: number;
+  name: string;
+  sort_order: number;
+};
+
+/** Catálogo de tipos de servicio (solicitud de inspección). */
+export const getInspectionServiceTypes = (insurerId?: number) =>
+  safeFetch<InspectionServiceTypeOption[]>(
+    buildApiUrl('/api/inspection-requests/service-types'),
+    { headers: defaultHeaders(getApiRoleForPortal('aseguradora'), insurerId) },
+    [],
+  );
+
 export const getInspectionRequests = (portal: 'aseguradora' | 'alara', insurerId?: number) =>
   safeFetch(
     buildApiUrl('/api/inspection-requests'),
@@ -258,11 +272,66 @@ export async function openInspectionRequestDocument(
 }
 
 export const createInspectionRequest = (payload: Record<string, unknown>, insurerId?: number) =>
-  safeFetch(
+  safeFetch<{ id: number }>(
     buildApiUrl('/api/inspection-requests'),
     {
       method: 'POST',
       headers: defaultHeaders(getApiRoleForPortal('aseguradora'), insurerId),
+      body: JSON.stringify(payload),
+    },
+  );
+
+/** Sube un adjunto a una solicitud ya creada (PDF o imagen, máx. 10 MB). */
+export async function uploadInspectionRequestDocument(
+  requestId: number,
+  file: File,
+  docType: string,
+  insurerId?: number,
+): Promise<void> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('doc_type', docType);
+  const token = localStorage.getItem('alara-token');
+  const effectiveInsurerId = insurerId ?? getStoredInsurerId();
+  const response = await fetch(buildApiUrl(`/api/inspection-requests/${requestId}/documents/upload`), {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      'x-user-role': getApiRoleForPortal('aseguradora'),
+      'x-user-id': getStoredUserId(),
+      ...(effectiveInsurerId ? { 'x-insurer-id': String(effectiveInsurerId) } : {}),
+    },
+    body: formData,
+  });
+  if (!response.ok) {
+    let detail = 'No se pudo subir el archivo';
+    try {
+      const j = (await response.json()) as { message?: string | string[] };
+      if (typeof j.message === 'string') detail = j.message;
+      else if (Array.isArray(j.message)) detail = j.message.join(', ');
+    } catch {
+      // ignore
+    }
+    throw new Error(detail);
+  }
+}
+
+export const updateInspectionRequestStatus = (
+  id: number,
+  payload: {
+    new_status: string;
+    scheduled_start_at?: string;
+    scheduled_end_at?: string;
+    note?: string;
+  },
+  portal: 'aseguradora' | 'alara',
+  insurerId?: number,
+) =>
+  safeFetch(
+    buildApiUrl(`/api/inspection-requests/${id}/status`),
+    {
+      method: 'POST',
+      headers: defaultHeaders(getApiRoleForPortal(portal), insurerId),
       body: JSON.stringify(payload),
     },
     null,

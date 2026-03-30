@@ -832,6 +832,51 @@ a {
   color: #b45309;
 }
 
+.solicitud-tab-detail__status {
+  display: inline-flex;
+  align-items: center;
+}
+
+.solicitud-schedule-block {
+  margin: 0.75rem 0 0;
+}
+
+.solicitud-schedule-form {
+  max-width: 28rem;
+}
+
+.solicitud-schedule-form__actions {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.form-hint {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0 0 0.75rem;
+  line-height: 1.4;
+}
+
+.attachment-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--alara-border, #e2e8f0);
+}
+
+.attachment-row__grid {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.attachment-row__remove {
+  flex: 0 0 auto;
+  margin-bottom: 0.25rem;
+}
+
 .field-required {
   color: #dc2626;
   font-weight: 600;

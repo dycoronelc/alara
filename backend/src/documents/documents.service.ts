@@ -1,10 +1,22 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { DocumentType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PdfService } from './pdf.service';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import { RequestContext } from '../common/request-context.middleware';
 import { isInsurerTenantRole } from '../common/app-roles';
+
+const USER_UPLOAD_DOC_TYPES: DocumentType[] = ['CEDULA', 'AUTORIZACION', 'EVIDENCIA', 'OTRO'];
+
+const UPLOAD_ALLOWED_MIMES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 @Injectable()
 export class DocumentsService {
@@ -98,6 +110,87 @@ export class DocumentsService {
       clientId: Number(request.client_id),
       userId: effectiveUserId,
     });
+  }
+
+  /**
+   * Adjuntos cargados por usuarios (cédula, autorización, etc.). Solo PDF o imágenes, máx. 10 MB.
+   */
+  async uploadAttachment(
+    inspectionRequestId: number,
+    file: Express.Multer.File | undefined,
+    docTypeRaw: string | undefined,
+    context?: RequestContext,
+  ) {
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('Archivo requerido');
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      throw new BadRequestException('El archivo supera el tamaño máximo permitido (10 MB)');
+    }
+    if (!docTypeRaw?.trim()) {
+      throw new BadRequestException('Tipo de documento requerido');
+    }
+    const docType = docTypeRaw.trim().toUpperCase() as DocumentType;
+    if (!USER_UPLOAD_DOC_TYPES.includes(docType)) {
+      throw new BadRequestException('Tipo de documento no permitido');
+    }
+    if (!UPLOAD_ALLOWED_MIMES.has(file.mimetype)) {
+      throw new BadRequestException('Solo se permiten archivos PDF o imágenes (JPEG, PNG, WebP)');
+    }
+
+    const request = await this.prisma.inspectionRequest.findUnique({
+      where: { id: inspectionRequestId },
+      select: { insurer_id: true, client_id: true },
+    });
+    if (!request) {
+      throw new NotFoundException('Solicitud no encontrada');
+    }
+    this.ensureTenancy(context, request.insurer_id);
+
+    const effectiveUserId = await this.resolveEffectiveUserId(context?.userId);
+    await fs.mkdir(this.storageDir, { recursive: true });
+    const safeName = this.sanitizeFilename(file.originalname);
+    const storageKey = `${Date.now()}_${safeName}`;
+    const filepath = join(this.storageDir, storageKey);
+    await fs.writeFile(filepath, file.buffer);
+
+    const document = await this.prisma.document.create({
+      data: {
+        insurer_id: request.insurer_id,
+        inspection_request_id: BigInt(inspectionRequestId),
+        client_id: request.client_id,
+        doc_type: docType,
+        filename: safeName,
+        mime_type: file.mimetype.slice(0, 80),
+        file_size_bytes: BigInt(file.size),
+        storage_provider: 'LOCAL',
+        storage_key: storageKey,
+        storage_url: null,
+        ...(effectiveUserId != null && { uploaded_by_user_id: effectiveUserId }),
+      },
+      select: {
+        id: true,
+        doc_type: true,
+        filename: true,
+        mime_type: true,
+        file_size_bytes: true,
+        uploaded_at: true,
+      },
+    });
+
+    return {
+      ...document,
+      id: Number(document.id),
+      file_size_bytes: Number(document.file_size_bytes),
+    };
+  }
+
+  private sanitizeFilename(name: string): string {
+    const base = String(name || '')
+      .replace(/^.*[/\\]/, '')
+      .replace(/[^\w.\- ()áéíóúÁÉÍÓÚñÑüÜ]/g, '_')
+      .trim();
+    return base.slice(0, 200) || 'documento';
   }
 
   async listByInspectionRequest(inspectionRequestId: number, context?: RequestContext) {

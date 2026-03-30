@@ -16,6 +16,7 @@ async function main() {
   await prisma.calendarEvent.deleteMany();
   await prisma.inspectionRequestStatusHistory.deleteMany();
   await prisma.inspectionRequest.deleteMany();
+  await prisma.serviceType.deleteMany();
   await prisma.insurerClient.deleteMany();
   await prisma.clientAddress.deleteMany();
   await prisma.client.deleteMany();
@@ -448,12 +449,27 @@ async function main() {
     prisma.insurerClient.create({ data: { insurer_id: insurer2.id, client_id: client3.id, is_vip: true } }),
   ]);
 
+  const serviceTypeNames = [
+    'Reporte de Inspeccion Regular',
+    'Reporte Inspeccion Regular +TMU',
+    'Back grownd check',
+    'TMU',
+    'TMU Plus',
+    'Siniestro',
+  ] as const;
+  await prisma.serviceType.createMany({
+    data: serviceTypeNames.map((name, i) => ({ name, sort_order: i + 1 })),
+  });
+  const seededServiceTypes = await prisma.serviceType.findMany({ orderBy: { sort_order: 'asc' } });
+  const stDefault = seededServiceTypes[0]!;
+
   const [request1, request2, request3, request4] = await prisma.$transaction([
     prisma.inspectionRequest.create({
       data: {
         insurer_id: insurer1.id,
         insurer_client_id: insurerClient1.id,
         client_id: client1.id,
+        service_type_id: stDefault.id,
         request_number: 'VIP-2026-001',
         agent_name: 'Luis Gálvez',
         insured_amount: 250000,
@@ -478,6 +494,7 @@ async function main() {
         insurer_id: insurer1.id,
         insurer_client_id: insurerClient2.id,
         client_id: client2.id,
+        service_type_id: stDefault.id,
         request_number: 'VIP-2026-002',
         responsible_name: 'Carolina Ibáñez',
         responsible_phone: '+507 6000 0101',
@@ -492,6 +509,7 @@ async function main() {
         insurer_id: insurer1.id,
         insurer_client_id: insurerClient1.id,
         client_id: client1.id,
+        service_type_id: stDefault.id,
         request_number: 'VIP-2026-003',
         responsible_name: 'Carolina Ibáñez',
         responsible_phone: '+507 6000 0101',
@@ -510,6 +528,7 @@ async function main() {
         insurer_id: insurer1.id,
         insurer_client_id: insurerClient1.id,
         client_id: client1.id,
+        service_type_id: stDefault.id,
         request_number: 'VIP-2026-004',
         responsible_name: 'Carolina Ibáñez',
         responsible_phone: '+507 6000 0101',

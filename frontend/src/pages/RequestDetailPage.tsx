@@ -11,6 +11,7 @@ import {
   startInspectionCall,
   triggerInvestigation,
   updateInspectionRequestClient,
+  updateInspectionRequestStatus,
   type RequestDocument,
   type UpdateClientPayload,
 } from '../data/api';
@@ -78,6 +79,7 @@ type RequestDetail = {
   priority?: string;
   comments?: string;
   client_notified?: boolean;
+  service_type?: { id?: string | number; name?: string } | null;
   scheduled_start_at?: string;
   scheduled_end_at?: string;
   completed_at?: string;
@@ -127,6 +129,10 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const [editingClient, setEditingClient] = useState(false);
   const [clientForm, setClientForm] = useState<Record<string, string>>({});
   const [clientMessage, setClientMessage] = useState('');
+  const [schedulePanelOpen, setSchedulePanelOpen] = useState(false);
+  const [scheduleDatetimeLocal, setScheduleDatetimeLocal] = useState('');
+  const [scheduleBusy, setScheduleBusy] = useState(false);
+  const [scheduleMessage, setScheduleMessage] = useState('');
 
   const mapPayloadToSections = (sections: any[]): ReportSectionDef[] => {
     const remote: ReportSectionDef[] = sections.map((section: any) => ({
@@ -202,6 +208,9 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
     }
     return legacyMontoVigenciaFromComments;
   }, [data?.amount_in_force, legacyMontoVigenciaFromComments]);
+
+  const canScheduleInterviewFromSolicitud =
+    data?.status === 'SOLICITADA' && !data?.scheduled_start_at;
   const initialReportValues = useMemo(() => {
     if (!data) return {};
     const c = data.client;
@@ -261,6 +270,38 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       setDocOpenError('No se pudo abrir el documento. Inténtalo de nuevo.');
     } finally {
       setOpeningDocId(null);
+    }
+  };
+
+  const handleScheduleInterview = async () => {
+    if (!id) return;
+    if (!scheduleDatetimeLocal.trim()) {
+      setScheduleMessage('Indica la fecha y hora de la entrevista.');
+      return;
+    }
+    const startMs = new Date(scheduleDatetimeLocal).getTime();
+    if (Number.isNaN(startMs)) {
+      setScheduleMessage('Fecha u hora no válida.');
+      return;
+    }
+    setScheduleBusy(true);
+    setScheduleMessage('');
+    try {
+      const startIso = new Date(scheduleDatetimeLocal).toISOString();
+      const endIso = new Date(startMs + 60 * 60 * 1000).toISOString();
+      await updateInspectionRequestStatus(
+        Number(id),
+        { new_status: 'AGENDADA', scheduled_start_at: startIso, scheduled_end_at: endIso },
+        portal,
+      );
+      const resp = await getInspectionRequest(Number(id), portal);
+      setData(resp);
+      setSchedulePanelOpen(false);
+      setScheduleDatetimeLocal('');
+    } catch {
+      setScheduleMessage('No se pudo agendar. Verifica permisos o la fecha y hora.');
+    } finally {
+      setScheduleBusy(false);
     }
   };
 
@@ -903,7 +944,21 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
               <strong>{data.priority ?? 'NORMAL'}</strong>
             </div>
             <div>
-              <span>Agendada inicio</span>
+              <span>Tipo de servicio</span>
+              <strong>{data.service_type?.name ?? '—'}</strong>
+            </div>
+            <div>
+              <span>Estado</span>
+              <strong className="solicitud-tab-detail__status">
+                <StatusBadge status={data.status} />
+              </strong>
+            </div>
+          </div>
+
+          <h4 className="solicitud-tab-detail__title">Entrevista</h4>
+          <div className="details-grid">
+            <div>
+              <span>Fecha y hora de inicio</span>
               <strong>
                 {data.scheduled_start_at
                   ? new Date(data.scheduled_start_at).toLocaleString()
@@ -911,12 +966,62 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
               </strong>
             </div>
             <div>
-              <span>Agendada fin</span>
+              <span>Fecha y hora de fin</span>
               <strong>
                 {data.scheduled_end_at ? new Date(data.scheduled_end_at).toLocaleString() : '—'}
               </strong>
             </div>
           </div>
+          {canScheduleInterviewFromSolicitud && (
+            <div className="solicitud-schedule-block">
+              {!schedulePanelOpen ? (
+                <button
+                  type="button"
+                  className="ghost-button"
+                  onClick={() => {
+                    setSchedulePanelOpen(true);
+                    setScheduleMessage('');
+                  }}
+                >
+                  Agendar entrevista
+                </button>
+              ) : (
+                <div className="form-grid solicitud-schedule-form">
+                  <label className="form-field">
+                    <span>Fecha y hora de la entrevista</span>
+                    <input
+                      type="datetime-local"
+                      value={scheduleDatetimeLocal}
+                      onChange={(e) => setScheduleDatetimeLocal(e.target.value)}
+                    />
+                  </label>
+                  <div className="form-actions solicitud-schedule-form__actions">
+                    <button
+                      type="button"
+                      className="primary-button"
+                      disabled={scheduleBusy}
+                      onClick={handleScheduleInterview}
+                    >
+                      {scheduleBusy ? 'Guardando…' : 'Confirmar'}
+                    </button>
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      disabled={scheduleBusy}
+                      onClick={() => {
+                        setSchedulePanelOpen(false);
+                        setScheduleDatetimeLocal('');
+                        setScheduleMessage('');
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                  {scheduleMessage ? <span className="form-message">{scheduleMessage}</span> : null}
+                </div>
+              )}
+            </div>
+          )}
 
           <h4 className="solicitud-tab-detail__title">Datos del responsable</h4>
           <div className="details-grid">

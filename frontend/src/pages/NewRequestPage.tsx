@@ -1,5 +1,10 @@
-import { useMemo, useState } from 'react';
-import { createInspectionRequest } from '../data/api';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  createInspectionRequest,
+  getInspectionServiceTypes,
+  uploadInspectionRequestDocument,
+  type InspectionServiceTypeOption,
+} from '../data/api';
 import {
   ageInYearsFromDdMmYyyy,
   ddMmYyyyToIso,
@@ -8,10 +13,20 @@ import {
 } from '../utils/ddMmYyyyDate';
 import { isPanamaCedula, PANAMA_CEDULA_HINT } from '../utils/panamaCedula';
 
+const ATTACHMENT_DOC_OPTIONS = [
+  { value: 'CEDULA', label: 'Cédula' },
+  { value: 'AUTORIZACION', label: 'Formulario de autorización' },
+  { value: 'EVIDENCIA', label: 'Evidencia / soporte' },
+  { value: 'OTRO', label: 'Otro' },
+] as const;
+
+type AttachmentRow = { key: string; doc_type: string; file: File | null };
+
 const initialState = {
   responsible_name: '',
   responsible_phone: '',
   responsible_email: '',
+  service_type_id: '',
   first_name: '',
   last_name: '',
   request_number: '',
@@ -34,6 +49,7 @@ const initialState = {
   marital_status: '',
   comments: '',
   client_notified: '',
+  interview_datetime: '',
   interview_language: '',
 };
 
@@ -57,6 +73,15 @@ const NewRequestPage = () => {
   const [message, setMessage] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [successUploadNote, setSuccessUploadNote] = useState('');
+  const [serviceTypes, setServiceTypes] = useState<InspectionServiceTypeOption[]>([]);
+  const [attachments, setAttachments] = useState<AttachmentRow[]>([]);
+
+  useEffect(() => {
+    getInspectionServiceTypes()
+      .then((rows) => setServiceTypes(Array.isArray(rows) ? rows : []))
+      .catch(() => setServiceTypes([]));
+  }, []);
 
   const dobAge = useMemo(() => {
     const v = form.dob.trim();
@@ -66,6 +91,21 @@ const NewRequestPage = () => {
 
   const updateField = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const addAttachmentRow = () => {
+    setAttachments((prev) => [
+      ...prev,
+      { key: `att-${Date.now()}-${Math.random().toString(36).slice(2)}`, doc_type: 'CEDULA', file: null },
+    ]);
+  };
+
+  const removeAttachmentRow = (key: string) => {
+    setAttachments((prev) => prev.filter((r) => r.key !== key));
+  };
+
+  const updateAttachmentRow = (key: string, patch: Partial<Pick<AttachmentRow, 'doc_type' | 'file'>>) => {
+    setAttachments((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   };
 
   const handleSubmit = async () => {
@@ -80,6 +120,11 @@ const NewRequestPage = () => {
     if (!t(form.responsible_email)) errors.responsible_email = 'Requerido';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t(form.responsible_email))) {
       errors.responsible_email = 'Correo no válido';
+    }
+
+    const serviceTypeNum = Number(form.service_type_id);
+    if (!form.service_type_id || Number.isNaN(serviceTypeNum) || serviceTypeNum < 1) {
+      errors.service_type_id = 'Requerido';
     }
 
     if (!t(form.first_name)) errors.first_name = 'Requerido';
@@ -125,6 +170,9 @@ const NewRequestPage = () => {
     if (!form.marital_status) errors.marital_status = 'Requerido';
     if (!form.interview_language) errors.interview_language = 'Requerido';
     if (!form.client_notified) errors.client_notified = 'Requerido';
+    if (form.client_notified === 'Si') {
+      if (!t(form.interview_datetime)) errors.interview_datetime = 'Requerido';
+    }
     if (!t(form.comments)) errors.comments = 'Requerido';
 
     if (Object.keys(errors).length) {
@@ -140,7 +188,18 @@ const NewRequestPage = () => {
       return;
     }
 
+    const notified = form.client_notified === 'Si';
+    const interviewStartIso =
+      notified && t(form.interview_datetime)
+        ? new Date(form.interview_datetime).toISOString()
+        : undefined;
+    const interviewEndIso =
+      interviewStartIso != null
+        ? new Date(new Date(interviewStartIso).getTime() + 60 * 60 * 1000).toISOString()
+        : undefined;
+
     const payload = {
+      service_type_id: serviceTypeNum,
       request_number: t(form.request_number),
       agent_name: t(form.agent_name),
       insured_amount: Number(String(form.insured_amount).replace(/,/g, '')),
@@ -154,7 +213,10 @@ const NewRequestPage = () => {
       responsible_email: t(form.responsible_email),
       marital_status: form.marital_status,
       comments: t(form.comments),
-      client_notified: form.client_notified === 'Si',
+      client_notified: notified,
+      ...(interviewStartIso != null
+        ? { scheduled_start_at: interviewStartIso, scheduled_end_at: interviewEndIso }
+        : {}),
       interview_language: form.interview_language,
       client: {
         first_name: t(form.first_name),
@@ -175,8 +237,29 @@ const NewRequestPage = () => {
     };
 
     try {
-      await createInspectionRequest(payload);
+      const created = await createInspectionRequest(payload);
+      const rid = Number(created.id);
+      if (!Number.isFinite(rid) || rid <= 0) {
+        throw new Error('Respuesta inválida del servidor');
+      }
+
+      const toUpload = attachments.filter((a) => a.file);
+      const failedNames: string[] = [];
+      for (const row of toUpload) {
+        try {
+          await uploadInspectionRequestDocument(rid, row.file!, row.doc_type);
+        } catch {
+          failedNames.push(row.file!.name);
+        }
+      }
+
       setMessage('');
+      setSuccessUploadNote(
+        failedNames.length
+          ? `La solicitud fue creada, pero no se pudieron subir: ${failedNames.join(', ')}.`
+          : '',
+      );
+      setAttachments([]);
       setForm({ ...initialState, ...readResponsibleFromSession() });
       setSuccessModalOpen(true);
     } catch {
@@ -216,6 +299,27 @@ const NewRequestPage = () => {
                 onChange={(e) => updateField('responsible_email', e.target.value)}
               />
               {fieldErrors.responsible_email && <span className="field-error">{fieldErrors.responsible_email}</span>}
+            </label>
+          </div>
+        </div>
+
+        <div className="form-section">
+          <h4>Tipo de servicio</h4>
+          <div className="form-grid">
+            <label className={`form-field ${fieldErrors.service_type_id ? 'has-error' : ''}`}>
+              <span>Tipo de servicio {reqStar}</span>
+              <select
+                value={form.service_type_id}
+                onChange={(e) => updateField('service_type_id', e.target.value)}
+              >
+                <option value="">Seleccione...</option>
+                {serviceTypes.map((st) => (
+                  <option key={st.id} value={String(st.id)}>
+                    {st.name}
+                  </option>
+                ))}
+              </select>
+              {fieldErrors.service_type_id && <span className="field-error">{fieldErrors.service_type_id}</span>}
             </label>
           </div>
         </div>
@@ -397,6 +501,7 @@ const NewRequestPage = () => {
                 <option value="">Seleccione...</option>
                 <option value="Español">Español</option>
                 <option value="Inglés">Inglés</option>
+                <option value="Chino">Chino</option>
                 <option value="Mandarín">Mandarín</option>
                 <option value="Portugués">Portugués</option>
                 <option value="Francés">Francés</option>
@@ -409,19 +514,86 @@ const NewRequestPage = () => {
             </label>
             <label className={`form-field ${fieldErrors.client_notified ? 'has-error' : ''}`}>
               <span>¿El cliente ha sido avisado? {reqStar}</span>
-              <select value={form.client_notified} onChange={(e) => updateField('client_notified', e.target.value)}>
+              <select
+                value={form.client_notified}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setForm((prev) => ({
+                    ...prev,
+                    client_notified: v,
+                    ...(v !== 'Si' ? { interview_datetime: '' } : {}),
+                  }));
+                }}
+              >
                 <option value="">Seleccione...</option>
                 <option value="Si">Si</option>
                 <option value="No">No</option>
               </select>
               {fieldErrors.client_notified && <span className="field-error">{fieldErrors.client_notified}</span>}
             </label>
+            {form.client_notified === 'Si' && (
+              <label className={`form-field ${fieldErrors.interview_datetime ? 'has-error' : ''}`}>
+                <span>Fecha y hora de la entrevista {reqStar}</span>
+                <input
+                  type="datetime-local"
+                  value={form.interview_datetime}
+                  onChange={(e) => updateField('interview_datetime', e.target.value)}
+                />
+                {fieldErrors.interview_datetime && (
+                  <span className="field-error">{fieldErrors.interview_datetime}</span>
+                )}
+              </label>
+            )}
             <label className={`form-field ${fieldErrors.comments ? 'has-error' : ''}`}>
               <span>Indicaciones / Comentarios {reqStar}</span>
               <textarea value={form.comments} onChange={(e) => updateField('comments', e.target.value)} rows={3} />
               {fieldErrors.comments && <span className="field-error">{fieldErrors.comments}</span>}
             </label>
           </div>
+        </div>
+
+        <div className="form-section">
+          <h4>Documentos adjuntos</h4>
+          <p className="form-hint">
+            Opcional. Puedes adjuntar por ejemplo cédula, formulario de autorización u otros documentos. Formatos:
+            PDF o imagen (JPEG, PNG, WebP), hasta 10 MB por archivo.
+          </p>
+          {attachments.map((row) => (
+            <div key={row.key} className="attachment-row">
+              <div className="form-grid attachment-row__grid">
+                <label className="form-field">
+                  <span>Tipo de documento</span>
+                  <select
+                    value={row.doc_type}
+                    onChange={(e) => updateAttachmentRow(row.key, { doc_type: e.target.value })}
+                  >
+                    {ATTACHMENT_DOC_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="form-field">
+                  <span>Archivo</span>
+                  <input
+                    type="file"
+                    accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0] ?? null;
+                      updateAttachmentRow(row.key, { file: f });
+                    }}
+                  />
+                </label>
+              </div>
+              <button type="button" className="ghost-button attachment-row__remove" onClick={() => removeAttachmentRow(row.key)}>
+                Quitar
+              </button>
+            </div>
+          ))}
+          <button type="button" className="ghost-button" onClick={addAttachmentRow}>
+            Añadir documento
+          </button>
         </div>
 
         <div className="form-actions">
@@ -442,7 +614,15 @@ const NewRequestPage = () => {
           <div className="inactivity-modal system-modal">
             <h2 id="new-request-success-title">Éxito</h2>
             <p>Solicitud creada correctamente.</p>
-            <button type="button" className="primary-button" onClick={() => setSuccessModalOpen(false)}>
+            {successUploadNote ? <p className="form-message">{successUploadNote}</p> : null}
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => {
+                setSuccessModalOpen(false);
+                setSuccessUploadNote('');
+              }}
+            >
               Aceptar
             </button>
           </div>
