@@ -1,21 +1,38 @@
+import { BadRequestException } from '@nestjs/common';
 import type { User, UserType } from '@prisma/client';
 import type { JwtRole } from '../common/app-roles';
 
 type UserWithRoles = User & { roles: { role: { code: string } }[] };
 
+/**
+ * Prioridad: tablas `user_roles` + `roles`, luego `user.user_type` (mismo código que `roles.code`).
+ * JWT usa roles cortos para el API (INSURER / ALARA / ADMIN / BROKER).
+ */
 export function resolveJwtRole(user: UserWithRoles): JwtRole {
   const codes = user.roles.map((r) => r.role.code);
   if (codes.includes('ADMIN')) return 'ADMIN';
-  if (codes.includes('INSURER')) return 'INSURER';
-  if (codes.includes('BROKER')) return 'BROKER';
-  if (user.user_type === 'INSURER') return 'INSURER';
-  if (user.user_type === 'BROKER') return 'BROKER';
-  return 'ALARA';
+  if (codes.includes('BROKER_USER')) return 'BROKER';
+  if (codes.includes('INSURER_USER')) return 'INSURER';
+  if (codes.includes('ALARA_USER')) return 'ALARA';
+
+  switch (user.user_type) {
+    case 'ADMIN':
+      return 'ADMIN';
+    case 'BROKER_USER':
+      return 'BROKER';
+    case 'INSURER_USER':
+      return 'INSURER';
+    case 'ALARA_USER':
+    default:
+      return 'ALARA';
+  }
 }
 
-export function userTypeForNewRole(roleCode: string): UserType {
-  if (roleCode === 'ADMIN') return 'ALARA';
-  if (roleCode === 'INSURER') return 'INSURER';
-  if (roleCode === 'BROKER') return 'BROKER';
-  return 'ALARA';
+/** Valida que el código exista en catálogo `roles` y devuelve el `UserType` equivalente (mismo literal). */
+export function userTypeFromRoleCode(roleCode: string): UserType {
+  const allowed: UserType[] = ['INSURER_USER', 'ALARA_USER', 'ADMIN', 'BROKER_USER'];
+  if (allowed.includes(roleCode as UserType)) {
+    return roleCode as UserType;
+  }
+  throw new BadRequestException(`Código de rol no válido para user_type: ${roleCode}`);
 }

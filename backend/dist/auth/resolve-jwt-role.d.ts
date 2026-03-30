@@ -8,5 +8,5 @@ type UserWithRoles = User & {
     }[];
 };
 export declare function resolveJwtRole(user: UserWithRoles): JwtRole;
-export declare function userTypeForNewRole(roleCode: string): UserType;
+export declare function userTypeFromRoleCode(roleCode: string): UserType;
 export {};

@@ -20,7 +20,9 @@ const AdminUsersPage = () => {
   const [newPhone, setNewPhone] = useState('');
   const [newFullName, setNewFullName] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [newRoleCode, setNewRoleCode] = useState<'ADMIN' | 'INSURER' | 'BROKER'>('INSURER');
+  const [newRoleCode, setNewRoleCode] = useState<'INSURER_USER' | 'ALARA_USER' | 'ADMIN' | 'BROKER_USER'>(
+    'INSURER_USER',
+  );
   const [newInsurerId, setNewInsurerId] = useState<number | ''>('');
 
   const load = useCallback(async () => {
@@ -48,7 +50,7 @@ const AdminUsersPage = () => {
       setUserMessage('Completa correo, teléfono, nombre y contraseña (mín. 8 caracteres).');
       return;
     }
-    if ((newRoleCode === 'INSURER' || newRoleCode === 'BROKER') && newInsurerId === '') {
+    if ((newRoleCode === 'INSURER_USER' || newRoleCode === 'BROKER_USER') && newInsurerId === '') {
       setUserMessage('Selecciona una aseguradora para este rol.');
       return;
     }
@@ -114,11 +116,12 @@ const AdminUsersPage = () => {
             <span>Rol</span>
             <select value={newRoleCode} onChange={(e) => setNewRoleCode(e.target.value as typeof newRoleCode)}>
               <option value="ADMIN">Administrador</option>
-              <option value="INSURER">Aseguradora</option>
-              <option value="BROKER">Corredor</option>
+              <option value="INSURER_USER">Usuario aseguradora</option>
+              <option value="ALARA_USER">Usuario ALARA</option>
+              <option value="BROKER_USER">Corredor</option>
             </select>
           </label>
-          {(newRoleCode === 'INSURER' || newRoleCode === 'BROKER') && (
+          {(newRoleCode === 'INSURER_USER' || newRoleCode === 'BROKER_USER') && (
             <label className="form-field">
               <span>Aseguradora</span>
               <select

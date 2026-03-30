@@ -35,10 +35,12 @@ async function main() {
     data: { name: 'Oficina Panamá', timezone: 'America/Panama' },
   });
 
-  const [roleAdmin, roleInsurer, roleBroker] = await prisma.$transaction([
+  /** Códigos alineados con `UserType` y con `users.user_type`. */
+  const [roleAdmin, roleInsurerUser, roleAlaraUser, roleBrokerUser] = await prisma.$transaction([
     prisma.role.create({ data: { code: 'ADMIN', name: 'Administrador' } }),
-    prisma.role.create({ data: { code: 'INSURER', name: 'Aseguradora' } }),
-    prisma.role.create({ data: { code: 'BROKER', name: 'Corredor' } }),
+    prisma.role.create({ data: { code: 'INSURER_USER', name: 'Usuario aseguradora' } }),
+    prisma.role.create({ data: { code: 'ALARA_USER', name: 'Usuario ALARA' } }),
+    prisma.role.create({ data: { code: 'BROKER_USER', name: 'Corredor' } }),
   ]);
 
   const reportTemplatePayload = {
@@ -341,7 +343,7 @@ async function main() {
   const [insurerUser1, insurerUser2, alaraUser, adminUser, brokerUser] = await prisma.$transaction([
     prisma.user.create({
       data: {
-        user_type: 'INSURER',
+        user_type: 'INSURER_USER',
         insurer_id: insurer1.id,
         email: 'insurer@palig.com',
         phone: '+507 6000 0101',
@@ -351,7 +353,7 @@ async function main() {
     }),
     prisma.user.create({
       data: {
-        user_type: 'INSURER',
+        user_type: 'INSURER_USER',
         insurer_id: insurer2.id,
         email: 'insurer@assa.com',
         phone: '+57 300 222 9921',
@@ -361,7 +363,7 @@ async function main() {
     }),
     prisma.user.create({
       data: {
-        user_type: 'ALARA',
+        user_type: 'ALARA_USER',
         alara_office_id: office.id,
         email: 'alara@alarains.com',
         phone: '+507 6500 7890',
@@ -371,7 +373,7 @@ async function main() {
     }),
     prisma.user.create({
       data: {
-        user_type: 'ALARA',
+        user_type: 'ADMIN',
         alara_office_id: office.id,
         email: 'admin@alarains.com',
         phone: '+507 6500 7000',
@@ -381,7 +383,7 @@ async function main() {
     }),
     prisma.user.create({
       data: {
-        user_type: 'BROKER',
+        user_type: 'BROKER_USER',
         insurer_id: insurer1.id,
         email: 'broker@alarains.com',
         phone: '+507 6000 0202',
@@ -393,10 +395,11 @@ async function main() {
 
   await prisma.userRole.createMany({
     data: [
-      { user_id: insurerUser1.id, role_id: roleInsurer.id },
-      { user_id: insurerUser2.id, role_id: roleInsurer.id },
+      { user_id: insurerUser1.id, role_id: roleInsurerUser.id },
+      { user_id: insurerUser2.id, role_id: roleInsurerUser.id },
+      { user_id: alaraUser.id, role_id: roleAlaraUser.id },
       { user_id: adminUser.id, role_id: roleAdmin.id },
-      { user_id: brokerUser.id, role_id: roleBroker.id },
+      { user_id: brokerUser.id, role_id: roleBrokerUser.id },
     ],
   });
 

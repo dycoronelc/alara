@@ -7,10 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Debe coincidir con roles.code (origen de verdad para el tipo de cuenta).
 enum UserType {
-  INSURER
-  ALARA
-  BROKER
+  INSURER_USER
+  ALARA_USER
+  ADMIN
+  BROKER_USER
 }
 
 enum AddressType {

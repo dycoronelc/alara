@@ -35,7 +35,7 @@ __decorate([
     __metadata("design:type", String)
 ], CreateUserDto.prototype, "password", void 0);
 __decorate([
-    (0, class_validator_1.IsEnum)(['ADMIN', 'INSURER', 'BROKER']),
+    (0, class_validator_1.IsEnum)(['INSURER_USER', 'ALARA_USER', 'ADMIN', 'BROKER_USER']),
     __metadata("design:type", String)
 ], CreateUserDto.prototype, "role_code", void 0);
 __decorate([

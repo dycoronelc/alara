@@ -48,21 +48,21 @@ let UsersService = class UsersService {
         if (!role) {
             throw new common_1.BadRequestException('Rol inválido');
         }
-        const user_type = (0, resolve_jwt_role_1.userTypeForNewRole)(dto.role_code);
+        const user_type = (0, resolve_jwt_role_1.userTypeFromRoleCode)(dto.role_code);
         let insurer_id = dto.insurer_id != null ? BigInt(dto.insurer_id) : null;
         let alara_office_id = dto.alara_office_id != null ? BigInt(dto.alara_office_id) : null;
-        if (dto.role_code === 'INSURER' || dto.role_code === 'BROKER') {
+        if (dto.role_code === 'INSURER_USER' || dto.role_code === 'BROKER_USER') {
             if (!insurer_id) {
                 throw new common_1.BadRequestException('La aseguradora es obligatoria para este rol');
             }
         }
-        if ((dto.role_code === 'ADMIN' || user_type === 'ALARA') && !alara_office_id) {
+        if ((dto.role_code === 'ADMIN' || dto.role_code === 'ALARA_USER') && !alara_office_id) {
             const first = await this.prisma.alaraOffice.findFirst({ orderBy: { id: 'asc' } });
             if (first) {
                 alara_office_id = first.id;
             }
         }
-        if (user_type === 'ALARA' && !alara_office_id) {
+        if ((user_type === 'ALARA_USER' || user_type === 'ADMIN') && !alara_office_id) {
             throw new common_1.BadRequestException('Defina una oficina ALARA o cree una en el sistema');
         }
         const password_hash = await bcrypt.hash(dto.password, 10);
@@ -74,8 +74,8 @@ let UsersService = class UsersService {
                     full_name: dto.full_name.trim(),
                     password_hash,
                     user_type,
-                    insurer_id: user_type === 'INSURER' || user_type === 'BROKER' ? insurer_id : null,
-                    alara_office_id: user_type === 'ALARA' ? alara_office_id : null,
+                    insurer_id: user_type === 'INSURER_USER' || user_type === 'BROKER_USER' ? insurer_id : null,
+                    alara_office_id: user_type === 'ALARA_USER' || user_type === 'ADMIN' ? alara_office_id : null,
                     roles: {
                         create: {
                             role: { connect: { id: role.id } },

@@ -16,14 +16,15 @@ export declare class InspectionRequestsService {
     }): Promise<({
         insurer: {
             id: bigint;
+            is_active: boolean;
             created_at: Date;
             updated_at: Date | null;
             name: string;
             legal_id: string | null;
-            is_active: boolean;
         };
         client: {
             id: bigint;
+            email: string | null;
             created_at: Date;
             updated_at: Date | null;
             first_name: string;
@@ -31,7 +32,6 @@ export declare class InspectionRequestsService {
             dob: Date | null;
             id_type: import(".prisma/client").$Enums.IdType | null;
             id_number: string | null;
-            email: string | null;
             phone_mobile: string | null;
             phone_home: string | null;
             phone_work: string | null;
@@ -45,6 +45,8 @@ export declare class InspectionRequestsService {
     } & {
         id: bigint;
         insurer_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         request_number: string;
@@ -78,8 +80,6 @@ export declare class InspectionRequestsService {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     })[]>;
     getById(context: RequestContext, id: number): Promise<{
         report_template: {
@@ -92,14 +92,15 @@ export declare class InspectionRequestsService {
         } | null;
         insurer: {
             id: bigint;
+            is_active: boolean;
             created_at: Date;
             updated_at: Date | null;
             name: string;
             legal_id: string | null;
-            is_active: boolean;
         };
         client: {
             id: bigint;
+            email: string | null;
             created_at: Date;
             updated_at: Date | null;
             first_name: string;
@@ -107,7 +108,6 @@ export declare class InspectionRequestsService {
             dob: Date | null;
             id_type: import(".prisma/client").$Enums.IdType | null;
             id_number: string | null;
-            email: string | null;
             phone_mobile: string | null;
             phone_home: string | null;
             phone_work: string | null;
@@ -139,9 +139,9 @@ export declare class InspectionRequestsService {
             })[];
         } & {
             id: bigint;
-            created_by_user_id: bigint | null;
             created_at: Date;
             updated_at: Date | null;
+            created_by_user_id: bigint | null;
             inspection_request_id: bigint;
             interview_started_at: Date | null;
             interview_ended_at: Date | null;
@@ -152,6 +152,8 @@ export declare class InspectionRequestsService {
         }) | null;
         id: bigint;
         insurer_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         request_number: string;
@@ -185,14 +187,12 @@ export declare class InspectionRequestsService {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
     saveReport(context: RequestContext, id: number, payload: SaveReportDto): Promise<{
         id: bigint;
-        created_by_user_id: bigint | null;
         created_at: Date;
         updated_at: Date | null;
+        created_by_user_id: bigint | null;
         inspection_request_id: bigint;
         interview_started_at: Date | null;
         interview_ended_at: Date | null;
@@ -204,6 +204,8 @@ export declare class InspectionRequestsService {
     shareReport(context: RequestContext, id: number): Promise<{
         id: bigint;
         insurer_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         request_number: string;
@@ -237,8 +239,6 @@ export declare class InspectionRequestsService {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
     triggerInvestigation(context: RequestContext, id: number, sources: {
         name: string;
@@ -253,8 +253,8 @@ export declare class InspectionRequestsService {
     }>;
     listInvestigations(context: RequestContext, id: number): Promise<{
         id: bigint;
-        created_by_user_id: bigint | null;
         created_at: Date;
+        created_by_user_id: bigint | null;
         inspection_request_id: bigint;
         source_type: import(".prisma/client").$Enums.InvestigationSource;
         source_name: string | null;
@@ -273,6 +273,8 @@ export declare class InspectionRequestsService {
     create(context: RequestContext, payload: CreateInspectionRequestDto): Promise<{
         id: bigint;
         insurer_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         request_number: string;
@@ -306,12 +308,12 @@ export declare class InspectionRequestsService {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
     updateStatus(context: RequestContext, id: number, payload: UpdateStatusDto): Promise<{
         id: bigint;
         insurer_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         request_number: string;
@@ -345,12 +347,12 @@ export declare class InspectionRequestsService {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
     decide(context: RequestContext, id: number, payload: DecisionDto): Promise<{
         id: bigint;
         insurer_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         request_number: string;
@@ -384,8 +386,6 @@ export declare class InspectionRequestsService {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
     updateClient(context: RequestContext, requestId: number, payload: UpdateClientDto): Promise<{
         report_template: {
@@ -398,14 +398,15 @@ export declare class InspectionRequestsService {
         } | null;
         insurer: {
             id: bigint;
+            is_active: boolean;
             created_at: Date;
             updated_at: Date | null;
             name: string;
             legal_id: string | null;
-            is_active: boolean;
         };
         client: {
             id: bigint;
+            email: string | null;
             created_at: Date;
             updated_at: Date | null;
             first_name: string;
@@ -413,7 +414,6 @@ export declare class InspectionRequestsService {
             dob: Date | null;
             id_type: import(".prisma/client").$Enums.IdType | null;
             id_number: string | null;
-            email: string | null;
             phone_mobile: string | null;
             phone_home: string | null;
             phone_work: string | null;
@@ -445,9 +445,9 @@ export declare class InspectionRequestsService {
             })[];
         } & {
             id: bigint;
-            created_by_user_id: bigint | null;
             created_at: Date;
             updated_at: Date | null;
+            created_by_user_id: bigint | null;
             inspection_request_id: bigint;
             interview_started_at: Date | null;
             interview_ended_at: Date | null;
@@ -458,6 +458,8 @@ export declare class InspectionRequestsService {
         }) | null;
         id: bigint;
         insurer_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         request_number: string;
@@ -491,8 +493,6 @@ export declare class InspectionRequestsService {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
     private ensureTenancy;
 }

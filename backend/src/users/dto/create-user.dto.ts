@@ -17,8 +17,9 @@ export class CreateUserDto {
   @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
   password!: string;
 
-  @IsEnum(['ADMIN', 'INSURER', 'BROKER'])
-  role_code!: 'ADMIN' | 'INSURER' | 'BROKER';
+  /** Mismo valor que `roles.code` y que `users.user_type`. */
+  @IsEnum(['INSURER_USER', 'ALARA_USER', 'ADMIN', 'BROKER_USER'])
+  role_code!: 'INSURER_USER' | 'ALARA_USER' | 'ADMIN' | 'BROKER_USER';
 
   /** Obligatorio para Aseguradora y Corredor */
   @IsOptional()

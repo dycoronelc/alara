@@ -41,7 +41,9 @@ const AdminRolesPage = () => {
     <div className="page">
       <div className="info-card">
         <h3>Roles del sistema</h3>
-        <p>Catálogo de roles disponibles (Administrador, Aseguradora, Corredor).</p>
+        <p>
+          Catálogo alineado con <code>users.user_type</code>: INSURER_USER, ALARA_USER, ADMIN, BROKER_USER.
+        </p>
       </div>
       <div className="info-card">
         {loading && <p>Cargando…</p>}

@@ -16,14 +16,15 @@ export declare class InspectionRequestsController {
     list(req: Request, status?: string, search?: string): Promise<({
         insurer: {
             id: bigint;
+            is_active: boolean;
             created_at: Date;
             updated_at: Date | null;
             name: string;
             legal_id: string | null;
-            is_active: boolean;
         };
         client: {
             id: bigint;
+            email: string | null;
             created_at: Date;
             updated_at: Date | null;
             first_name: string;
@@ -31,7 +32,6 @@ export declare class InspectionRequestsController {
             dob: Date | null;
             id_type: import(".prisma/client").$Enums.IdType | null;
             id_number: string | null;
-            email: string | null;
             phone_mobile: string | null;
             phone_home: string | null;
             phone_work: string | null;
@@ -45,6 +45,8 @@ export declare class InspectionRequestsController {
     } & {
         id: bigint;
         insurer_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         request_number: string;
@@ -78,12 +80,12 @@ export declare class InspectionRequestsController {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     })[]>;
     create(req: Request, payload: CreateInspectionRequestDto): Promise<{
         id: bigint;
         insurer_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         request_number: string;
@@ -117,8 +119,6 @@ export declare class InspectionRequestsController {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
     listDocuments(req: Request, id: number): Promise<{
         id: bigint;
@@ -133,6 +133,8 @@ export declare class InspectionRequestsController {
     updateStatus(req: Request, id: number, payload: UpdateStatusDto): Promise<{
         id: bigint;
         insurer_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         request_number: string;
@@ -166,12 +168,12 @@ export declare class InspectionRequestsController {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
     decide(req: Request, id: number, payload: DecisionDto): Promise<{
         id: bigint;
         insurer_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         request_number: string;
@@ -205,8 +207,6 @@ export declare class InspectionRequestsController {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
     updateClient(req: Request, id: number, payload: UpdateClientDto): Promise<{
         report_template: {
@@ -219,14 +219,15 @@ export declare class InspectionRequestsController {
         } | null;
         insurer: {
             id: bigint;
+            is_active: boolean;
             created_at: Date;
             updated_at: Date | null;
             name: string;
             legal_id: string | null;
-            is_active: boolean;
         };
         client: {
             id: bigint;
+            email: string | null;
             created_at: Date;
             updated_at: Date | null;
             first_name: string;
@@ -234,7 +235,6 @@ export declare class InspectionRequestsController {
             dob: Date | null;
             id_type: import(".prisma/client").$Enums.IdType | null;
             id_number: string | null;
-            email: string | null;
             phone_mobile: string | null;
             phone_home: string | null;
             phone_work: string | null;
@@ -266,9 +266,9 @@ export declare class InspectionRequestsController {
             })[];
         } & {
             id: bigint;
-            created_by_user_id: bigint | null;
             created_at: Date;
             updated_at: Date | null;
+            created_by_user_id: bigint | null;
             inspection_request_id: bigint;
             interview_started_at: Date | null;
             interview_ended_at: Date | null;
@@ -279,6 +279,8 @@ export declare class InspectionRequestsController {
         }) | null;
         id: bigint;
         insurer_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         request_number: string;
@@ -312,14 +314,12 @@ export declare class InspectionRequestsController {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
     saveReport(req: Request, id: number, payload: SaveReportDto): Promise<{
         id: bigint;
-        created_by_user_id: bigint | null;
         created_at: Date;
         updated_at: Date | null;
+        created_by_user_id: bigint | null;
         inspection_request_id: bigint;
         interview_started_at: Date | null;
         interview_ended_at: Date | null;
@@ -331,6 +331,8 @@ export declare class InspectionRequestsController {
     shareReport(req: Request, id: number): Promise<{
         id: bigint;
         insurer_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         request_number: string;
@@ -364,8 +366,6 @@ export declare class InspectionRequestsController {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
     requestPdf(req: Request, res: Response, id: number): Promise<Response<any, Record<string, any>>>;
     reportPdf(req: Request, res: Response, id: number): Promise<Response<any, Record<string, any>>>;
@@ -384,8 +384,8 @@ export declare class InspectionRequestsController {
     }>;
     listInvestigations(req: Request, id: number): Promise<{
         id: bigint;
-        created_by_user_id: bigint | null;
         created_at: Date;
+        created_by_user_id: bigint | null;
         inspection_request_id: bigint;
         source_type: import(".prisma/client").$Enums.InvestigationSource;
         source_name: string | null;
@@ -412,14 +412,15 @@ export declare class InspectionRequestsController {
         } | null;
         insurer: {
             id: bigint;
+            is_active: boolean;
             created_at: Date;
             updated_at: Date | null;
             name: string;
             legal_id: string | null;
-            is_active: boolean;
         };
         client: {
             id: bigint;
+            email: string | null;
             created_at: Date;
             updated_at: Date | null;
             first_name: string;
@@ -427,7 +428,6 @@ export declare class InspectionRequestsController {
             dob: Date | null;
             id_type: import(".prisma/client").$Enums.IdType | null;
             id_number: string | null;
-            email: string | null;
             phone_mobile: string | null;
             phone_home: string | null;
             phone_work: string | null;
@@ -459,9 +459,9 @@ export declare class InspectionRequestsController {
             })[];
         } & {
             id: bigint;
-            created_by_user_id: bigint | null;
             created_at: Date;
             updated_at: Date | null;
+            created_by_user_id: bigint | null;
             inspection_request_id: bigint;
             interview_started_at: Date | null;
             interview_ended_at: Date | null;
@@ -472,6 +472,8 @@ export declare class InspectionRequestsController {
         }) | null;
         id: bigint;
         insurer_id: bigint;
+        created_at: Date;
+        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         request_number: string;
@@ -505,7 +507,5 @@ export declare class InspectionRequestsController {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-        created_at: Date;
-        updated_at: Date | null;
     }>;
 }
