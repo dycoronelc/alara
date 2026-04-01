@@ -52,6 +52,47 @@ export const SI_NO_OPTIONS: ReportFieldOption[] = [
   { value: 'No', label: 'No' },
 ];
 
+/** Opciones de un select son exactamente Sí / No (mismo valor). */
+export function isSiNoOptionList(opts: ReportFieldOption[] | undefined): boolean {
+  if (!opts || opts.length !== 2) return false;
+  const vals = new Set(opts.map((o) => String(o.value)));
+  return vals.has('Sí') && vals.has('No');
+}
+
+/**
+ * Valor persistido → "Sí" solo si quedó explícitamente afirmativo; en cualquier otro caso (vacío, "No", etc.) → "No".
+ */
+export function resolvedYesNoStoredValue(v: string | undefined | null): 'Sí' | 'No' {
+  const t = (v ?? '').trim();
+  if (!t) return 'No';
+  const lower = t.toLowerCase();
+  if (t === 'Sí' || lower === 'sí' || lower === 'si' || t === 'TRUE' || lower === 'true' || t === '1') {
+    return 'Sí';
+  }
+  return 'No';
+}
+
+export function fieldIsSiNoSelector(field: ReportFieldDef): boolean {
+  if (field.type === 'yes_no') return true;
+  if (field.type === 'select') return isSiNoOptionList(field.options);
+  return false;
+}
+
+export function applySiNoDefaultsFromSections(
+  values: Record<string, string>,
+  sections: ReportSectionDef[],
+): Record<string, string> {
+  const next = { ...values };
+  for (const section of sections) {
+    for (const field of section.fields) {
+      if (fieldIsSiNoSelector(field)) {
+        next[field.key] = resolvedYesNoStoredValue(next[field.key]);
+      }
+    }
+  }
+  return next;
+}
+
 /** Claves que siempre son Sí/No aunque el API aún diga TEXT (plantillas antiguas) */
 export const YES_NO_KEYS = new Set<string>([
   'deafness',
@@ -138,6 +179,7 @@ export const TEXTAREA_KEYS = new Set<string>([
   'traffic',
   'arrested',
   'additional_comments',
+  'informacion_medica',
 ]);
 
 export const DATE_KEYS = new Set<string>([

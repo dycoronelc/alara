@@ -23,12 +23,19 @@ import { defaultReportSections } from '../report/defaultReportSections';
 import { mergeReportTemplate } from '../report/mergeReportTemplate';
 import { migrateLegacyDatosPersonales } from '../report/migrateLegacyReportValues';
 import {
+  applySiNoDefaultsFromSections,
   DATE_KEYS,
+  fieldIsSiNoSelector,
   isReportFieldVisible,
   mapApiFieldToDef,
+  resolvedYesNoStoredValue,
   toApiFieldType,
+  type ReportFieldDef,
   type ReportSectionDef,
 } from '../report/fieldTypes';
+
+/** TMU — tipos de servicio que muestran el bloque Información Médica en el reporte. */
+const TMU_SERVICE_TYPE_ID = 2;
 import { ageInYearsFromDdMmYyyy, isoLikeToDdMmYyyy, isValidDdMmYyyy } from '../utils/ddMmYyyyDate';
 import { isPanamaCedula, PANAMA_CEDULA_HINT } from '../utils/panamaCedula';
 
@@ -103,6 +110,24 @@ type RequestDetail = {
     payload?: { sections?: { code?: string; title: string; fields: any[] }[] };
   } | null;
 };
+
+function reportStatusLabelForInsurer(d: RequestDetail): string {
+  if (d.status === 'CANCELADA') return 'Cancelada';
+  if (['SOLICITADA', 'AGENDADA'].includes(d.status)) return 'En proceso';
+  if (d.status === 'REALIZADA') {
+    if (!d.report_shared_at) return 'Pendiente de envío';
+    return 'Reporte enviado';
+  }
+  if (d.status === 'APROBADA') return 'Aprobada';
+  if (d.status === 'RECHAZADA') return 'Rechazada';
+  return '—';
+}
+
+function investigationStatusLabelForInsurer(requestStatus: string, rows: unknown[]): string {
+  if (['SOLICITADA', 'AGENDADA'].includes(requestStatus)) return 'Pendiente';
+  if (rows.length > 0) return `Completada (${rows.length})`;
+  return 'Sin registros';
+}
 
 const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const { id } = useParams();
@@ -190,7 +215,25 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       .catch(() => setData(null));
   }, [id, portal]);
 
-  const reportSections = useMemo(() => templateSections, [templateSections]);
+  const reportSections = useMemo(() => {
+    const stId = Number(data?.service_type?.id);
+    if (stId !== TMU_SERVICE_TYPE_ID) return templateSections;
+
+    const already = templateSections.some((s) => s.fields.some((f) => f.key === 'informacion_medica'));
+    if (already) return templateSections;
+
+    const tmuMedicalField: ReportFieldDef = {
+      key: 'informacion_medica',
+      label: 'Información Médica',
+      type: 'textarea',
+    };
+    const tmuSection: ReportSectionDef = {
+      code: 'INFORMACION_MEDICA_TMU',
+      title: '',
+      fields: [tmuMedicalField],
+    };
+    return [...templateSections, tmuSection];
+  }, [templateSections, data?.service_type?.id]);
 
   const solicitudDobDdMm = useMemo(
     () => (data?.client?.dob ? isoLikeToDdMmYyyy(data.client.dob) : ''),
@@ -252,11 +295,24 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   }, [data]);
 
   useEffect(() => {
-    if (!id || activeTab !== 'investigaciones') return;
+    if (!id) return;
+    if (portal === 'aseguradora') {
+      getInvestigations(Number(id), portal)
+        .then((resp) => setInvestigations(resp as any[]))
+        .catch(() => setInvestigations([]));
+      return;
+    }
+    if (activeTab !== 'investigaciones') return;
     getInvestigations(Number(id), portal)
       .then((resp) => setInvestigations(resp as any[]))
       .catch(() => setInvestigations([]));
   }, [activeTab, id, portal]);
+
+  useEffect(() => {
+    if (portal === 'aseguradora' && (activeTab === 'documentacion' || activeTab === 'investigaciones')) {
+      setActiveTab('general');
+    }
+  }, [portal, activeTab]);
 
   useEffect(() => {
     if (!id || activeTab !== 'documentacion') return;
@@ -375,13 +431,13 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       });
     }
     migrateLegacyDatosPersonales(existingValues);
-    setReportValues(existingValues);
+    setReportValues(applySiNoDefaultsFromSections(existingValues, templateSections));
     setReportSummary(data?.inspection_report?.summary ?? '');
     setReportComments(data?.inspection_report?.additional_comments ?? '');
     if (data?.inspection_report?.outcome) {
       setReportOutcome(data.inspection_report.outcome as any);
     }
-  }, [initialReportValues, data?.inspection_report]);
+  }, [initialReportValues, data?.inspection_report, templateSections]);
 
   const reportDraftStorageKey = id && portal === 'alara' ? `alara-report-draft:${id}` : '';
 
@@ -444,7 +500,9 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
         reportOutcome?: string;
       };
       if (d.reportValues && typeof d.reportValues === 'object') {
-        setReportValues((prev) => ({ ...prev, ...d.reportValues }));
+        setReportValues((prev) =>
+          applySiNoDefaultsFromSections({ ...prev, ...d.reportValues }, templateSections),
+        );
       }
       if (d.reportSummary !== undefined) setReportSummary(d.reportSummary);
       if (d.reportComments !== undefined) setReportComments(d.reportComments);
@@ -500,7 +558,9 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
           key: field.key,
           label: field.label,
           type: toApiFieldType(field),
-          value: reportValues[field.key] ?? '',
+          value: fieldIsSiNoSelector(field)
+            ? resolvedYesNoStoredValue(reportValues[field.key])
+            : (reportValues[field.key] ?? ''),
         })),
       })),
     };
@@ -672,18 +732,22 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
             Reporte
           </button>
         )}
-        <button
-          className={activeTab === 'documentacion' ? 'tab active' : 'tab'}
-          onClick={() => setActiveTab('documentacion')}
-        >
-          Documentación
-        </button>
-        <button
-          className={activeTab === 'investigaciones' ? 'tab active' : 'tab'}
-          onClick={() => setActiveTab('investigaciones')}
-        >
-          Investigaciones
-        </button>
+        {portal !== 'aseguradora' && (
+          <>
+            <button
+              className={activeTab === 'documentacion' ? 'tab active' : 'tab'}
+              onClick={() => setActiveTab('documentacion')}
+            >
+              Documentación
+            </button>
+            <button
+              className={activeTab === 'investigaciones' ? 'tab active' : 'tab'}
+              onClick={() => setActiveTab('investigaciones')}
+            >
+              Investigaciones
+            </button>
+          </>
+        )}
       </div>
 
       {activeTab === 'general' && (
@@ -737,19 +801,25 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
             <div className="file-row">
               <span>Reporte de inspección</span>
               <div className="file-actions">
-                {data.status === 'REALIZADA' && !data.report_shared_at && (
-                  <span className="pending-pill">Pendiente de envío</span>
-                )}
-                {['REALIZADA', 'APROBADA', 'RECHAZADA'].includes(data.status) &&
-                (portal === 'alara' || data.report_shared_at) ? (
-                  <button
-                    className="ghost-button"
-                    onClick={() => downloadPdf(Number(data.id), 'reporte')}
-                  >
-                    Descargar
-                  </button>
+                {portal === 'aseguradora' ? (
+                  <span className="pending-pill">{reportStatusLabelForInsurer(data)}</span>
                 ) : (
-                  <span>En proceso</span>
+                  <>
+                    {data.status === 'REALIZADA' && !data.report_shared_at && (
+                      <span className="pending-pill">Pendiente de envío</span>
+                    )}
+                    {['REALIZADA', 'APROBADA', 'RECHAZADA'].includes(data.status) &&
+                    (portal === 'alara' || data.report_shared_at) ? (
+                      <button
+                        className="ghost-button"
+                        onClick={() => downloadPdf(Number(data.id), 'reporte')}
+                      >
+                        Descargar
+                      </button>
+                    ) : (
+                      <span>En proceso</span>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -763,9 +833,17 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
             )}
             <div className="file-row">
               <span>Investigación</span>
-              <button className="ghost-button" onClick={handleInvestigate}>
-                Investigar
-              </button>
+              <div className="file-actions">
+                {portal === 'aseguradora' ? (
+                  <span className="pending-pill">
+                    {investigationStatusLabelForInsurer(data.status, investigations)}
+                  </span>
+                ) : (
+                  <button className="ghost-button" onClick={handleInvestigate}>
+                    Investigar
+                  </button>
+                )}
+              </div>
             </div>
             {callMessage && <span className="form-message">{callMessage}</span>}
           </div>
@@ -1234,12 +1312,15 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
               </div>
               {reportSections.map((section) => (
                 <div key={section.code ?? section.title} className="form-section">
-                  <h4>{section.title}</h4>
+                  {section.title?.trim() ? <h4>{section.title}</h4> : null}
                   <div className="form-grid">
                     {section.fields
                       .filter((field) => isReportFieldVisible(field, reportValues))
                       .map((field) => (
-                        <label key={field.key} className="form-field">
+                        <label
+                          key={field.key}
+                          className={`form-field${field.key === 'informacion_medica' ? ' details-wide' : ''}`}
+                        >
                           <span>{field.label}</span>
                           <ReportFormField
                             field={field}
@@ -1302,7 +1383,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
         </div>
       )}
 
-      {activeTab === 'documentacion' && (
+      {portal !== 'aseguradora' && activeTab === 'documentacion' && (
         <div className="info-card">
           <h4>Documentación</h4>
           <p>Documentos registrados para este trámite.</p>
@@ -1332,7 +1413,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
         </div>
       )}
 
-      {activeTab === 'investigaciones' && (
+      {portal !== 'aseguradora' && activeTab === 'investigaciones' && (
         <div className="info-card info-card--uaf">
           <InvestigationsUafSection
             client={data?.client}
