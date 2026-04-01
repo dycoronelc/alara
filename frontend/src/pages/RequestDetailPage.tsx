@@ -12,6 +12,7 @@ import {
   triggerInvestigation,
   updateInspectionRequestClient,
   updateInspectionRequestStatus,
+  getStoredRole,
   type RequestDocument,
   type UpdateClientPayload,
 } from '../data/api';
@@ -165,6 +166,11 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const [scheduleBusy, setScheduleBusy] = useState(false);
   const [scheduleMessage, setScheduleMessage] = useState('');
 
+  const sessionRole = getStoredRole();
+  /** Vista de aseguradora/corredor: ruta `/portal/aseguradora` o rol INSURER/BROKER (p. ej. enlace al portal ALARA). */
+  const isInsurerExperience =
+    portal === 'aseguradora' || sessionRole === 'INSURER' || sessionRole === 'BROKER';
+
   const mapPayloadToSections = (sections: any[]): ReportSectionDef[] => {
     const remote: ReportSectionDef[] = sections.map((section: any) => ({
       code: section.code,
@@ -296,7 +302,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
 
   useEffect(() => {
     if (!id) return;
-    if (portal === 'aseguradora') {
+    if (isInsurerExperience) {
       getInvestigations(Number(id), portal)
         .then((resp) => setInvestigations(resp as any[]))
         .catch(() => setInvestigations([]));
@@ -306,13 +312,13 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
     getInvestigations(Number(id), portal)
       .then((resp) => setInvestigations(resp as any[]))
       .catch(() => setInvestigations([]));
-  }, [activeTab, id, portal]);
+  }, [activeTab, id, portal, isInsurerExperience]);
 
   useEffect(() => {
-    if (portal === 'aseguradora' && (activeTab === 'documentacion' || activeTab === 'investigaciones')) {
+    if (isInsurerExperience && (activeTab === 'documentacion' || activeTab === 'investigaciones')) {
       setActiveTab('general');
     }
-  }, [portal, activeTab]);
+  }, [isInsurerExperience, activeTab]);
 
   useEffect(() => {
     if (!id || activeTab !== 'documentacion') return;
@@ -439,7 +445,8 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
     }
   }, [initialReportValues, data?.inspection_report, templateSections]);
 
-  const reportDraftStorageKey = id && portal === 'alara' ? `alara-report-draft:${id}` : '';
+  const reportDraftStorageKey =
+    id && portal === 'alara' && !isInsurerExperience ? `alara-report-draft:${id}` : '';
 
   const updateReportValue = (key: string, value: string) => {
     setReportValues((prev) => {
@@ -477,7 +484,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   }, [reportDraftStorageKey, activeTab, persistReportDraft]);
 
   useEffect(() => {
-    if (!id || activeTab !== 'reporte' || portal !== 'alara') {
+    if (!id || activeTab !== 'reporte' || portal !== 'alara' || isInsurerExperience) {
       setHasLocalReportDraft(false);
       return;
     }
@@ -486,7 +493,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
     } catch {
       setHasLocalReportDraft(false);
     }
-  }, [id, activeTab, portal]);
+  }, [id, activeTab, portal, isInsurerExperience]);
 
   const handleRecoverReportDraft = () => {
     if (!reportDraftStorageKey) return;
@@ -727,12 +734,12 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
         <button className={activeTab === 'solicitud' ? 'tab active' : 'tab'} onClick={() => setActiveTab('solicitud')}>
           Solicitud
         </button>
-        {portal !== 'aseguradora' && (
+        {!isInsurerExperience && (
           <button className={activeTab === 'reporte' ? 'tab active' : 'tab'} onClick={() => setActiveTab('reporte')}>
             Reporte
           </button>
         )}
-        {portal !== 'aseguradora' && (
+        {!isInsurerExperience && (
           <>
             <button
               className={activeTab === 'documentacion' ? 'tab active' : 'tab'}
@@ -801,7 +808,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
             <div className="file-row">
               <span>Reporte de inspección</span>
               <div className="file-actions">
-                {portal === 'aseguradora' ? (
+                {isInsurerExperience ? (
                   <span className="pending-pill">{reportStatusLabelForInsurer(data)}</span>
                 ) : (
                   <>
@@ -823,7 +830,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                 )}
               </div>
             </div>
-            {portal === 'alara' && (
+            {portal === 'alara' && !isInsurerExperience && (
               <div className="file-row">
                 <span>Llamada</span>
                 <button className="ghost-button" onClick={handleStartCall}>
@@ -834,7 +841,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
             <div className="file-row">
               <span>Investigación</span>
               <div className="file-actions">
-                {portal === 'aseguradora' ? (
+                {isInsurerExperience ? (
                   <span className="pending-pill">
                     {investigationStatusLabelForInsurer(data.status, investigations)}
                   </span>
@@ -1277,7 +1284,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
         </div>
       )}
 
-      {portal !== 'aseguradora' && activeTab === 'reporte' && (
+      {!isInsurerExperience && activeTab === 'reporte' && (
         <div className="info-card report-tab-card">
           {showReportForm && (
             <div className="report-form">
@@ -1340,7 +1347,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                 >
                   {reportSaveBusy ? 'Guardando…' : 'Guardar y Finalizar'}
                 </button>
-                {portal === 'alara' && data.status === 'REALIZADA' && !data.report_shared_at && (
+                {portal === 'alara' && !isInsurerExperience && data.status === 'REALIZADA' && !data.report_shared_at && (
                   <button className="ghost-button" onClick={handleShareReport}>
                     Enviar a la aseguradora
                   </button>
@@ -1359,7 +1366,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
             </div>
           )}
 
-          {showReportForm && portal === 'alara' && (
+          {showReportForm && portal === 'alara' && !isInsurerExperience && (
             <div className="report-floating-save" role="region" aria-label="Guardado del reporte">
               <button
                 type="button"
@@ -1383,7 +1390,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
         </div>
       )}
 
-      {portal !== 'aseguradora' && activeTab === 'documentacion' && (
+      {!isInsurerExperience && activeTab === 'documentacion' && (
         <div className="info-card">
           <h4>Documentación</h4>
           <p>Documentos registrados para este trámite.</p>
@@ -1413,7 +1420,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
         </div>
       )}
 
-      {portal !== 'aseguradora' && activeTab === 'investigaciones' && (
+      {!isInsurerExperience && activeTab === 'investigaciones' && (
         <div className="info-card info-card--uaf">
           <InvestigationsUafSection
             client={data?.client}
@@ -1422,7 +1429,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
             onSearchModeChange={setUafSearchMode}
           >
             <div className="uaf-validation__actions">
-              {portal === 'alara' && (
+              {portal === 'alara' && !isInsurerExperience && (
                 <button type="button" className="primary-button" onClick={handleInvestigate}>
                   Ejecutar investigación (n8n)
                 </button>
