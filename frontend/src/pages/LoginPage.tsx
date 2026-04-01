@@ -31,6 +31,8 @@ const LoginPage = () => {
         full_name: data.user.full_name,
         email: data.user.email,
         phone: data.user.phone ?? '',
+        role: data.user.role,
+        role_codes: data.user.role_codes ?? [],
       }),
     );
     if (data.user.insurer_id) {

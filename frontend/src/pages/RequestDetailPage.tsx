@@ -12,7 +12,7 @@ import {
   triggerInvestigation,
   updateInspectionRequestClient,
   updateInspectionRequestStatus,
-  getStoredRole,
+  isInsurerExperienceMode,
   type RequestDocument,
   type UpdateClientPayload,
 } from '../data/api';
@@ -130,6 +130,15 @@ function investigationStatusLabelForInsurer(requestStatus: string, rows: unknown
   return 'Sin registros';
 }
 
+function formatTimelineDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -166,10 +175,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const [scheduleBusy, setScheduleBusy] = useState(false);
   const [scheduleMessage, setScheduleMessage] = useState('');
 
-  const sessionRole = getStoredRole();
-  /** Vista de aseguradora/corredor: ruta `/portal/aseguradora` o rol INSURER/BROKER (p. ej. enlace al portal ALARA). */
-  const isInsurerExperience =
-    portal === 'aseguradora' || sessionRole === 'INSURER' || sessionRole === 'BROKER';
+  const isInsurerExperience = isInsurerExperienceMode(portal);
 
   const mapPayloadToSections = (sections: any[]): ReportSectionDef[] => {
     const remote: ReportSectionDef[] = sections.map((section: any) => ({
@@ -1462,7 +1468,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
         <div className="timeline">
           {timelineItems.map((item, index) => (
             <div key={`${item.label}-${index}`}>
-              <span>{new Date(item.date).toLocaleDateString()}</span>
+              <span>{formatTimelineDate(item.date)}</span>
               <p>{item.label}</p>
             </div>
           ))}

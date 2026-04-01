@@ -50,9 +50,42 @@ export type LoginSuccess = {
 export type ApiRole = 'INSURER' | 'ALARA' | 'ADMIN' | 'BROKER';
 
 export function getStoredRole(): ApiRole {
-  const r = localStorage.getItem('alara-role');
+  const raw = localStorage.getItem('alara-role');
+  const r = raw?.trim();
   if (r === 'INSURER' || r === 'ALARA' || r === 'ADMIN' || r === 'BROKER') return r;
+  if (r === 'INSURER_USER') return 'INSURER';
+  if (r === 'BROKER_USER') return 'BROKER';
   return 'ALARA';
+}
+
+/** true si la URL actual es del portal aseguradoras (incluye subpath tipo /app/portal/aseguradora/...). */
+export function isAseguradoraPortalPath(): boolean {
+  if (typeof window === 'undefined') return false;
+  return /(^|\/)portal\/aseguradora(\/|$)/.test(window.location.pathname);
+}
+
+/**
+ * Vista restringida tipo aseguradora: URL /portal/aseguradora, prop o rol INSURER/BROKER (y copia en alara-user).
+ */
+export function isInsurerExperienceMode(portal: 'aseguradora' | 'alara'): boolean {
+  if (isAseguradoraPortalPath()) return true;
+  if (portal === 'aseguradora') return true;
+  const r = getStoredRole();
+  if (r === 'INSURER' || r === 'BROKER') return true;
+  try {
+    const raw = localStorage.getItem('alara-user');
+    if (!raw) return false;
+    const u = JSON.parse(raw) as { role?: string; role_codes?: string[] };
+    if (u.role === 'INSURER' || u.role === 'BROKER') return true;
+    if (Array.isArray(u.role_codes)) {
+      return u.role_codes.some((c) =>
+        ['INSURER', 'INSURER_USER', 'BROKER', 'BROKER_USER'].includes(c),
+      );
+    }
+  } catch {
+    /* ignore */
+  }
+  return false;
 }
 
 export function getApiRoleForPortal(portal: 'aseguradora' | 'alara'): ApiRole {
