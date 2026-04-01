@@ -58,18 +58,40 @@ export function getStoredRole(): ApiRole {
   return 'ALARA';
 }
 
-/** true si la URL actual es del portal aseguradoras (incluye subpath tipo /app/portal/aseguradora/...). */
-export function isAseguradoraPortalPath(): boolean {
-  if (typeof window === 'undefined') return false;
-  return /(^|\/)portal\/aseguradora(\/|$)/.test(window.location.pathname);
+/** true si la ruta es del portal aseguradoras (case-insensitive; admite subpath tipo /app/portal/aseguradora/...). */
+export function isAseguradoraPortalPath(pathname?: string): boolean {
+  const p = pathname ?? (typeof window !== 'undefined' ? window.location.pathname : '');
+  if (!p) return false;
+  return /(^|\/)portal\/aseguradora(\/|$)/i.test(p);
+}
+
+/** Rol del JWT de acceso (sin verificar firma; solo para UI). */
+export function getRoleFromAccessToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  const token = localStorage.getItem('alara-token');
+  if (!token) return null;
+  try {
+    const part = token.split('.')[1];
+    if (!part) return null;
+    const b64 = part.replace(/-/g, '+').replace(/_/g, '/');
+    const pad = '='.repeat((4 - (b64.length % 4)) % 4);
+    const json = atob(b64 + pad);
+    const payload = JSON.parse(json) as { role?: string };
+    return payload.role ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /**
- * Vista restringida tipo aseguradora: URL /portal/aseguradora, prop o rol INSURER/BROKER (y copia en alara-user).
+ * Vista restringida tipo aseguradora: URL /portal/aseguradora, prop, rol en JWT o localStorage.
+ * Pasa `pathname` desde useLocation() para que React recalcule al navegar.
  */
-export function isInsurerExperienceMode(portal: 'aseguradora' | 'alara'): boolean {
-  if (isAseguradoraPortalPath()) return true;
+export function isInsurerExperienceMode(portal: 'aseguradora' | 'alara', pathname?: string): boolean {
+  if (isAseguradoraPortalPath(pathname)) return true;
   if (portal === 'aseguradora') return true;
+  const jwtRole = getRoleFromAccessToken();
+  if (jwtRole === 'INSURER' || jwtRole === 'BROKER') return true;
   const r = getStoredRole();
   if (r === 'INSURER' || r === 'BROKER') return true;
   try {

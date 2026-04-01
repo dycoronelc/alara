@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   downloadPdf,
   getInspectionRequest,
@@ -141,6 +141,7 @@ function formatTimelineDate(iso: string): string {
 
 const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const [data, setData] = useState<RequestDetail | null>(null);
   const [activeTab, setActiveTab] = useState<
@@ -175,7 +176,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const [scheduleBusy, setScheduleBusy] = useState(false);
   const [scheduleMessage, setScheduleMessage] = useState('');
 
-  const isInsurerExperience = isInsurerExperienceMode(portal);
+  const isInsurerExperience = isInsurerExperienceMode(portal, location.pathname);
 
   const mapPayloadToSections = (sections: any[]): ReportSectionDef[] => {
     const remote: ReportSectionDef[] = sections.map((section: any) => ({
