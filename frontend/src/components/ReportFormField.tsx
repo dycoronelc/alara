@@ -1,11 +1,13 @@
 import type { ReportFieldDef } from '../report/fieldTypes';
 import {
   EMPLOYEE_OR_PARTNER_OPTIONS,
+  HEIGHT_UNIT_OPTIONS,
   ID_TYPE_REPORT_OPTIONS,
   isSiNoOptionList,
   MARITAL_STATUS_OPTIONS,
   resolvedYesNoStoredValue,
   SI_NO_OPTIONS,
+  WEIGHT_UNIT_OPTIONS,
 } from '../report/fieldTypes';
 import { isValidDdMmYyyy, normalizeDdMmYyyyInput } from '../utils/ddMmYyyyDate';
 
@@ -20,6 +22,8 @@ function optionsForSelect(field: ReportFieldDef) {
   if (field.key === 'marital_status') return MARITAL_STATUS_OPTIONS;
   if (field.key === 'employee_or_partner') return EMPLOYEE_OR_PARTNER_OPTIONS;
   if (field.key === 'id_type') return ID_TYPE_REPORT_OPTIONS;
+  if (field.key === 'weight_unit') return WEIGHT_UNIT_OPTIONS;
+  if (field.key === 'height_unit') return HEIGHT_UNIT_OPTIONS;
   return [];
 }
 

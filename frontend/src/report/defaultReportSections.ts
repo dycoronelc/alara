@@ -18,7 +18,11 @@ export const defaultReportSections = (): ReportSectionDef[] => [
       { key: 'dob', label: 'Fecha de Nacimiento', type: 'date' },
       { key: 'nationality', label: 'Nacionalidad' },
       { key: 'marital_status', label: 'Estado Civil', type: 'select' },
-      { key: 'spouse_name', label: 'Nombre del Cónyuge' },
+      {
+        key: 'spouse_name',
+        label: 'Nombre del Cónyuge',
+        visibleWhen: { key: 'marital_status', values: ['Casado', 'Unido'] },
+      },
       { key: 'children', label: 'Hijos' },
     ],
   },
@@ -53,7 +57,25 @@ export const defaultReportSections = (): ReportSectionDef[] => [
       { key: 'studies', label: 'Estudios realizados', type: 'textarea' },
       { key: 'results', label: 'Resultados Obtenidos', type: 'textarea' },
       { key: 'weight', label: 'Peso' },
+      {
+        key: 'weight_unit',
+        label: 'Unidad de peso',
+        type: 'select',
+        options: [
+          { value: 'kg', label: 'kg' },
+          { value: 'lbs', label: 'lbs' },
+        ],
+      },
       { key: 'height', label: 'Altura' },
+      {
+        key: 'height_unit',
+        label: 'Unidad de altura',
+        type: 'select',
+        options: [
+          { value: 'cm', label: 'cm' },
+          { value: 'ft', label: 'ft' },
+        ],
+      },
       { key: 'weight_change', label: 'Cambio de Peso' },
       { key: 'deafness', label: 'Sordera', type: 'yes_no' },
       { key: 'blindness', label: 'Ceguera', type: 'yes_no' },

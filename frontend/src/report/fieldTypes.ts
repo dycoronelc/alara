@@ -47,6 +47,16 @@ export const EMPLOYEE_OR_PARTNER_OPTIONS: ReportFieldOption[] = [
   { value: 'Socio', label: 'Socio' },
 ];
 
+export const WEIGHT_UNIT_OPTIONS: ReportFieldOption[] = [
+  { value: 'kg', label: 'kg' },
+  { value: 'lbs', label: 'lbs' },
+];
+
+export const HEIGHT_UNIT_OPTIONS: ReportFieldOption[] = [
+  { value: 'cm', label: 'cm' },
+  { value: 'ft', label: 'ft' },
+];
+
 export const SI_NO_OPTIONS: ReportFieldOption[] = [
   { value: 'Sí', label: 'Sí' },
   { value: 'No', label: 'No' },
@@ -194,7 +204,17 @@ const SELECT_BY_KEY: Record<string, ReportFieldOption[]> = {
   marital_status: MARITAL_STATUS_OPTIONS,
   employee_or_partner: EMPLOYEE_OR_PARTNER_OPTIONS,
   id_type: ID_TYPE_REPORT_OPTIONS,
+  weight_unit: WEIGHT_UNIT_OPTIONS,
+  height_unit: HEIGHT_UNIT_OPTIONS,
 };
+
+/** Reglas de UI que el API de plantilla no envía (p. ej. cónyuge solo si Casado/Unido). */
+export function applyReportFieldUiRules(def: ReportFieldDef): ReportFieldDef {
+  if (def.key === 'spouse_name') {
+    return { ...def, visibleWhen: { key: 'marital_status', values: ['Casado', 'Unido'] } };
+  }
+  return def;
+}
 
 export function mapApiFieldToDef(field: {
   key: string;
@@ -206,37 +226,37 @@ export function mapApiFieldToDef(field: {
   const key = field.key;
 
   if (t === 'TEXTAREA' || t === 'TEXT_AREA') {
-    return { key, label: field.label, type: 'textarea' };
+    return applyReportFieldUiRules({ key, label: field.label, type: 'textarea' });
   }
   if (t === 'BOOL' || t === 'YES_NO' || t === 'SI_NO') {
-    return { key, label: field.label, type: 'yes_no' };
+    return applyReportFieldUiRules({ key, label: field.label, type: 'yes_no' });
   }
   if (t === 'DATE' || t === 'DATE_DDMMYYYY') {
-    return { key, label: field.label, type: 'date' };
+    return applyReportFieldUiRules({ key, label: field.label, type: 'date' });
   }
   if (t === 'SELECT' || t === 'ENUM') {
-    return {
+    return applyReportFieldUiRules({
       key,
       label: field.label,
       type: 'select',
       options: field.options?.length ? field.options : SELECT_BY_KEY[key] ?? [],
-    };
+    });
   }
 
   if (SELECT_BY_KEY[key]) {
-    return { key, label: field.label, type: 'select', options: SELECT_BY_KEY[key] };
+    return applyReportFieldUiRules({ key, label: field.label, type: 'select', options: SELECT_BY_KEY[key] });
   }
   if (YES_NO_KEYS.has(key)) {
-    return { key, label: field.label, type: 'yes_no' };
+    return applyReportFieldUiRules({ key, label: field.label, type: 'yes_no' });
   }
   if (DATE_KEYS.has(key)) {
-    return { key, label: field.label, type: 'date' };
+    return applyReportFieldUiRules({ key, label: field.label, type: 'date' });
   }
   if (TEXTAREA_KEYS.has(key)) {
-    return { key, label: field.label, type: 'textarea' };
+    return applyReportFieldUiRules({ key, label: field.label, type: 'textarea' });
   }
 
-  return { key, label: field.label, type: 'text' };
+  return applyReportFieldUiRules({ key, label: field.label, type: 'text' });
 }
 
 /** Valores del enum `ReportFieldType` en Prisma (backend). */

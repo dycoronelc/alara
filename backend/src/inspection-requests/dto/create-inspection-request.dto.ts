@@ -145,9 +145,17 @@ export class CreateInspectionRequestDto {
   @IsNotEmpty()
   marital_status!: string;
 
+  /** Obligatorio si estado civil es Casado o Unido. */
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @ValidateIf((o: CreateInspectionRequestDto) => o.marital_status === 'Casado' || o.marital_status === 'Unido')
   @IsString()
   @IsNotEmpty()
-  comments!: string;
+  spouse_name?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => emptyStringToUndefined(value))
+  @IsString()
+  comments?: string;
 
   @IsBoolean()
   client_notified!: boolean;

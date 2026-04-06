@@ -86,6 +86,7 @@ type RequestDetail = {
   has_amount_in_force?: boolean;
   amount_in_force?: string | number;
   marital_status?: string;
+  spouse_name?: string;
   interview_language?: string;
   priority?: string;
   comments?: string;
@@ -276,7 +277,9 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const initialReportValues = useMemo(() => {
     if (!data) return {};
     const c = data.client;
-    const marital = c?.marital_status ?? data.marital_status ?? '';
+    const marital = (c?.marital_status ?? data.marital_status ?? '').trim();
+    const spouseFromSolicitud =
+      marital === 'Casado' || marital === 'Unido' ? (data.spouse_name ?? '').trim() : '';
     return {
       first_name: c?.first_name ?? '',
       last_name: c?.last_name ?? '',
@@ -287,8 +290,11 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       mobile: c?.phone_mobile ?? '',
       dob: isoLikeToDdMmYyyy(c?.dob),
       marital_status: marital,
+      spouse_name: spouseFromSolicitud,
       profession_studies: c?.profession ?? '',
       employer: c?.employer_name ?? '',
+      weight_unit: 'kg',
+      height_unit: 'cm',
     };
   }, [data]);
 
@@ -444,6 +450,12 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       });
     }
     migrateLegacyDatosPersonales(existingValues);
+    const ms = (existingValues.marital_status ?? '').trim();
+    if (ms !== 'Casado' && ms !== 'Unido') {
+      existingValues.spouse_name = '';
+    }
+    if (!String(existingValues.weight_unit ?? '').trim()) existingValues.weight_unit = 'kg';
+    if (!String(existingValues.height_unit ?? '').trim()) existingValues.height_unit = 'cm';
     setReportValues(applySiNoDefaultsFromSections(existingValues, templateSections));
     setReportSummary(data?.inspection_report?.summary ?? '');
     setReportComments(data?.inspection_report?.additional_comments ?? '');
@@ -458,6 +470,9 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const updateReportValue = (key: string, value: string) => {
     setReportValues((prev) => {
       const next = { ...prev, [key]: value };
+      if (key === 'marital_status' && value !== 'Casado' && value !== 'Unido') {
+        next.spouse_name = '';
+      }
       if (key === 'previous_rejected' && value !== 'Sí') {
         next.previous_rejection_reason = '';
       }
@@ -1275,6 +1290,15 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
               <span>Estado civil</span>
               <strong>{data.client?.marital_status ?? data.marital_status ?? '—'}</strong>
             </div>
+            {(data.marital_status === 'Casado' ||
+              data.marital_status === 'Unido' ||
+              data.client?.marital_status === 'Casado' ||
+              data.client?.marital_status === 'Unido') && (
+              <div>
+                <span>Nombre del cónyuge</span>
+                <strong>{data.spouse_name?.trim() ? data.spouse_name : '—'}</strong>
+              </div>
+            )}
             <div>
               <span>Idioma para la entrevista</span>
               <strong>{data.interview_language ?? '—'}</strong>

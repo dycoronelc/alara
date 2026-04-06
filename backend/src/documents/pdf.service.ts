@@ -13,6 +13,7 @@ type InspectionRequestPayload = {
   has_amount_in_force: boolean;
   amount_in_force?: any;
   marital_status?: string | null;
+  spouse_name?: string | null;
   interview_language?: string | null;
   client_notified?: boolean | null;
   comments?: string | null;
@@ -374,6 +375,9 @@ export class PdfService {
       this.addKeyValue(doc, 'Monto en vigencia', String(request.amount_in_force));
     }
     this.addKeyValue(doc, 'Estado civil', request.marital_status ?? null);
+    if (request.marital_status === 'Casado' || request.marital_status === 'Unido') {
+      this.addKeyValue(doc, 'Nombre del cónyuge', request.spouse_name ?? null);
+    }
     this.addKeyValue(doc, 'Idioma entrevista', request.interview_language ?? null);
     this.addKeyValue(doc, 'Cliente avisado', request.client_notified ? 'Sí' : 'No');
 

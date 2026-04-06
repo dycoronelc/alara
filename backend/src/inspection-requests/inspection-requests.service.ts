@@ -557,7 +557,11 @@ export class InspectionRequestsService {
             responsible_phone: payload.responsible_phone,
             responsible_email: payload.responsible_email,
             marital_status: payload.marital_status,
-            comments: payload.comments,
+            spouse_name:
+              payload.marital_status === 'Casado' || payload.marital_status === 'Unido'
+                ? payload.spouse_name?.trim() || null
+                : null,
+            comments: payload.comments ?? null,
             client_notified: payload.client_notified,
             interview_language: payload.interview_language,
             priority: payload.priority ?? 'NORMAL',

@@ -48,6 +48,7 @@ const initialState = {
   phone_mobile: '',
   email: '',
   marital_status: '',
+  spouse_name: '',
   comments: '',
   client_notified: '',
   interview_date: '',
@@ -191,6 +192,9 @@ const NewRequestPage = () => {
     }
 
     if (!form.marital_status) errors.marital_status = 'Requerido';
+    if (form.marital_status === 'Casado' || form.marital_status === 'Unido') {
+      if (!t(form.spouse_name)) errors.spouse_name = 'Requerido';
+    }
     if (!form.interview_language) errors.interview_language = 'Requerido';
     if (!form.client_notified) errors.client_notified = 'Requerido';
     if (form.client_notified === 'Si') {
@@ -198,8 +202,6 @@ const NewRequestPage = () => {
       else if (!isValidDdMmYyyy(form.interview_date)) errors.interview_date = 'Use formato dd/mm/aaaa';
       if (!t(form.interview_time)) errors.interview_time = 'Requerido';
     }
-    if (!t(form.comments)) errors.comments = 'Requerido';
-
     if (Object.keys(errors).length) {
       setFieldErrors(errors);
       setMessage('Completa los campos obligatorios y corrige los errores.');
@@ -237,7 +239,10 @@ const NewRequestPage = () => {
       responsible_phone: t(form.responsible_phone),
       responsible_email: t(form.responsible_email),
       marital_status: form.marital_status,
-      comments: t(form.comments),
+      ...(form.marital_status === 'Casado' || form.marital_status === 'Unido'
+        ? { spouse_name: t(form.spouse_name) }
+        : {}),
+      ...(t(form.comments) ? { comments: t(form.comments) } : {}),
       client_notified: notified,
       ...(interviewStartIso != null
         ? { scheduled_start_at: interviewStartIso, scheduled_end_at: interviewEndIso }
@@ -521,7 +526,17 @@ const NewRequestPage = () => {
             )}
             <label className={`form-field ${fieldErrors.marital_status ? 'has-error' : ''}`}>
               <span>Estado Civil {reqStar}</span>
-              <select value={form.marital_status} onChange={(e) => updateField('marital_status', e.target.value)}>
+              <select
+                value={form.marital_status}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setForm((prev) => ({
+                    ...prev,
+                    marital_status: v,
+                    ...(v !== 'Casado' && v !== 'Unido' ? { spouse_name: '' } : {}),
+                  }));
+                }}
+              >
                 <option value="">Seleccione...</option>
                 <option value="Soltero">Soltero</option>
                 <option value="Casado">Casado</option>
@@ -532,6 +547,18 @@ const NewRequestPage = () => {
               </select>
               {fieldErrors.marital_status && <span className="field-error">{fieldErrors.marital_status}</span>}
             </label>
+            {(form.marital_status === 'Casado' || form.marital_status === 'Unido') && (
+              <label className={`form-field ${fieldErrors.spouse_name ? 'has-error' : ''}`}>
+                <span>Nombre del cónyuge {reqStar}</span>
+                <input
+                  type="text"
+                  value={form.spouse_name}
+                  onChange={(e) => updateField('spouse_name', e.target.value)}
+                  autoComplete="name"
+                />
+                {fieldErrors.spouse_name && <span className="field-error">{fieldErrors.spouse_name}</span>}
+              </label>
+            )}
             <label className={`form-field ${fieldErrors.interview_language ? 'has-error' : ''}`}>
               <span>Idioma para la Entrevista {reqStar}</span>
               <select value={form.interview_language} onChange={(e) => updateField('interview_language', e.target.value)}>
@@ -599,7 +626,7 @@ const NewRequestPage = () => {
               </>
             )}
             <label className={`form-field ${fieldErrors.comments ? 'has-error' : ''}`}>
-              <span>Indicaciones / Comentarios {reqStar}</span>
+              <span>Indicaciones / Comentarios</span>
               <textarea value={form.comments} onChange={(e) => updateField('comments', e.target.value)} rows={3} />
               {fieldErrors.comments && <span className="field-error">{fieldErrors.comments}</span>}
             </label>
