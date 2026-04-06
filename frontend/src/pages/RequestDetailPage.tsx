@@ -25,6 +25,7 @@ import { mergeReportTemplate } from '../report/mergeReportTemplate';
 import { migrateLegacyDatosPersonales } from '../report/migrateLegacyReportValues';
 import {
   applySiNoDefaultsFromSections,
+  clearHiddenAffirmativeDetails,
   DATE_KEYS,
   fieldIsSiNoSelector,
   isReportFieldVisible,
@@ -476,6 +477,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       if (key === 'previous_rejected' && value !== 'Sí') {
         next.previous_rejection_reason = '';
       }
+      clearHiddenAffirmativeDetails(next);
       return next;
     });
   };
@@ -529,9 +531,11 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
         reportOutcome?: string;
       };
       if (d.reportValues && typeof d.reportValues === 'object') {
-        setReportValues((prev) =>
-          applySiNoDefaultsFromSections({ ...prev, ...d.reportValues }, templateSections),
-        );
+        setReportValues((prev) => {
+          const merged = applySiNoDefaultsFromSections({ ...prev, ...d.reportValues }, templateSections);
+          clearHiddenAffirmativeDetails(merged);
+          return merged;
+        });
       }
       if (d.reportSummary !== undefined) setReportSummary(d.reportSummary);
       if (d.reportComments !== undefined) setReportComments(d.reportComments);
@@ -1357,7 +1361,11 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                       .map((field) => (
                         <label
                           key={field.key}
-                          className={`form-field${field.key === 'informacion_medica' ? ' details-wide' : ''}`}
+                          className={`form-field${
+                            field.key === 'informacion_medica' || field.key.endsWith('_detalle_respuesta_afirmativa')
+                              ? ' details-wide'
+                              : ''
+                          }`}
                         >
                           <span>{field.label}</span>
                           <ReportFormField

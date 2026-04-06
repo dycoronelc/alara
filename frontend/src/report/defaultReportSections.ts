@@ -1,4 +1,13 @@
 import type { ReportSectionDef } from './fieldTypes';
+import {
+  AFFIRMATIVE_YES_KEYS_ALCOHOL_DROGAS,
+  AFFIRMATIVE_YES_KEYS_DEPORTES_RIESGO,
+  AFFIRMATIVE_YES_KEYS_JUICIOS,
+  AFFIRMATIVE_YES_KEYS_RIESGOS_LABORALES,
+  AFFIRMATIVE_YES_KEYS_SALUD,
+  AFFIRMATIVE_YES_KEYS_SEGURIDAD,
+  visibleWhenAnySi,
+} from './fieldTypes';
 
 /** Plantilla por defecto (alineada con seed INSPECTION_REPORT_V1). */
 export const defaultReportSections = (): ReportSectionDef[] => [
@@ -91,6 +100,12 @@ export const defaultReportSections = (): ReportSectionDef[] => [
       { key: 'important_diseases', label: 'Enfermedades Importantes / Fechas', type: 'textarea' },
       { key: 'prescribed_meds', label: 'Medicamentos con prescripción (Nombre y Dosis)', type: 'textarea' },
       { key: 'non_prescribed_meds', label: 'Medicamentos no recetados (Nombre y Dosis)', type: 'textarea' },
+      {
+        key: 'salud_detalle_respuesta_afirmativa',
+        label: 'Detalle de respuesta afirmativa',
+        type: 'textarea',
+        visibleWhenAny: visibleWhenAnySi(AFFIRMATIVE_YES_KEYS_SALUD),
+      },
     ],
   },
   {
@@ -100,6 +115,12 @@ export const defaultReportSections = (): ReportSectionDef[] => [
       { key: 'work_risk', label: '¿Está expuesto a algún riesgo por sus labores?', type: 'yes_no' },
       { key: 'work_risk_desc', label: 'Descripción según Ocupación', type: 'textarea' },
       { key: 'safety_rules', label: '¿Hay Normas de Seguridad?', type: 'yes_no' },
+      {
+        key: 'riesgos_laborales_detalle_respuesta_afirmativa',
+        label: 'Detalle de respuesta afirmativa',
+        type: 'textarea',
+        visibleWhenAny: visibleWhenAnySi(AFFIRMATIVE_YES_KEYS_RIESGOS_LABORALES),
+      },
     ],
   },
   {
@@ -126,6 +147,12 @@ export const defaultReportSections = (): ReportSectionDef[] => [
       { key: 'other_risk', label: 'Otra Actividad de Riesgo (ampliar)', type: 'textarea' },
       { key: 'accidents', label: '¿Ha tenido accidentes o lesiones practicando deporte?', type: 'yes_no' },
       { key: 'accidents_detail', label: 'Detalle de accidentes o lesiones (deporte)', type: 'textarea' },
+      {
+        key: 'deportes_riesgo_detalle_respuesta_afirmativa',
+        label: 'Detalle de respuesta afirmativa',
+        type: 'textarea',
+        visibleWhenAny: visibleWhenAnySi(AFFIRMATIVE_YES_KEYS_DEPORTES_RIESGO),
+      },
     ],
   },
   {
@@ -164,6 +191,12 @@ export const defaultReportSections = (): ReportSectionDef[] => [
       { key: 'other_drugs', label: 'Otras Drogas', type: 'yes_no' },
       { key: 'treatment', label: 'Tratamiento por Consumo de Drogas / Alcohol', type: 'yes_no' },
       { key: 'treatment_detail', label: 'Detalle del tratamiento (centro, fechas, etc.)', type: 'textarea' },
+      {
+        key: 'alcohol_drogas_detalle_respuesta_afirmativa',
+        label: 'Detalle de respuesta afirmativa',
+        type: 'textarea',
+        visibleWhenAny: visibleWhenAnySi(AFFIRMATIVE_YES_KEYS_ALCOHOL_DROGAS),
+      },
     ],
   },
   {
@@ -197,6 +230,12 @@ export const defaultReportSections = (): ReportSectionDef[] => [
       { key: 'security_equipment', label: 'Equipo de seguridad utilizado' },
       { key: 'accidents_security', label: '¿Ha tenido accidentes?', type: 'yes_no' },
       { key: 'personal_guard', label: 'Custodia Personal', type: 'yes_no' },
+      {
+        key: 'seguridad_detalle_respuesta_afirmativa',
+        label: 'Detalle de respuesta afirmativa',
+        type: 'textarea',
+        visibleWhenAny: visibleWhenAnySi(AFFIRMATIVE_YES_KEYS_SEGURIDAD),
+      },
     ],
   },
   {
@@ -286,6 +325,12 @@ export const defaultReportSections = (): ReportSectionDef[] => [
       { key: 'civil_case', label: 'Juicio Civil', type: 'yes_no' },
       { key: 'commercial_case', label: 'Juicio Comercial', type: 'yes_no' },
       { key: 'labor_case', label: 'Juicio Laboral', type: 'yes_no' },
+      {
+        key: 'juicios_detalle_respuesta_afirmativa',
+        label: 'Detalle de respuesta afirmativa',
+        type: 'textarea',
+        visibleWhenAny: visibleWhenAnySi(AFFIRMATIVE_YES_KEYS_JUICIOS),
+      },
       { key: 'arrested', label: '¿Ha sido Arrestado? Detallar', type: 'textarea' },
     ],
   },

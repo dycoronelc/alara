@@ -9,6 +9,8 @@ export type ReportFieldDef = {
   options?: ReportFieldOption[];
   /** Si se define, el campo solo se muestra cuando `key` tiene uno de `values` (p. ej. Sí/No). */
   visibleWhen?: { key: string; values: string[] };
+  /** Si se define, el campo se muestra cuando **alguna** de las claves tiene uno de `values` (OR). */
+  visibleWhenAny?: { keys: string[]; values: string[] };
 };
 
 /** Claves obsoletas en plantillas remotas que ya no deben añadirse al fusionar. */
@@ -19,6 +21,10 @@ export const DEPRECATED_REPORT_FIELD_KEYS = new Set<string>([
 ]);
 
 export function isReportFieldVisible(field: ReportFieldDef, values: Record<string, string>): boolean {
+  if (field.visibleWhenAny) {
+    const { keys, values: allowed } = field.visibleWhenAny;
+    return keys.some((k) => allowed.includes((values[k] ?? '').trim()));
+  }
   if (!field.visibleWhen) return true;
   const v = (values[field.visibleWhen.key] ?? '').trim();
   return field.visibleWhen.values.includes(v);
@@ -190,7 +196,88 @@ export const TEXTAREA_KEYS = new Set<string>([
   'arrested',
   'additional_comments',
   'informacion_medica',
+  'salud_detalle_respuesta_afirmativa',
+  'riesgos_laborales_detalle_respuesta_afirmativa',
+  'deportes_riesgo_detalle_respuesta_afirmativa',
+  'alcohol_drogas_detalle_respuesta_afirmativa',
+  'seguridad_detalle_respuesta_afirmativa',
+  'juicios_detalle_respuesta_afirmativa',
 ]);
+
+const SI_VALUES = ['Sí'] as const;
+
+export const AFFIRMATIVE_YES_KEYS_SALUD = [
+  'deafness',
+  'blindness',
+  'physical_alterations',
+  'amputations',
+  'other_impediments',
+  'high_pressure',
+  'diabetes',
+  'cancer',
+  'cardiac',
+  'ulcer',
+] as const;
+
+export const AFFIRMATIVE_YES_KEYS_RIESGOS_LABORALES = ['work_risk', 'safety_rules'] as const;
+
+export const AFFIRMATIVE_YES_KEYS_DEPORTES_RIESGO = [
+  'diving',
+  'racing',
+  'pilot',
+  'ultralight',
+  'parachute',
+  'paragliding',
+  'climbing',
+  'accidents',
+] as const;
+
+export const AFFIRMATIVE_YES_KEYS_ALCOHOL_DROGAS = [
+  'alcohol',
+  'marijuana',
+  'amphetamines',
+  'barbiturics',
+  'cocaine',
+  'lsd',
+  'stimulants',
+  'other_drugs',
+  'treatment',
+] as const;
+
+export const AFFIRMATIVE_YES_KEYS_SEGURIDAD = [
+  'kidnapping',
+  'armored_car',
+  'weapons',
+  'weapon_fired',
+  'weapon_training',
+  'military',
+  'accidents_security',
+  'personal_guard',
+] as const;
+
+export const AFFIRMATIVE_YES_KEYS_JUICIOS = ['criminal_case', 'civil_case', 'commercial_case', 'labor_case'] as const;
+
+/** Uso en `ReportFieldDef.visibleWhenAny` para mostrar detalle si alguna respuesta es Sí. */
+export function visibleWhenAnySi(keys: readonly string[]): { keys: string[]; values: string[] } {
+  return { keys: [...keys], values: [...SI_VALUES] };
+}
+
+/** Claves Sí/No por sección: si ninguna es «Sí», se limpia el detalle asociado. */
+export const AFFIRMATIVE_DETAIL_FIELD_GROUPS: { detailKey: string; yesKeys: readonly string[] }[] = [
+  { detailKey: 'salud_detalle_respuesta_afirmativa', yesKeys: AFFIRMATIVE_YES_KEYS_SALUD },
+  { detailKey: 'riesgos_laborales_detalle_respuesta_afirmativa', yesKeys: AFFIRMATIVE_YES_KEYS_RIESGOS_LABORALES },
+  { detailKey: 'deportes_riesgo_detalle_respuesta_afirmativa', yesKeys: AFFIRMATIVE_YES_KEYS_DEPORTES_RIESGO },
+  { detailKey: 'alcohol_drogas_detalle_respuesta_afirmativa', yesKeys: AFFIRMATIVE_YES_KEYS_ALCOHOL_DROGAS },
+  { detailKey: 'seguridad_detalle_respuesta_afirmativa', yesKeys: AFFIRMATIVE_YES_KEYS_SEGURIDAD },
+  { detailKey: 'juicios_detalle_respuesta_afirmativa', yesKeys: AFFIRMATIVE_YES_KEYS_JUICIOS },
+];
+
+export function clearHiddenAffirmativeDetails(next: Record<string, string>): void {
+  for (const { detailKey, yesKeys } of AFFIRMATIVE_DETAIL_FIELD_GROUPS) {
+    const anySi = yesKeys.some((k) => (next[k] ?? '').trim() === 'Sí');
+    if (!anySi) next[detailKey] = '';
+  }
+}
 
 export const DATE_KEYS = new Set<string>([
   'dob',
