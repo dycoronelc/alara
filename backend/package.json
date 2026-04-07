@@ -10,6 +10,7 @@
     "prisma:generate": "node ./node_modules/prisma/build/index.js generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts",
+    "prisma:purge-report-pdfs": "ts-node prisma/scripts/purge-reporte-pdf-documents.ts",
     "lint": "eslint . --ext .ts"
   },
   "prisma": {

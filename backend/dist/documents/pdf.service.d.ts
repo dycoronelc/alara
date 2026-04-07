@@ -52,10 +52,19 @@ type InspectionReportPayload = {
 };
 export declare class PdfService {
     private brand;
+    private readonly pdfLayout;
     private addHeader;
     private addFooter;
     private addSectionTitle;
     private addKeyValue;
+    private addReportVipBanner;
+    private outcomeLabel;
+    private isPdfFullWidthField;
+    private resolveFieldValue;
+    private heightOfFieldCell;
+    private drawFieldCell;
+    private ensurePageSpace;
+    private renderTemplateSection;
     private reportTemplate;
     buildRequestPdf(request: InspectionRequestPayload): Promise<Buffer>;
     buildReportPdf(request: InspectionRequestPayload, report?: InspectionReportPayload | null): Promise<Buffer>;

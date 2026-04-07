@@ -824,6 +824,21 @@ a {
   font-size: 0.875rem;
 }
 
+.doc-delete-btn {
+  flex-shrink: 0;
+  color: #b91c1c;
+  border-color: rgba(185, 28, 28, 0.35);
+}
+
+.doc-delete-btn:hover:not(:disabled) {
+  color: #991b1b;
+  background: rgba(185, 28, 28, 0.06);
+}
+
+.doc-delete-btn:disabled {
+  opacity: 0.65;
+}
+
 .solicitud-tab-detail__title {
   margin: 1.25rem 0 0.75rem;
   font-size: 1rem;

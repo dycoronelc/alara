@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DocumentType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PdfService } from './pdf.service';
@@ -219,6 +224,52 @@ export class DocumentsService {
   }
 
   /** Lee el binario del documento vinculado a la solicitud (misma regla de tenancy que el listado). */
+  /** Solo ADMIN. Elimina la fila y, si aplica, el archivo en almacenamiento local. */
+  async deleteDocument(
+    inspectionRequestId: number,
+    documentId: number,
+    context?: RequestContext,
+  ): Promise<void> {
+    if (context?.role !== 'ADMIN') {
+      throw new ForbiddenException('Solo los administradores pueden eliminar documentos');
+    }
+
+    const request = await this.prisma.inspectionRequest.findUnique({
+      where: { id: inspectionRequestId },
+      select: { insurer_id: true },
+    });
+    if (!request) {
+      throw new NotFoundException('Solicitud no encontrada');
+    }
+    this.ensureTenancy(context, request.insurer_id);
+
+    const doc = await this.prisma.document.findFirst({
+      where: {
+        id: BigInt(documentId),
+        inspection_request_id: BigInt(inspectionRequestId),
+      },
+    });
+    if (!doc) {
+      throw new NotFoundException('Documento no encontrado');
+    }
+
+    const storageKey = doc.storage_provider === 'LOCAL' ? doc.storage_key : null;
+
+    await this.prisma.document.delete({ where: { id: doc.id } });
+
+    if (storageKey) {
+      const filepath = join(this.storageDir, storageKey);
+      try {
+        await fs.unlink(filepath);
+      } catch (err: unknown) {
+        const code = err && typeof err === 'object' && 'code' in err ? (err as NodeJS.ErrnoException).code : '';
+        if (code !== 'ENOENT') {
+          /* archivo huérfano; la fila ya no existe */
+        }
+      }
+    }
+  }
+
   async getDocumentFile(
     inspectionRequestId: number,
     documentId: number,

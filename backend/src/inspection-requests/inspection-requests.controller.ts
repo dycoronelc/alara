@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Logger,
   Param,
@@ -104,6 +105,16 @@ export class InspectionRequestsController {
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `inline; filename="${filename.replace(/"/g, '')}"`);
     return res.send(buffer);
+  }
+
+  @Delete(':id/documents/:documentId')
+  async deleteDocument(
+    @Req() req: Request,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('documentId', ParseIntPipe) documentId: number,
+  ) {
+    await this.documentsService.deleteDocument(id, documentId, req.userContext);
+    return { ok: true };
   }
 
   @Post(':id/documents/upload')

@@ -16,22 +16,22 @@ export declare class InspectionRequestsController {
     list(req: Request, status?: string, search?: string): Promise<({
         insurer: {
             id: bigint;
-            is_active: boolean;
             created_at: Date;
             updated_at: Date | null;
             name: string;
+            is_active: boolean;
             legal_id: string | null;
         };
         client: {
+            id: bigint;
+            created_at: Date;
+            updated_at: Date | null;
             first_name: string;
             last_name: string;
             dob: Date | null;
             id_type: import(".prisma/client").$Enums.IdType | null;
             id_number: string | null;
             email: string | null;
-            id: bigint;
-            created_at: Date;
-            updated_at: Date | null;
             phone_mobile: string | null;
             phone_home: string | null;
             phone_work: string | null;
@@ -44,18 +44,14 @@ export declare class InspectionRequestsController {
         };
         service_type: {
             id: bigint;
-            is_active: boolean;
             created_at: Date;
             name: string;
+            is_active: boolean;
             sort_order: number;
         } | null;
     } & {
-        marital_status: string | null;
-        spouse_name: string | null;
         id: bigint;
         insurer_id: bigint;
-        created_at: Date;
-        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         service_type_id: bigint | null;
@@ -67,6 +63,8 @@ export declare class InspectionRequestsController {
         responsible_name: string;
         responsible_phone: string | null;
         responsible_email: string | null;
+        marital_status: string | null;
+        spouse_name: string | null;
         comments: string | null;
         client_notified: boolean;
         interview_language: string | null;
@@ -89,6 +87,8 @@ export declare class InspectionRequestsController {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
+        created_at: Date;
+        updated_at: Date | null;
     })[]>;
     listServiceTypes(req: Request): Promise<{
         id: number;
@@ -96,12 +96,8 @@ export declare class InspectionRequestsController {
         sort_order: number;
     }[]>;
     create(req: Request, payload: CreateInspectionRequestDto): Promise<{
-        marital_status: string | null;
-        spouse_name: string | null;
         id: bigint;
         insurer_id: bigint;
-        created_at: Date;
-        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         service_type_id: bigint | null;
@@ -113,6 +109,8 @@ export declare class InspectionRequestsController {
         responsible_name: string;
         responsible_phone: string | null;
         responsible_email: string | null;
+        marital_status: string | null;
+        spouse_name: string | null;
         comments: string | null;
         client_notified: boolean;
         interview_language: string | null;
@@ -135,6 +133,8 @@ export declare class InspectionRequestsController {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
+        created_at: Date;
+        updated_at: Date | null;
     }>;
     listDocuments(req: Request, id: number): Promise<{
         id: bigint;
@@ -146,6 +146,9 @@ export declare class InspectionRequestsController {
         uploaded_at: Date;
     }[]>;
     downloadStoredDocument(req: Request, res: Response, id: number, documentId: number): Promise<Response<any, Record<string, any>>>;
+    deleteDocument(req: Request, id: number, documentId: number): Promise<{
+        ok: boolean;
+    }>;
     uploadDocument(req: Request, id: number, file: Express.Multer.File | undefined, docType: string | undefined): Promise<{
         id: number;
         file_size_bytes: number;
@@ -155,12 +158,8 @@ export declare class InspectionRequestsController {
         uploaded_at: Date;
     }>;
     updateStatus(req: Request, id: number, payload: UpdateStatusDto): Promise<{
-        marital_status: string | null;
-        spouse_name: string | null;
         id: bigint;
         insurer_id: bigint;
-        created_at: Date;
-        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         service_type_id: bigint | null;
@@ -172,6 +171,8 @@ export declare class InspectionRequestsController {
         responsible_name: string;
         responsible_phone: string | null;
         responsible_email: string | null;
+        marital_status: string | null;
+        spouse_name: string | null;
         comments: string | null;
         client_notified: boolean;
         interview_language: string | null;
@@ -194,14 +195,12 @@ export declare class InspectionRequestsController {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
+        created_at: Date;
+        updated_at: Date | null;
     }>;
     decide(req: Request, id: number, payload: DecisionDto): Promise<{
-        marital_status: string | null;
-        spouse_name: string | null;
         id: bigint;
         insurer_id: bigint;
-        created_at: Date;
-        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         service_type_id: bigint | null;
@@ -213,6 +212,8 @@ export declare class InspectionRequestsController {
         responsible_name: string;
         responsible_phone: string | null;
         responsible_email: string | null;
+        marital_status: string | null;
+        spouse_name: string | null;
         comments: string | null;
         client_notified: boolean;
         interview_language: string | null;
@@ -235,6 +236,8 @@ export declare class InspectionRequestsController {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
+        created_at: Date;
+        updated_at: Date | null;
     }>;
     updateClient(req: Request, id: number, payload: UpdateClientDto): Promise<{
         report_template: {
@@ -247,22 +250,22 @@ export declare class InspectionRequestsController {
         } | null;
         insurer: {
             id: bigint;
-            is_active: boolean;
             created_at: Date;
             updated_at: Date | null;
             name: string;
+            is_active: boolean;
             legal_id: string | null;
         };
         client: {
+            id: bigint;
+            created_at: Date;
+            updated_at: Date | null;
             first_name: string;
             last_name: string;
             dob: Date | null;
             id_type: import(".prisma/client").$Enums.IdType | null;
             id_number: string | null;
             email: string | null;
-            id: bigint;
-            created_at: Date;
-            updated_at: Date | null;
             phone_mobile: string | null;
             phone_home: string | null;
             phone_work: string | null;
@@ -275,9 +278,9 @@ export declare class InspectionRequestsController {
         };
         service_type: {
             id: bigint;
-            is_active: boolean;
             created_at: Date;
             name: string;
+            is_active: boolean;
             sort_order: number;
         } | null;
         inspection_report: ({
@@ -300,24 +303,20 @@ export declare class InspectionRequestsController {
                 section_order: number;
             })[];
         } & {
-            additional_comments: string | null;
-            summary: string | null;
             id: bigint;
+            created_by_user_id: bigint | null;
             created_at: Date;
             updated_at: Date | null;
-            created_by_user_id: bigint | null;
             inspection_request_id: bigint;
+            additional_comments: string | null;
             interview_started_at: Date | null;
             interview_ended_at: Date | null;
             concluded_at: Date | null;
+            summary: string | null;
             outcome: import(".prisma/client").$Enums.ReportOutcome;
         }) | null;
-        marital_status: string | null;
-        spouse_name: string | null;
         id: bigint;
         insurer_id: bigint;
-        created_at: Date;
-        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         service_type_id: bigint | null;
@@ -329,6 +328,8 @@ export declare class InspectionRequestsController {
         responsible_name: string;
         responsible_phone: string | null;
         responsible_email: string | null;
+        marital_status: string | null;
+        spouse_name: string | null;
         comments: string | null;
         client_notified: boolean;
         interview_language: string | null;
@@ -351,27 +352,25 @@ export declare class InspectionRequestsController {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
-    }>;
-    saveReport(req: Request, id: number, payload: SaveReportDto): Promise<{
-        additional_comments: string | null;
-        summary: string | null;
-        id: bigint;
         created_at: Date;
         updated_at: Date | null;
+    }>;
+    saveReport(req: Request, id: number, payload: SaveReportDto): Promise<{
+        id: bigint;
         created_by_user_id: bigint | null;
+        created_at: Date;
+        updated_at: Date | null;
         inspection_request_id: bigint;
+        additional_comments: string | null;
         interview_started_at: Date | null;
         interview_ended_at: Date | null;
         concluded_at: Date | null;
+        summary: string | null;
         outcome: import(".prisma/client").$Enums.ReportOutcome;
     }>;
     shareReport(req: Request, id: number): Promise<{
-        marital_status: string | null;
-        spouse_name: string | null;
         id: bigint;
         insurer_id: bigint;
-        created_at: Date;
-        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         service_type_id: bigint | null;
@@ -383,6 +382,8 @@ export declare class InspectionRequestsController {
         responsible_name: string;
         responsible_phone: string | null;
         responsible_email: string | null;
+        marital_status: string | null;
+        spouse_name: string | null;
         comments: string | null;
         client_notified: boolean;
         interview_language: string | null;
@@ -405,6 +406,8 @@ export declare class InspectionRequestsController {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
+        created_at: Date;
+        updated_at: Date | null;
     }>;
     requestPdf(req: Request, res: Response, id: number): Promise<Response<any, Record<string, any>>>;
     reportPdf(req: Request, res: Response, id: number): Promise<Response<any, Record<string, any>>>;
@@ -423,8 +426,8 @@ export declare class InspectionRequestsController {
     }>;
     listInvestigations(req: Request, id: number): Promise<{
         id: bigint;
-        created_at: Date;
         created_by_user_id: bigint | null;
+        created_at: Date;
         inspection_request_id: bigint;
         source_type: import(".prisma/client").$Enums.InvestigationSource;
         source_name: string | null;
@@ -451,22 +454,22 @@ export declare class InspectionRequestsController {
         } | null;
         insurer: {
             id: bigint;
-            is_active: boolean;
             created_at: Date;
             updated_at: Date | null;
             name: string;
+            is_active: boolean;
             legal_id: string | null;
         };
         client: {
+            id: bigint;
+            created_at: Date;
+            updated_at: Date | null;
             first_name: string;
             last_name: string;
             dob: Date | null;
             id_type: import(".prisma/client").$Enums.IdType | null;
             id_number: string | null;
             email: string | null;
-            id: bigint;
-            created_at: Date;
-            updated_at: Date | null;
             phone_mobile: string | null;
             phone_home: string | null;
             phone_work: string | null;
@@ -479,9 +482,9 @@ export declare class InspectionRequestsController {
         };
         service_type: {
             id: bigint;
-            is_active: boolean;
             created_at: Date;
             name: string;
+            is_active: boolean;
             sort_order: number;
         } | null;
         inspection_report: ({
@@ -504,24 +507,20 @@ export declare class InspectionRequestsController {
                 section_order: number;
             })[];
         } & {
-            additional_comments: string | null;
-            summary: string | null;
             id: bigint;
+            created_by_user_id: bigint | null;
             created_at: Date;
             updated_at: Date | null;
-            created_by_user_id: bigint | null;
             inspection_request_id: bigint;
+            additional_comments: string | null;
             interview_started_at: Date | null;
             interview_ended_at: Date | null;
             concluded_at: Date | null;
+            summary: string | null;
             outcome: import(".prisma/client").$Enums.ReportOutcome;
         }) | null;
-        marital_status: string | null;
-        spouse_name: string | null;
         id: bigint;
         insurer_id: bigint;
-        created_at: Date;
-        updated_at: Date | null;
         insurer_client_id: bigint;
         client_id: bigint;
         service_type_id: bigint | null;
@@ -533,6 +532,8 @@ export declare class InspectionRequestsController {
         responsible_name: string;
         responsible_phone: string | null;
         responsible_email: string | null;
+        marital_status: string | null;
+        spouse_name: string | null;
         comments: string | null;
         client_notified: boolean;
         interview_language: string | null;
@@ -555,5 +556,7 @@ export declare class InspectionRequestsController {
         report_shared_by_user_id: bigint | null;
         created_by_user_id: bigint | null;
         updated_by_user_id: bigint | null;
+        created_at: Date;
+        updated_at: Date | null;
     }>;
 }

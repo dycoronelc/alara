@@ -298,6 +298,38 @@ export const getInspectionRequestDocuments = (
     [],
   );
 
+/** Solo rol ADMIN en el API. Elimina el registro y el archivo en almacenamiento local si aplica. */
+export async function deleteInspectionRequestDocument(
+  requestId: number,
+  documentId: number,
+  portal: 'aseguradora' | 'alara',
+  insurerId?: number,
+): Promise<void> {
+  const token = localStorage.getItem('alara-token');
+  const effectiveInsurerId = insurerId ?? getStoredInsurerId();
+  const role = getApiRoleForPortal(portal);
+  const url = buildApiUrl(`/api/inspection-requests/${requestId}/documents/${documentId}`);
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      'x-user-role': role,
+      'x-user-id': getStoredUserId(),
+      ...(effectiveInsurerId ? { 'x-insurer-id': String(effectiveInsurerId) } : {}),
+    },
+  });
+  if (!response.ok) {
+    let msg = 'No se pudo eliminar el documento';
+    try {
+      const body = (await response.json()) as { message?: unknown };
+      if (body?.message != null) msg = String(body.message);
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg);
+  }
+}
+
 /** Abre el documento almacenado (PDF, etc.) en una pestaña nueva; requiere JWT. */
 export async function openInspectionRequestDocument(
   requestId: number,

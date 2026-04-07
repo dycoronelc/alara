@@ -53,9 +53,16 @@ type InspectionReportPayload = {
 export class PdfService {
   private brand = {
     primary: '#1D4F7C',
+    primaryDeep: '#163a5c',
     accent: '#2CD4F8',
     dark: '#0f172a',
     muted: '#64748b',
+  };
+
+  private readonly pdfLayout = {
+    margin: 40,
+    footerReserve: 52,
+    colGap: 20,
   };
 
   private addHeader(doc: PDFKit.PDFDocument, title: string) {
@@ -98,6 +105,201 @@ export class PdfService {
       .fillColor(this.brand.muted)
       .text(`${label}: `, { continued: true });
     doc.font('Helvetica').fillColor(this.brand.dark).text(value ? String(value) : 'No disponible');
+  }
+
+  /** Misma jerarquía visual que la pestaña Reporte (banner VIP centrado). */
+  private addReportVipBanner(doc: PDFKit.PDFDocument) {
+    const w = doc.page.width;
+    const h = 78;
+    const split = Math.floor(h * 0.52);
+    doc.rect(0, 0, w, split).fill(this.brand.primary);
+    doc.rect(0, split, w, h - split).fill(this.brand.primaryDeep);
+    doc.fillColor('#ffffff');
+    doc.font('Helvetica').fontSize(8).text('GRACIAS POR CONFIAR EN NOSOTROS', 0, 22, {
+      width: w,
+      align: 'center',
+    });
+    doc.font('Helvetica-Bold').fontSize(11).text('ENTREVISTA SEGURO DE PERSONAS', 0, 40, {
+      width: w,
+      align: 'center',
+    });
+    doc.fillColor(this.brand.dark);
+    doc.y = h + 14;
+  }
+
+  private outcomeLabel(code: string): string {
+    const map: Record<string, string> = {
+      PENDIENTE: 'Pendiente',
+      FAVORABLE: 'Favorable',
+      NO_FAVORABLE: 'No favorable',
+      INCONCLUSO: 'Inconcluso',
+    };
+    return map[code] ?? code;
+  }
+
+  /** Campos largos a ancho completo, alineados al formulario web (details-wide). */
+  private isPdfFullWidthField(key: string): boolean {
+    if (key.endsWith('_detalle_respuesta_afirmativa')) return true;
+    if (key === 'informacion_medica' || key === 'informacion_complementaria') return true;
+    const wide = new Set([
+      'foreign_residence',
+      'functions',
+      'other_occupation',
+      'results',
+      'studies',
+      'consultation_reason',
+      'surgeries',
+      'important_diseases',
+      'prescribed_meds',
+      'non_prescribed_meds',
+      'work_risk_desc',
+      'other_risk',
+      'accidents',
+      'accidents_detail',
+      'sports_details',
+      'vape_details',
+      'treatment_detail',
+      'pep_detail',
+      'political_party_detail',
+      'weapon_training_detail',
+      'military_detail',
+      'insurance_reason',
+      'simultaneous_policy',
+      'funds_origin',
+      'earned_concept',
+      'unearned_concept',
+      'goods',
+      'other_assets',
+      'negative_history',
+      'dui',
+      'traffic',
+      'arrested',
+      'additional_comments',
+    ]);
+    return wide.has(key);
+  }
+
+  private resolveFieldValue(
+    field: { key: string; label: string },
+    valuesByKey: Map<string, string>,
+    valuesByLabel: Map<string, string>,
+  ): string {
+    let v = valuesByKey.get(field.key) ?? valuesByLabel.get(field.label) ?? '';
+    if (field.key === 'weight') {
+      const u = valuesByKey.get('weight_unit') ?? '';
+      const n = v.trim();
+      if (n && u) return `${n} ${u}`.trim();
+    }
+    if (field.key === 'height') {
+      const u = valuesByKey.get('height_unit') ?? '';
+      const n = v.trim();
+      if (n && u) return `${n} ${u}`.trim();
+    }
+    return v;
+  }
+
+  private heightOfFieldCell(doc: PDFKit.PDFDocument, label: string, value: string, width: number): number {
+    doc.font('Helvetica').fontSize(8).fillColor(this.brand.muted);
+    const h1 = doc.heightOfString(label, { width });
+    const display = value.trim() ? value : '—';
+    doc.font('Helvetica').fontSize(9).fillColor(this.brand.dark);
+    const h2 = doc.heightOfString(display, { width });
+    return h1 + 3 + h2 + 6;
+  }
+
+  private drawFieldCell(
+    doc: PDFKit.PDFDocument,
+    x: number,
+    y: number,
+    width: number,
+    label: string,
+    value: string,
+  ): number {
+    doc.font('Helvetica').fontSize(8).fillColor(this.brand.muted).text(label, x, y, { width });
+    const h1 = doc.heightOfString(label, { width });
+    const display = value.trim() ? value : '—';
+    doc.font('Helvetica').fontSize(9).fillColor(this.brand.dark).text(display, x, y + h1 + 3, { width });
+    const h2 = doc.heightOfString(display, { width });
+    return h1 + 3 + h2 + 6;
+  }
+
+  private ensurePageSpace(doc: PDFKit.PDFDocument, currentY: number, blockHeight: number): number {
+    const { margin, footerReserve } = this.pdfLayout;
+    const limit = doc.page.height - footerReserve;
+    if (currentY + blockHeight > limit) {
+      doc.addPage();
+      doc.x = margin;
+      return margin;
+    }
+    return currentY;
+  }
+
+  /** Secciones del cuerpo en 2 columnas (como .report-form-grid en el front). */
+  private renderTemplateSection(
+    doc: PDFKit.PDFDocument,
+    section: { title: string; fields: { key: string; label: string }[] },
+    valuesByKey: Map<string, string>,
+    valuesByLabel: Map<string, string>,
+  ) {
+    const { margin, colGap } = this.pdfLayout;
+    const usableW = doc.page.width - margin * 2;
+    const colW = (usableW - colGap) / 2;
+    const skip = new Set(['weight_unit', 'height_unit']);
+    const fields = section.fields.filter((f) => !skip.has(f.key));
+
+    let y = doc.y;
+    if (section.title?.trim()) {
+      y = this.ensurePageSpace(doc, y, 28);
+      doc.y = y;
+      this.addSectionTitle(doc, section.title);
+      y = doc.y;
+    }
+
+    let i = 0;
+    while (i < fields.length) {
+      const f = fields[i];
+      const full = this.isPdfFullWidthField(f.key);
+      if (full) {
+        const value = this.resolveFieldValue(f, valuesByKey, valuesByLabel);
+        const h = this.heightOfFieldCell(doc, f.label, value, usableW);
+        y = this.ensurePageSpace(doc, y, h);
+        doc.y = y;
+        doc.x = margin;
+        this.drawFieldCell(doc, margin, y, usableW, f.label, value);
+        y = y + h;
+        doc.y = y;
+        doc.x = margin;
+        i += 1;
+        continue;
+      }
+
+      const f2 = fields[i + 1];
+      if (f2 && !this.isPdfFullWidthField(f2.key)) {
+        const v1 = this.resolveFieldValue(f, valuesByKey, valuesByLabel);
+        const v2 = this.resolveFieldValue(f2, valuesByKey, valuesByLabel);
+        const h1 = this.heightOfFieldCell(doc, f.label, v1, colW);
+        const h2 = this.heightOfFieldCell(doc, f2.label, v2, colW);
+        const rowH = Math.max(h1, h2);
+        y = this.ensurePageSpace(doc, y, rowH);
+        doc.x = margin;
+        this.drawFieldCell(doc, margin, y, colW, f.label, v1);
+        this.drawFieldCell(doc, margin + colW + colGap, y, colW, f2.label, v2);
+        y += rowH;
+        doc.y = y;
+        doc.x = margin;
+        i += 2;
+      } else {
+        const value = this.resolveFieldValue(f, valuesByKey, valuesByLabel);
+        const h = this.heightOfFieldCell(doc, f.label, value, colW);
+        y = this.ensurePageSpace(doc, y, h);
+        doc.x = margin;
+        this.drawFieldCell(doc, margin, y, colW, f.label, value);
+        y += h;
+        doc.y = y;
+        doc.x = margin;
+        i += 1;
+      }
+    }
   }
 
   /** Alineado al formulario impreso «Reporte de Inspección VIP – ALARA INSP, S.A.» */
@@ -443,39 +645,40 @@ export class PdfService {
 
     doc.on('data', (chunk: Buffer) => chunks.push(chunk));
 
-    this.addHeader(doc, 'Reporte de Inspección VIP · ALARA INSP, S.A.');
+    this.addReportVipBanner(doc);
 
-    doc
-      .fontSize(8)
-      .fillColor(this.brand.muted)
-      .font('Helvetica')
-      .text('Gracias por confiar en nosotros · Entrevista seguro de personas', { align: 'center' });
-    doc.moveDown(0.5);
-    doc.fontSize(10).fillColor(this.brand.dark).font('Helvetica');
-    this.addKeyValue(doc, 'Solicitud', request.request_number);
-    this.addKeyValue(doc, 'Aseguradora', request.insurer.name);
-    this.addKeyValue(doc, 'Cliente', `${request.client.first_name} ${request.client.last_name}`);
-    this.addKeyValue(doc, 'Estado', request.status);
-    doc.moveDown();
+    const { margin, colGap, footerReserve } = this.pdfLayout;
+    const usableW = doc.page.width - margin * 2;
+    const colW = (usableW - colGap) / 2;
+
+    let y = doc.y;
+    const metaRow1H = Math.max(
+      this.heightOfFieldCell(doc, 'Solicitud', request.request_number, colW),
+      this.heightOfFieldCell(doc, 'Aseguradora', request.insurer.name, colW),
+    );
+    y = this.ensurePageSpace(doc, y, metaRow1H);
+    this.drawFieldCell(doc, margin, y, colW, 'Solicitud', request.request_number);
+    this.drawFieldCell(doc, margin + colW + colGap, y, colW, 'Aseguradora', request.insurer.name);
+    y += metaRow1H;
+
+    const clientName = `${request.client.first_name} ${request.client.last_name}`.trim();
+    const metaRow2H = Math.max(
+      this.heightOfFieldCell(doc, 'Cliente', clientName, colW),
+      this.heightOfFieldCell(doc, 'Estado', request.status, colW),
+    );
+    y = this.ensurePageSpace(doc, y, metaRow2H);
+    this.drawFieldCell(doc, margin, y, colW, 'Cliente', clientName);
+    this.drawFieldCell(doc, margin + colW + colGap, y, colW, 'Estado', request.status);
+    y += metaRow2H + 8;
+    doc.y = y;
+    doc.x = margin;
 
     if (!report) {
-      doc.text('Reporte aún no disponible.');
+      doc.fontSize(10).fillColor(this.brand.dark).text('Reporte aún no disponible.');
       this.addFooter(doc);
       doc.end();
       await new Promise<void>((resolve) => doc.on('end', () => resolve()));
       return Buffer.concat(chunks);
-    }
-
-    this.addSectionTitle(doc, 'Resultado');
-    doc.fillColor(this.brand.primary).fontSize(11).font('Helvetica-Bold').text(`Resultado: ${report.outcome}`);
-    doc.fillColor(this.brand.dark).fontSize(10).font('Helvetica');
-    if (report.summary) {
-      doc.moveDown();
-      this.addKeyValue(doc, 'Resumen', report.summary);
-    }
-    if (report.additional_comments) {
-      doc.moveDown();
-      this.addKeyValue(doc, 'Comentarios adicionales', report.additional_comments);
     }
 
     const valuesByKey = new Map<string, string>();
@@ -492,26 +695,47 @@ export class PdfService {
       });
     });
 
+    doc.y = y;
+    doc.x = margin;
+    this.addSectionTitle(doc, 'Resumen del reporte');
+    y = doc.y;
+    doc.font('Helvetica').fontSize(9).fillColor('#475569');
+    const intro =
+      'Resumen de la conversación telefónica realizada al propuesto asegurado.';
+    const introH = doc.heightOfString(intro, { width: usableW });
+    y = this.ensurePageSpace(doc, y, introH + 4);
+    doc.text(intro, margin, y, { width: usableW });
+    y += introH + 12;
+
+    const outcomeStr = this.outcomeLabel(report.outcome);
+    const blocks: { label: string; value: string }[] = [
+      { label: 'Resultado', value: outcomeStr },
+      { label: 'Resumen', value: report.summary ?? '' },
+      { label: 'Comentarios adicionales', value: report.additional_comments ?? '' },
+    ];
+    for (const b of blocks) {
+      const h = this.heightOfFieldCell(doc, b.label, b.value, usableW);
+      y = this.ensurePageSpace(doc, y, h);
+      this.drawFieldCell(doc, margin, y, usableW, b.label, b.value);
+      y += h;
+    }
+    doc.y = y;
+    doc.x = margin;
+
     this.reportTemplate().forEach((section) => {
-      doc.moveDown();
-      if (section.title?.trim()) {
-        this.addSectionTitle(doc, section.title);
-      }
-      section.fields.forEach((field) => {
-        const value = valuesByKey.get(field.key) ?? valuesByLabel.get(field.label) ?? '';
-        this.addKeyValue(doc, field.label, value);
-      });
+      doc.moveDown(0.35);
+      this.renderTemplateSection(doc, section, valuesByKey, valuesByLabel);
     });
 
     doc.moveDown();
-    doc
-      .fontSize(8)
-      .fillColor(this.brand.muted)
-      .font('Helvetica')
-      .text(
-        'Nota: El presente reporte es para uso exclusivo de la compañía de seguros solicitante y no debe ser exhibido a terceros, ni en su totalidad ni en ninguna de sus partes.',
-        { align: 'left' },
-      );
+    y = doc.y;
+    const note =
+      'Nota: El presente reporte es para uso exclusivo de la compañía de seguros solicitante y no debe ser exhibido a terceros, ni en su totalidad ni en ninguna de sus partes.';
+    doc.font('Helvetica').fontSize(8).fillColor(this.brand.muted);
+    const noteH = doc.heightOfString(note, { width: usableW });
+    y = this.ensurePageSpace(doc, y, noteH + footerReserve);
+    doc.text(note, margin, y, { width: usableW });
+    doc.y = y + noteH + 12;
 
     this.addFooter(doc);
     doc.end();

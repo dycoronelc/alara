@@ -196,6 +196,41 @@ let DocumentsService = class DocumentsService {
             },
         });
     }
+    async deleteDocument(inspectionRequestId, documentId, context) {
+        if (context?.role !== 'ADMIN') {
+            throw new common_1.ForbiddenException('Solo los administradores pueden eliminar documentos');
+        }
+        const request = await this.prisma.inspectionRequest.findUnique({
+            where: { id: inspectionRequestId },
+            select: { insurer_id: true },
+        });
+        if (!request) {
+            throw new common_1.NotFoundException('Solicitud no encontrada');
+        }
+        this.ensureTenancy(context, request.insurer_id);
+        const doc = await this.prisma.document.findFirst({
+            where: {
+                id: BigInt(documentId),
+                inspection_request_id: BigInt(inspectionRequestId),
+            },
+        });
+        if (!doc) {
+            throw new common_1.NotFoundException('Documento no encontrado');
+        }
+        const storageKey = doc.storage_provider === 'LOCAL' ? doc.storage_key : null;
+        await this.prisma.document.delete({ where: { id: doc.id } });
+        if (storageKey) {
+            const filepath = (0, path_1.join)(this.storageDir, storageKey);
+            try {
+                await fs_1.promises.unlink(filepath);
+            }
+            catch (err) {
+                const code = err && typeof err === 'object' && 'code' in err ? err.code : '';
+                if (code !== 'ENOENT') {
+                }
+            }
+        }
+    }
     async getDocumentFile(inspectionRequestId, documentId, context) {
         const request = await this.prisma.inspectionRequest.findUnique({
             where: { id: inspectionRequestId },

@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
+  deleteInspectionRequestDocument,
   downloadPdf,
   getInspectionRequest,
   getInspectionRequestDocuments,
+  getStoredRole,
   openInspectionRequestDocument,
   getInvestigations,
   saveInspectionReport,
@@ -167,6 +169,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const [documents, setDocuments] = useState<RequestDocument[]>([]);
   const [docOpenError, setDocOpenError] = useState('');
   const [openingDocId, setOpeningDocId] = useState<string | number | null>(null);
+  const [deletingDocId, setDeletingDocId] = useState<string | number | null>(null);
   const [investigationMessage, setInvestigationMessage] = useState('');
   const [uafSearchMode, setUafSearchMode] = useState<'cedula' | 'nombre' | 'ambos'>('ambos');
   const [callMessage, setCallMessage] = useState('');
@@ -356,6 +359,24 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       setDocOpenError('No se pudo abrir el documento. Inténtalo de nuevo.');
     } finally {
       setOpeningDocId(null);
+    }
+  };
+
+  const isAdminUser = getStoredRole() === 'ADMIN';
+
+  const handleDeleteDocument = async (file: RequestDocument) => {
+    if (!id || !isAdminUser) return;
+    const label = file.filename || 'este documento';
+    if (!window.confirm(`¿Eliminar ${label}? Esta acción no se puede deshacer.`)) return;
+    setDocOpenError('');
+    setDeletingDocId(file.id);
+    try {
+      await deleteInspectionRequestDocument(Number(id), Number(file.id), portal);
+      setDocuments((prev) => prev.filter((d) => String(d.id) !== String(file.id)));
+    } catch (e) {
+      setDocOpenError(e instanceof Error ? e.message : 'No se pudo eliminar el documento.');
+    } finally {
+      setDeletingDocId(null);
     }
   };
 
@@ -1459,7 +1480,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                     type="button"
                     className="doc-filename-link"
                     onClick={() => handleOpenDocument(file)}
-                    disabled={openingDocId === file.id}
+                    disabled={openingDocId === file.id || deletingDocId === file.id}
                     title="Abrir o descargar documento"
                   >
                     {openingDocId === file.id ? 'Abriendo…' : file.filename}
@@ -1469,6 +1490,17 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                     {new Date(file.uploaded_at).toLocaleString()}
                   </span>
                 </div>
+                {isAdminUser && (
+                  <button
+                    type="button"
+                    className="ghost-button doc-delete-btn"
+                    onClick={() => handleDeleteDocument(file)}
+                    disabled={deletingDocId === file.id || openingDocId === file.id}
+                    title="Eliminar documento (solo administradores)"
+                  >
+                    {deletingDocId === file.id ? 'Eliminando…' : 'Eliminar'}
+                  </button>
+                )}
               </div>
             ))}
             {!documents.length && <p>No hay documentos registrados.</p>}

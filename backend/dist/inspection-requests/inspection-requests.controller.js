@@ -71,6 +71,10 @@ let InspectionRequestsController = InspectionRequestsController_1 = class Inspec
         res.setHeader('Content-Disposition', `inline; filename="${filename.replace(/"/g, '')}"`);
         return res.send(buffer);
     }
+    async deleteDocument(req, id, documentId) {
+        await this.documentsService.deleteDocument(id, documentId, req.userContext);
+        return { ok: true };
+    }
     async uploadDocument(req, id, file, docType) {
         if (!file) {
             throw new common_1.BadRequestException('Archivo requerido');
@@ -173,6 +177,15 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object, Number, Number]),
     __metadata("design:returntype", Promise)
 ], InspectionRequestsController.prototype, "downloadStoredDocument", null);
+__decorate([
+    (0, common_1.Delete)(':id/documents/:documentId'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(2, (0, common_1.Param)('documentId', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number, Number]),
+    __metadata("design:returntype", Promise)
+], InspectionRequestsController.prototype, "deleteDocument", null);
 __decorate([
     (0, common_1.Post)(':id/documents/upload'),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {

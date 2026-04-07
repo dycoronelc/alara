@@ -63,6 +63,7 @@ export declare class DocumentsService {
         storage_provider: import(".prisma/client").$Enums.StorageProvider;
         uploaded_at: Date;
     }[]>;
+    deleteDocument(inspectionRequestId: number, documentId: number, context?: RequestContext): Promise<void>;
     getDocumentFile(inspectionRequestId: number, documentId: number, context?: RequestContext): Promise<{
         buffer: Buffer;
         filename: string;
