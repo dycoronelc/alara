@@ -120,6 +120,12 @@ class CreateInspectionRequestDto {
 }
 exports.CreateInspectionRequestDto = CreateInspectionRequestDto;
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
+    __metadata("design:type", Number)
+], CreateInspectionRequestDto.prototype, "service_type_id", void 0);
+__decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
@@ -165,14 +171,34 @@ __decorate([
     __metadata("design:type", String)
 ], CreateInspectionRequestDto.prototype, "marital_status", void 0);
 __decorate([
+    (0, class_transformer_1.Transform)(({ value }) => (typeof value === 'string' ? value.trim() : value)),
+    (0, class_validator_1.ValidateIf)((o) => o.marital_status === 'Casado' || o.marital_status === 'Unido'),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreateInspectionRequestDto.prototype, "spouse_name", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => emptyStringToUndefined(value)),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateInspectionRequestDto.prototype, "comments", void 0);
 __decorate([
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], CreateInspectionRequestDto.prototype, "client_notified", void 0);
+__decorate([
+    (0, class_validator_1.ValidateIf)((o) => o.client_notified === true),
+    (0, class_validator_1.IsDateString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreateInspectionRequestDto.prototype, "scheduled_start_at", void 0);
+__decorate([
+    (0, class_validator_1.ValidateIf)((o) => o.client_notified === true),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], CreateInspectionRequestDto.prototype, "scheduled_end_at", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),

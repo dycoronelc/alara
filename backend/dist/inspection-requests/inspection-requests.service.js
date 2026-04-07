@@ -16,7 +16,7 @@ const app_roles_1 = require("../common/app-roles");
 const allowedTransitions = {
     SOLICITADA: ['AGENDADA', 'CANCELADA'],
     AGENDADA: ['REALIZADA', 'CANCELADA'],
-    REALIZADA: ['APROBADA', 'RECHAZADA'],
+    REALIZADA: ['APROBADA', 'RECHAZADA', 'CANCELADA'],
     CANCELADA: [],
     APROBADA: [],
     RECHAZADA: [],
@@ -54,8 +54,20 @@ let InspectionRequestsService = class InspectionRequestsService {
         return this.prisma.inspectionRequest.findMany({
             where,
             orderBy: { created_at: 'desc' },
-            include: { client: true, insurer: true },
+            include: { client: true, insurer: true, service_type: true },
         });
+    }
+    async listServiceTypes(_context) {
+        const rows = await this.prisma.serviceType.findMany({
+            where: { is_active: true },
+            orderBy: { sort_order: 'asc' },
+            select: { id: true, name: true, sort_order: true },
+        });
+        return rows.map((r) => ({
+            id: Number(r.id),
+            name: r.name,
+            sort_order: r.sort_order,
+        }));
     }
     async getById(context, id) {
         const request = await this.prisma.inspectionRequest.findUnique({
@@ -63,6 +75,7 @@ let InspectionRequestsService = class InspectionRequestsService {
             include: {
                 client: true,
                 insurer: true,
+                service_type: true,
                 inspection_report: { include: { sections: { include: { fields: true } } } },
             },
         });
@@ -366,6 +379,7 @@ let InspectionRequestsService = class InspectionRequestsService {
         if (!context.insurerId) {
             throw new common_1.BadRequestException('insurerId header requerido');
         }
+        const insurerId = context.insurerId;
         if (!context.userId) {
             throw new common_1.BadRequestException('userId requerido');
         }
@@ -406,11 +420,11 @@ let InspectionRequestsService = class InspectionRequestsService {
             })
             : await this.prisma.client.create({ data: clientScalar });
         const insurerClient = (await this.prisma.insurerClient.findFirst({
-            where: { insurer_id: context.insurerId, client_id: client.id },
+            where: { insurer_id: insurerId, client_id: client.id },
         })) ??
             (await this.prisma.insurerClient.create({
                 data: {
-                    insurer_id: context.insurerId,
+                    insurer_id: insurerId,
                     client_id: client.id,
                     is_vip: true,
                 },
@@ -418,7 +432,7 @@ let InspectionRequestsService = class InspectionRequestsService {
         const existingByNumber = await this.prisma.inspectionRequest.findUnique({
             where: {
                 insurer_id_request_number: {
-                    insurer_id: context.insurerId,
+                    insurer_id: insurerId,
                     request_number: payload.request_number.trim(),
                 },
             },
@@ -426,33 +440,70 @@ let InspectionRequestsService = class InspectionRequestsService {
         if (existingByNumber) {
             throw new common_1.ConflictException(`Ya existe una solicitud con el número "${payload.request_number}" para esta aseguradora. Usa otro número de solicitud.`);
         }
+        const serviceType = await this.prisma.serviceType.findFirst({
+            where: { id: BigInt(payload.service_type_id), is_active: true },
+        });
+        if (!serviceType) {
+            throw new common_1.BadRequestException('Tipo de servicio inválido o inactivo');
+        }
         try {
             const hasAmt = payload.has_amount_in_force === true;
             const amtRaw = payload.amount_in_force;
             const amountInForce = hasAmt && amtRaw != null && !Number.isNaN(Number(amtRaw)) ? Number(amtRaw) : null;
-            return await this.prisma.inspectionRequest.create({
-                data: {
-                    insurer_id: context.insurerId,
-                    insurer_client_id: insurerClient.id,
-                    client_id: client.id,
-                    request_number: payload.request_number.trim(),
-                    agent_name: payload.agent_name,
-                    insured_amount: payload.insured_amount,
-                    has_amount_in_force: payload.has_amount_in_force,
-                    amount_in_force: amountInForce,
-                    responsible_name: payload.responsible_name,
-                    responsible_phone: payload.responsible_phone,
-                    responsible_email: payload.responsible_email,
-                    marital_status: payload.marital_status,
-                    comments: payload.comments,
-                    client_notified: payload.client_notified,
-                    interview_language: payload.interview_language,
-                    priority: payload.priority ?? 'NORMAL',
-                    ...(createdByUserId != null && {
-                        created_by_user_id: createdByUserId,
-                        updated_by_user_id: createdByUserId,
-                    }),
-                },
+            const withInterview = payload.client_notified === true && !!payload.scheduled_start_at?.trim();
+            const startAt = withInterview ? new Date(payload.scheduled_start_at) : undefined;
+            const endAt = withInterview
+                ? payload.scheduled_end_at?.trim()
+                    ? new Date(payload.scheduled_end_at)
+                    : startAt
+                        ? new Date(startAt.getTime() + 60 * 60 * 1000)
+                        : undefined
+                : undefined;
+            const status = withInterview ? 'AGENDADA' : 'SOLICITADA';
+            return await this.prisma.$transaction(async (tx) => {
+                const created = await tx.inspectionRequest.create({
+                    data: {
+                        insurer_id: insurerId,
+                        insurer_client_id: insurerClient.id,
+                        client_id: client.id,
+                        service_type_id: serviceType.id,
+                        request_number: payload.request_number.trim(),
+                        agent_name: payload.agent_name,
+                        insured_amount: payload.insured_amount,
+                        has_amount_in_force: payload.has_amount_in_force,
+                        amount_in_force: amountInForce,
+                        responsible_name: payload.responsible_name,
+                        responsible_phone: payload.responsible_phone,
+                        responsible_email: payload.responsible_email,
+                        marital_status: payload.marital_status,
+                        spouse_name: payload.marital_status === 'Casado' || payload.marital_status === 'Unido'
+                            ? payload.spouse_name?.trim() || null
+                            : null,
+                        comments: payload.comments ?? null,
+                        client_notified: payload.client_notified,
+                        interview_language: payload.interview_language,
+                        priority: payload.priority ?? 'NORMAL',
+                        status,
+                        scheduled_start_at: startAt,
+                        scheduled_end_at: endAt,
+                        ...(createdByUserId != null && {
+                            created_by_user_id: createdByUserId,
+                            updated_by_user_id: createdByUserId,
+                        }),
+                    },
+                });
+                if (status === 'AGENDADA' && createdByUserId != null) {
+                    await tx.inspectionRequestStatusHistory.create({
+                        data: {
+                            inspection_request_id: created.id,
+                            old_status: 'SOLICITADA',
+                            new_status: 'AGENDADA',
+                            note: 'Solicitud creada con entrevista agendada',
+                            changed_by_user_id: createdByUserId,
+                        },
+                    });
+                }
+                return created;
             });
         }
         catch (err) {
@@ -476,23 +527,32 @@ let InspectionRequestsService = class InspectionRequestsService {
         if (!allowedTransitions[request.status].includes(payload.new_status)) {
             throw new common_1.BadRequestException('Transición de estado inválida');
         }
+        if (payload.new_status === 'AGENDADA' && !payload.scheduled_start_at?.trim()) {
+            throw new common_1.BadRequestException('Indique la fecha y hora de la entrevista para agendar');
+        }
         if (['APROBADA', 'RECHAZADA'].includes(payload.new_status)) {
             if (!(0, app_roles_1.isInsurerTenantRole)(context.role)) {
                 throw new common_1.ForbiddenException('Solo aseguradoras o corredores pueden aprobar o rechazar');
             }
         }
-        if (['AGENDADA', 'REALIZADA'].includes(payload.new_status) && (0, app_roles_1.isInsurerTenantRole)(context.role)) {
-            throw new common_1.ForbiddenException('Solo ALARA puede agendar o marcar como realizada');
+        if (payload.new_status === 'REALIZADA' && (0, app_roles_1.isInsurerTenantRole)(context.role)) {
+            throw new common_1.ForbiddenException('Solo ALARA puede marcar la inspección como realizada');
         }
+        const scheduleStart = payload.scheduled_start_at?.trim()
+            ? new Date(payload.scheduled_start_at)
+            : undefined;
+        const scheduleEnd = payload.scheduled_end_at?.trim()
+            ? new Date(payload.scheduled_end_at)
+            : scheduleStart && payload.new_status === 'AGENDADA'
+                ? new Date(scheduleStart.getTime() + 60 * 60 * 1000)
+                : undefined;
         return this.prisma.$transaction(async (tx) => {
             const updated = await tx.inspectionRequest.update({
                 where: { id },
                 data: {
                     status: payload.new_status,
-                    scheduled_start_at: payload.scheduled_start_at
-                        ? new Date(payload.scheduled_start_at)
-                        : undefined,
-                    scheduled_end_at: payload.scheduled_end_at ? new Date(payload.scheduled_end_at) : undefined,
+                    scheduled_start_at: scheduleStart ?? undefined,
+                    scheduled_end_at: scheduleEnd ?? undefined,
                     assigned_investigator_user_id: payload.assigned_investigator_user_id,
                     cancellation_reason: payload.cancellation_reason,
                     updated_by_user_id: userId,

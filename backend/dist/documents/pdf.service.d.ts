@@ -9,6 +9,7 @@ type InspectionRequestPayload = {
     has_amount_in_force: boolean;
     amount_in_force?: any;
     marital_status?: string | null;
+    spouse_name?: string | null;
     interview_language?: string | null;
     client_notified?: boolean | null;
     comments?: string | null;

@@ -244,10 +244,14 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
     };
     const tmuSection: ReportSectionDef = {
       code: 'INFORMACION_MEDICA_TMU',
-      title: '',
+      title: 'Información médica (TMU)',
       fields: [tmuMedicalField],
     };
-    return [...templateSections, tmuSection];
+    const complementIdx = templateSections.findIndex((s) => s.code === 'INFORMACION_COMPLEMENTARIA');
+    if (complementIdx === -1) return [...templateSections, tmuSection];
+    const next = [...templateSections];
+    next.splice(complementIdx, 0, tmuSection);
+    return next;
   }, [templateSections, data?.service_type?.id]);
 
   const solicitudDobDdMm = useMemo(
@@ -1322,10 +1326,17 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
       {!isInsurerExperience && activeTab === 'reporte' && (
         <div className="info-card report-tab-card">
           {showReportForm && (
-            <div className="report-form">
+            <div className="report-form report-form--vip">
+              <div className="report-vip-banner" aria-hidden>
+                <p className="report-vip-banner__tagline">Gracias por confiar en nosotros</p>
+                <p className="report-vip-banner__title">Entrevista seguro de personas</p>
+              </div>
               <div className="form-section">
                 <h4>Resumen del reporte</h4>
-                <div className="form-grid">
+                <p className="report-vip-summary-intro">
+                  Resumen de la conversación telefónica realizada al propuesto asegurado
+                </p>
+                <div className="form-grid report-form-grid report-form-grid--single">
                   <label className="form-field">
                     <span>Resultado</span>
                     <select
@@ -1355,14 +1366,16 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
               {reportSections.map((section) => (
                 <div key={section.code ?? section.title} className="form-section">
                   {section.title?.trim() ? <h4>{section.title}</h4> : null}
-                  <div className="form-grid">
+                  <div className="form-grid report-form-grid">
                     {section.fields
                       .filter((field) => isReportFieldVisible(field, reportValues))
                       .map((field) => (
                         <label
                           key={field.key}
                           className={`form-field${
-                            field.key === 'informacion_medica' || field.key.endsWith('_detalle_respuesta_afirmativa')
+                            field.key === 'informacion_medica' ||
+                            field.key === 'informacion_complementaria' ||
+                            field.key.endsWith('_detalle_respuesta_afirmativa')
                               ? ' details-wide'
                               : ''
                           }`}
@@ -1378,6 +1391,10 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                   </div>
                 </div>
               ))}
+              <p className="report-legal-note">
+                Nota: El presente reporte es para uso exclusivo de la compañía de seguros solicitante y no debe ser
+                exhibido a terceros, ni en su totalidad ni en ninguna de sus partes.
+              </p>
               <div className="form-actions">
                 <button
                   className="primary-button"

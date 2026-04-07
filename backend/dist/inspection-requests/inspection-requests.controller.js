@@ -15,6 +15,7 @@ var InspectionRequestsController_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InspectionRequestsController = void 0;
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
 const inspection_requests_service_1 = require("./inspection-requests.service");
 const create_inspection_request_dto_1 = require("./dto/create-inspection-request.dto");
 const update_status_dto_1 = require("./dto/update-status.dto");
@@ -37,6 +38,9 @@ let InspectionRequestsController = InspectionRequestsController_1 = class Inspec
             status: status,
             search,
         });
+    }
+    async listServiceTypes(req) {
+        return this.service.listServiceTypes(req.userContext);
     }
     async create(req, payload) {
         const created = await this.service.create(req.userContext, payload);
@@ -66,6 +70,12 @@ let InspectionRequestsController = InspectionRequestsController_1 = class Inspec
         res.setHeader('Content-Type', mimeType);
         res.setHeader('Content-Disposition', `inline; filename="${filename.replace(/"/g, '')}"`);
         return res.send(buffer);
+    }
+    async uploadDocument(req, id, file, docType) {
+        if (!file) {
+            throw new common_1.BadRequestException('Archivo requerido');
+        }
+        return this.documentsService.uploadAttachment(id, file, docType, req.userContext);
     }
     async updateStatus(req, id, payload) {
         return this.service.updateStatus(req.userContext, id, payload);
@@ -131,6 +141,13 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], InspectionRequestsController.prototype, "list", null);
 __decorate([
+    (0, common_1.Get)('service-types'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], InspectionRequestsController.prototype, "listServiceTypes", null);
+__decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Body)()),
@@ -156,6 +173,19 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object, Number, Number]),
     __metadata("design:returntype", Promise)
 ], InspectionRequestsController.prototype, "downloadStoredDocument", null);
+__decorate([
+    (0, common_1.Post)(':id/documents/upload'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
+        limits: { fileSize: 10 * 1024 * 1024 },
+    })),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(2, (0, common_1.UploadedFile)()),
+    __param(3, (0, common_1.Body)('doc_type')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number, Object, Object]),
+    __metadata("design:returntype", Promise)
+], InspectionRequestsController.prototype, "uploadDocument", null);
 __decorate([
     (0, common_1.Post)(':id/status'),
     __param(0, (0, common_1.Req)()),

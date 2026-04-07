@@ -45,6 +45,15 @@ export declare class DocumentsService {
             uploaded_by_user_id: bigint | null;
         };
     }>;
+    uploadAttachment(inspectionRequestId: number, file: Express.Multer.File | undefined, docTypeRaw: string | undefined, context?: RequestContext): Promise<{
+        id: number;
+        file_size_bytes: number;
+        doc_type: import(".prisma/client").$Enums.DocumentType;
+        filename: string;
+        mime_type: string;
+        uploaded_at: Date;
+    }>;
+    private sanitizeFilename;
     listByInspectionRequest(inspectionRequestId: number, context?: RequestContext): Promise<{
         id: bigint;
         doc_type: import(".prisma/client").$Enums.DocumentType;

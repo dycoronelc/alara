@@ -16,6 +16,7 @@ export declare class ClientInputDto {
     profession: string;
 }
 export declare class CreateInspectionRequestDto {
+    service_type_id: number;
     request_number: string;
     agent_name: string;
     insured_amount: number;
@@ -25,8 +26,11 @@ export declare class CreateInspectionRequestDto {
     responsible_phone: string;
     responsible_email: string;
     marital_status: string;
-    comments: string;
+    spouse_name?: string;
+    comments?: string;
     client_notified: boolean;
+    scheduled_start_at?: string;
+    scheduled_end_at?: string;
     interview_language: string;
     priority?: 'NORMAL' | 'ALTA';
     client: ClientInputDto;

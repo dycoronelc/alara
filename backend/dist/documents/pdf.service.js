@@ -51,22 +51,23 @@ class PdfService {
         doc.font('Helvetica').fillColor(this.brand.dark).text(value ? String(value) : 'No disponible');
     }
     reportTemplate() {
+        const affirmative = 'Por favor ampliar respuesta (Si en caso de alguna o más fue positiva):';
         return [
             {
                 title: 'Datos personales',
                 fields: [
                     { key: 'first_name', label: 'Nombres' },
                     { key: 'last_name', label: 'Apellidos' },
-                    { key: 'id_type', label: 'Tipo de documento' },
-                    { key: 'id_number', label: 'Número de documento' },
-                    { key: 'home_address', label: 'Domicilio Particular' },
-                    { key: 'residence_time', label: 'Tiempo de Residencia' },
-                    { key: 'foreign_residence', label: 'Residencia en el extranjero (Dónde / cuándo)' },
-                    { key: 'mobile', label: 'Celular' },
-                    { key: 'email', label: 'E-mail' },
+                    { key: 'marital_status', label: 'Estado Civil' },
                     { key: 'dob', label: 'Fecha de Nacimiento' },
                     { key: 'nationality', label: 'Nacionalidad' },
-                    { key: 'marital_status', label: 'Estado Civil' },
+                    { key: 'home_address', label: 'Domicilio' },
+                    { key: 'residence_time', label: 'Tiempo de residencia' },
+                    { key: 'foreign_residence', label: 'Residencia en el extranjero (Dónde / cuándo)' },
+                    { key: 'id_type', label: 'Tipo de documento' },
+                    { key: 'id_number', label: 'Número de documento' },
+                    { key: 'mobile', label: 'Celular' },
+                    { key: 'email', label: 'E-mail' },
                     { key: 'spouse_name', label: 'Nombre del Cónyuge' },
                     { key: 'children', label: 'Hijos' },
                 ],
@@ -75,33 +76,35 @@ class PdfService {
                 title: 'Profesión – Actividad Laboral',
                 fields: [
                     { key: 'profession_studies', label: 'Profesión / Estudios Cursados' },
-                    { key: 'occupation', label: 'Ocupación / Cargo' },
-                    { key: 'functions', label: 'Funciones' },
-                    { key: 'employer', label: 'Empleador / Empresa' },
-                    { key: 'seniority', label: 'Antigüedad en la empresa' },
-                    { key: 'company_start', label: 'Fecha de Creación de la Empresa' },
-                    { key: 'employees', label: 'Cantidad de Empleados' },
-                    { key: 'employee_or_partner', label: '¿Es empleado o socio?' },
-                    { key: 'business_nature', label: 'Naturaleza del Negocio' },
-                    { key: 'clients', label: 'Clientes' },
                     { key: 'business_address', label: 'Domicilio Comercial' },
+                    { key: 'functions', label: 'Funciones' },
+                    { key: 'clients', label: 'Clientes' },
+                    { key: 'seniority', label: 'Antigüedad en la empresa' },
+                    { key: 'employees', label: 'Cantidad de Empleados' },
+                    { key: 'business_nature', label: 'Naturaleza del Negocio' },
+                    { key: 'employer', label: 'Empleador / Empresa' },
                     { key: 'website', label: 'Sitio Web' },
+                    { key: 'occupation', label: 'Ocupación / Cargo' },
+                    { key: 'employee_or_partner', label: '¿Es empleado o socio?' },
                     { key: 'other_occupation', label: 'Otra Ocupación Actual (describa)' },
+                    { key: 'company_start', label: 'Fecha de Creación de la Empresa' },
                 ],
             },
             {
                 title: 'Salud',
                 fields: [
                     { key: 'doctor_name', label: 'Nombre del Médico Personal' },
-                    { key: 'medical_coverage', label: 'Cobertura Médica' },
-                    { key: 'last_consult', label: 'Fecha Última Consulta Médica' },
-                    { key: 'consultation_reason', label: 'Motivo de la Consulta' },
-                    { key: 'doctor_contact', label: 'Nombre, Dirección del Médico Consultado' },
-                    { key: 'studies', label: 'Estudios realizados' },
                     { key: 'results', label: 'Resultados Obtenidos' },
-                    { key: 'weight', label: 'Peso' },
-                    { key: 'height', label: 'Altura' },
+                    { key: 'weight', label: 'Peso (kg / lb)' },
+                    { key: 'weight_unit', label: 'kg / lb' },
+                    { key: 'height', label: 'Altura (cm / ft)' },
+                    { key: 'height_unit', label: 'cm / ft' },
                     { key: 'weight_change', label: 'Cambio de Peso' },
+                    { key: 'medical_coverage', label: 'Cobertura Médica' },
+                    { key: 'studies', label: 'Estudios realizados' },
+                    { key: 'consultation_reason', label: 'Motivo de la Consulta' },
+                    { key: 'last_consult', label: 'Fecha Última Consulta Médica' },
+                    { key: 'doctor_contact', label: 'Nombre, Dirección del Médico Consultado' },
                     { key: 'deafness', label: 'Sordera' },
                     { key: 'blindness', label: 'Ceguera' },
                     { key: 'physical_alterations', label: 'Alteraciones Físicas' },
@@ -116,6 +119,7 @@ class PdfService {
                     { key: 'important_diseases', label: 'Enfermedades Importantes / Fechas' },
                     { key: 'prescribed_meds', label: 'Medicamentos con prescripción (Nombre y Dosis)' },
                     { key: 'non_prescribed_meds', label: 'Medicamentos no recetados (Nombre y Dosis)' },
+                    { key: 'salud_detalle_respuesta_afirmativa', label: affirmative },
                 ],
             },
             {
@@ -124,6 +128,7 @@ class PdfService {
                     { key: 'work_risk', label: '¿Está expuesto a algún riesgo por sus labores?' },
                     { key: 'work_risk_desc', label: 'Descripción según Ocupación' },
                     { key: 'safety_rules', label: '¿Hay Normas de Seguridad?' },
+                    { key: 'riesgos_laborales_detalle_respuesta_afirmativa', label: affirmative },
                 ],
             },
             {
@@ -140,13 +145,18 @@ class PdfService {
                 fields: [
                     { key: 'diving', label: '¿Buceo?' },
                     { key: 'racing', label: '¿Carrera de Vehículos?' },
-                    { key: 'pilot', label: '¿Piloto de avión o Piloto Estudiante?' },
                     { key: 'ultralight', label: 'Aviones Ultraligeros' },
                     { key: 'parachute', label: 'Paracaidismo' },
                     { key: 'paragliding', label: 'Parapente' },
                     { key: 'climbing', label: 'Escalamiento de montañas' },
                     { key: 'other_risk', label: 'Otra Actividad de Riesgo (ampliar)' },
-                    { key: 'accidents', label: 'Accidentes o lesiones (detallar)' },
+                    { key: 'pilot', label: '¿Es Piloto de avión o Piloto Estudiante?' },
+                    {
+                        key: 'accidents',
+                        label: '¿Ha sufrido algún accidente o lesión practicando un deporte o actividad física? (En caso afirmativo, detallar circunstancias, fecha, lugar, secuelas)',
+                    },
+                    { key: 'accidents_detail', label: 'Tipo, frecuencia y cantidad' },
+                    { key: 'deportes_riesgo_detalle_respuesta_afirmativa', label: affirmative },
                 ],
             },
             {
@@ -163,10 +173,10 @@ class PdfService {
                     { key: 'smoker', label: '¿Es Fumador o utiliza algún tipo de tabaco?' },
                     { key: 'tobacco_type', label: 'Tipo de Tabaco' },
                     { key: 'tobacco_amount', label: 'Cantidad y Frecuencia de Consumo' },
-                    { key: 'tobacco_period', label: 'Período de Consumo' },
+                    { key: 'tobacco_period', label: 'Período de consumo' },
                     { key: 'tobacco_last', label: 'Fecha del Último consumo' },
                     { key: 'vape', label: '¿Consume cigarrillo electrónico?' },
-                    { key: 'vape_details', label: 'Cantidad/frecuencia y circunstancias' },
+                    { key: 'vape_details', label: 'Frecuencia: Detalles' },
                 ],
             },
             {
@@ -174,20 +184,24 @@ class PdfService {
                 fields: [
                     { key: 'alcohol', label: '¿Toma Bebidas Alcohólicas?' },
                     { key: 'marijuana', label: 'Marihuana' },
-                    { key: 'amphetamines', label: 'Anfetaminas' },
-                    { key: 'barbiturics', label: 'Barbitúricos' },
                     { key: 'cocaine', label: 'Cocaína' },
                     { key: 'lsd', label: 'LSD' },
+                    { key: 'amphetamines', label: 'Anfetaminas' },
                     { key: 'stimulants', label: 'Estimulantes' },
+                    { key: 'barbiturics', label: 'Barbitúricos' },
                     { key: 'other_drugs', label: 'Otras Drogas' },
                     { key: 'treatment', label: 'Tratamiento por Consumo de Drogas / Alcohol' },
+                    { key: 'treatment_detail', label: 'Detalle del tratamiento (centro, fechas, etc.)' },
+                    { key: 'alcohol_drogas_detalle_respuesta_afirmativa', label: affirmative },
                 ],
             },
             {
                 title: 'Política',
                 fields: [
-                    { key: 'pep', label: '¿Es PEP? (detallar)' },
-                    { key: 'political_party', label: '¿Participa en partido político? (detallar)' },
+                    { key: 'pep', label: '¿Es PEP? (En caso de afirmativo dar detalles)' },
+                    { key: 'pep_detail', label: 'Detalle PEP (cargo, organismo, etc.)' },
+                    { key: 'political_party', label: '¿Participa en partido político? (En caso de afirmativo dar detalles)' },
+                    { key: 'political_party_detail', label: 'Detalle participación política' },
                 ],
             },
             {
@@ -200,20 +214,23 @@ class PdfService {
                     { key: 'weapon_use', label: '¿En qué circunstancia la porta?' },
                     { key: 'weapon_reason', label: 'Razón de portación' },
                     { key: 'weapon_type', label: 'Tipo de arma, calibre y modelo' },
-                    { key: 'weapon_fired', label: '¿Utilizó o disparó el arma?' },
-                    { key: 'weapon_training', label: 'Entrenamiento especial (nombre y lugar)' },
-                    { key: 'military', label: '¿Ha pertenecido a fuerza militar/política? (detallar)' },
+                    { key: 'weapon_fired', label: '¿Utilizó o disparó el arma en alguna ocasión?' },
+                    { key: 'weapon_training', label: '¿Ha recibido entrenamiento especial?' },
+                    { key: 'weapon_training_detail', label: 'Entrenamiento especial (nombre y lugar)' },
+                    { key: 'military', label: '¿Ha pertenecido a fuerza militar / política? (detallar)' },
+                    { key: 'military_detail', label: 'Detalle fuerza militar / política' },
                     { key: 'weapon_maintenance', label: 'Frecuencia de mantenimiento del arma' },
                     { key: 'practice_place', label: 'Lugar de práctica' },
                     { key: 'security_equipment', label: 'Equipo de seguridad utilizado' },
                     { key: 'accidents_security', label: '¿Ha tenido accidentes?' },
-                    { key: 'personal_guard', label: 'Custodia Personal' },
+                    { key: 'personal_guard', label: 'Custodia personal (De ser afirmativo dar detalles)' },
+                    { key: 'seguridad_detalle_respuesta_afirmativa', label: affirmative },
                 ],
             },
             {
                 title: 'Historia de Seguros',
                 fields: [
-                    { key: 'insurance_date', label: 'Fecha' },
+                    { key: 'insurance_date', label: 'Fecha del seguro' },
                     { key: 'insurance_company', label: 'Compañía' },
                     { key: 'insurance_amount', label: 'Monto' },
                     { key: 'insurance_reason', label: 'Motivo del seguro' },
@@ -273,23 +290,31 @@ class PdfService {
             {
                 title: 'Historial de Manejo',
                 fields: [
-                    { key: 'dui', label: 'Condenas por DUI en últimos 5 años' },
+                    { key: 'dui', label: 'Condenas en los últimos 5 años' },
                     { key: 'traffic', label: 'Infracciones de tránsito últimos 3 años' },
                 ],
             },
             {
-                title: 'Juicios',
+                title: 'Juicios - Pasados o Presentes',
                 fields: [
                     { key: 'criminal_case', label: 'Juicio Penal' },
                     { key: 'civil_case', label: 'Juicio Civil' },
                     { key: 'commercial_case', label: 'Juicio Comercial' },
                     { key: 'labor_case', label: 'Juicio Laboral' },
+                    { key: 'juicios_detalle_respuesta_afirmativa', label: affirmative },
                     { key: 'arrested', label: '¿Ha sido Arrestado? Detallar' },
                 ],
             },
             {
                 title: 'Ampliación o Comentarios Adicional',
-                fields: [{ key: 'additional_comments', label: 'Comentarios' }],
+                fields: [{ key: 'additional_comments', label: 'Nota' }],
+            },
+            {
+                title: 'Información complementaria',
+                fields: [
+                    { key: 'informacion_complementaria', label: 'Amplíe aquí' },
+                    { key: 'informacion_medica', label: 'Información Médica (TMU)' },
+                ],
             },
         ];
     }
@@ -322,6 +347,9 @@ class PdfService {
             this.addKeyValue(doc, 'Monto en vigencia', String(request.amount_in_force));
         }
         this.addKeyValue(doc, 'Estado civil', request.marital_status ?? null);
+        if (request.marital_status === 'Casado' || request.marital_status === 'Unido') {
+            this.addKeyValue(doc, 'Nombre del cónyuge', request.spouse_name ?? null);
+        }
         this.addKeyValue(doc, 'Idioma entrevista', request.interview_language ?? null);
         this.addKeyValue(doc, 'Cliente avisado', request.client_notified ? 'Sí' : 'No');
         this.addSectionTitle(doc, 'Datos del cliente');
@@ -351,7 +379,13 @@ class PdfService {
         const doc = new PDFDocument({ margin: 40 });
         const chunks = [];
         doc.on('data', (chunk) => chunks.push(chunk));
-        this.addHeader(doc, 'Reporte de Inspección VIP');
+        this.addHeader(doc, 'Reporte de Inspección VIP · ALARA INSP, S.A.');
+        doc
+            .fontSize(8)
+            .fillColor(this.brand.muted)
+            .font('Helvetica')
+            .text('Gracias por confiar en nosotros · Entrevista seguro de personas', { align: 'center' });
+        doc.moveDown(0.5);
         doc.fontSize(10).fillColor(this.brand.dark).font('Helvetica');
         this.addKeyValue(doc, 'Solicitud', request.request_number);
         this.addKeyValue(doc, 'Aseguradora', request.insurer.name);
@@ -390,12 +424,20 @@ class PdfService {
         });
         this.reportTemplate().forEach((section) => {
             doc.moveDown();
-            this.addSectionTitle(doc, section.title);
+            if (section.title?.trim()) {
+                this.addSectionTitle(doc, section.title);
+            }
             section.fields.forEach((field) => {
                 const value = valuesByKey.get(field.key) ?? valuesByLabel.get(field.label) ?? '';
                 this.addKeyValue(doc, field.label, value);
             });
         });
+        doc.moveDown();
+        doc
+            .fontSize(8)
+            .fillColor(this.brand.muted)
+            .font('Helvetica')
+            .text('Nota: El presente reporte es para uso exclusivo de la compañía de seguros solicitante y no debe ser exhibido a terceros, ni en su totalidad ni en ninguna de sus partes.', { align: 'left' });
         this.addFooter(doc);
         doc.end();
         await new Promise((resolve) => doc.on('end', () => resolve()));

@@ -16,6 +16,14 @@ const pdf_service_1 = require("./pdf.service");
 const fs_1 = require("fs");
 const path_1 = require("path");
 const app_roles_1 = require("../common/app-roles");
+const USER_UPLOAD_DOC_TYPES = ['CEDULA', 'AUTORIZACION', 'EVIDENCIA', 'OTRO'];
+const UPLOAD_ALLOWED_MIMES = new Set([
+    'application/pdf',
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+]);
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 let DocumentsService = class DocumentsService {
     constructor(prisma, pdfService) {
         this.prisma = prisma;
@@ -97,6 +105,73 @@ let DocumentsService = class DocumentsService {
             clientId: Number(request.client_id),
             userId: effectiveUserId,
         });
+    }
+    async uploadAttachment(inspectionRequestId, file, docTypeRaw, context) {
+        if (!file?.buffer?.length) {
+            throw new common_1.BadRequestException('Archivo requerido');
+        }
+        if (file.size > MAX_UPLOAD_BYTES) {
+            throw new common_1.BadRequestException('El archivo supera el tamaño máximo permitido (10 MB)');
+        }
+        if (!docTypeRaw?.trim()) {
+            throw new common_1.BadRequestException('Tipo de documento requerido');
+        }
+        const docType = docTypeRaw.trim().toUpperCase();
+        if (!USER_UPLOAD_DOC_TYPES.includes(docType)) {
+            throw new common_1.BadRequestException('Tipo de documento no permitido');
+        }
+        if (!UPLOAD_ALLOWED_MIMES.has(file.mimetype)) {
+            throw new common_1.BadRequestException('Solo se permiten archivos PDF o imágenes (JPEG, PNG, WebP)');
+        }
+        const request = await this.prisma.inspectionRequest.findUnique({
+            where: { id: inspectionRequestId },
+            select: { insurer_id: true, client_id: true },
+        });
+        if (!request) {
+            throw new common_1.NotFoundException('Solicitud no encontrada');
+        }
+        this.ensureTenancy(context, request.insurer_id);
+        const effectiveUserId = await this.resolveEffectiveUserId(context?.userId);
+        await fs_1.promises.mkdir(this.storageDir, { recursive: true });
+        const safeName = this.sanitizeFilename(file.originalname);
+        const storageKey = `${Date.now()}_${safeName}`;
+        const filepath = (0, path_1.join)(this.storageDir, storageKey);
+        await fs_1.promises.writeFile(filepath, file.buffer);
+        const document = await this.prisma.document.create({
+            data: {
+                insurer_id: request.insurer_id,
+                inspection_request_id: BigInt(inspectionRequestId),
+                client_id: request.client_id,
+                doc_type: docType,
+                filename: safeName,
+                mime_type: file.mimetype.slice(0, 80),
+                file_size_bytes: BigInt(file.size),
+                storage_provider: 'LOCAL',
+                storage_key: storageKey,
+                storage_url: null,
+                ...(effectiveUserId != null && { uploaded_by_user_id: effectiveUserId }),
+            },
+            select: {
+                id: true,
+                doc_type: true,
+                filename: true,
+                mime_type: true,
+                file_size_bytes: true,
+                uploaded_at: true,
+            },
+        });
+        return {
+            ...document,
+            id: Number(document.id),
+            file_size_bytes: Number(document.file_size_bytes),
+        };
+    }
+    sanitizeFilename(name) {
+        const base = String(name || '')
+            .replace(/^.*[/\\]/, '')
+            .replace(/[^\w.\- ()áéíóúÁÉÍÓÚñÑüÜ]/g, '_')
+            .trim();
+        return base.slice(0, 200) || 'documento';
     }
     async listByInspectionRequest(inspectionRequestId, context) {
         const request = await this.prisma.inspectionRequest.findUnique({

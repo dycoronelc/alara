@@ -25,6 +25,8 @@ export function mergeReportTemplate(remote: ReportSectionDef[] | undefined): Rep
         label: remoteF.label || defF.label,
         type: defF.type ?? remoteF.type,
         options: defF.options?.length ? defF.options : remoteF.options,
+        visibleWhen: defF.visibleWhen ?? remoteF.visibleWhen,
+        visibleWhenAny: defF.visibleWhenAny ?? remoteF.visibleWhenAny,
       };
     });
 

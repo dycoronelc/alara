@@ -20,7 +20,7 @@ let RequestMailService = RequestMailService_1 = class RequestMailService {
         const user = process.env.SMTP_USER;
         const pass = process.env.SMTP_PASS;
         const from = process.env.SMTP_FROM ?? 'no-reply@alara.local';
-        const to = process.env.REQUEST_CREATED_NOTIFY_TO ?? 'dycoronel@gmail.com';
+        const to = process.env.REQUEST_CREATED_NOTIFY_TO ?? 'amelia.fuentes.barahona@gmail.com';
         if (!host || !user || !pass) {
             this.logger.warn('SMTP no configurado. Omitiendo envio de correo con PDF de solicitud.');
             return { sent: false, reason: 'smtp_not_configured' };
