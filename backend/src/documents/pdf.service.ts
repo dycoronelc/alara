@@ -735,64 +735,135 @@ export class PdfService {
   }
 
   async buildRequestPdf(request: InspectionRequestPayload): Promise<Buffer> {
-    const doc = new (PDFDocument as any)({ margin: 40 });
+    const doc = new (PDFDocument as any)({ margin: 0, size: 'A4' });
     const chunks: Buffer[] = [];
 
     doc.on('data', (chunk: Buffer) => chunks.push(chunk));
 
-    this.addHeader(doc, 'Solicitud de Inspección VIP');
+    const headerPath = this.resolveReportAsset('cabeceraReporte.jpg');
+    const footerPath = this.resolveReportAsset('pieReporte.jpg');
+    const pageW = doc.page.width;
 
-    doc.fontSize(10).fillColor(this.brand.dark).font('Helvetica');
-    this.addKeyValue(doc, 'Número de solicitud', request.request_number);
-    this.addKeyValue(doc, 'Aseguradora', request.insurer.name);
-    this.addKeyValue(doc, 'Estado', request.status);
-    this.addKeyValue(doc, 'Fecha', request.requested_at.toISOString().split('T')[0]);
-    doc.moveDown();
+    this.registerReportFontsForDoc(doc);
 
-    this.addSectionTitle(doc, 'Responsable del pedido');
-    this.addKeyValue(doc, 'Responsable', request.responsible_name);
-    if (request.responsible_phone) this.addKeyValue(doc, 'Teléfono responsable', request.responsible_phone);
-    if (request.responsible_email) this.addKeyValue(doc, 'Email responsable', request.responsible_email);
-
-    this.addSectionTitle(doc, 'Datos de la solicitud');
-    this.addKeyValue(doc, 'Número de solicitud', request.request_number);
-    if (request.agent_name) this.addKeyValue(doc, 'Agente', request.agent_name);
-    if (request.insured_amount !== null && request.insured_amount !== undefined) {
-      this.addKeyValue(doc, 'Monto asegurado', request.insured_amount.toString());
+    if (headerPath) {
+      this.reportHeaderDrawH = this.computeImageDrawHeight(doc, headerPath, pageW);
+    } else {
+      this.reportHeaderDrawH = 0;
     }
-    this.addKeyValue(doc, 'Monto vigente', request.has_amount_in_force ? 'Sí' : 'No');
-    if (request.has_amount_in_force && request.amount_in_force != null && request.amount_in_force !== '') {
-      this.addKeyValue(doc, 'Monto en vigencia', String(request.amount_in_force));
+    if (footerPath) {
+      this.reportFooterDrawH = this.computeImageDrawHeight(doc, footerPath, pageW);
+    } else {
+      this.reportFooterDrawH = this.pdfLayout.footerReserve;
     }
-    this.addKeyValue(doc, 'Estado civil', request.marital_status ?? null);
+
+    this.reportContentMargin = 40;
+    this.reportContentTopY = this.reportHeaderDrawH + (this.reportHeaderDrawH > 0 ? 14 : 24);
+    this.reportPdfLayoutMode = true;
+
+    const drawChrome = () => {
+      this.drawReportChrome(doc, headerPath, footerPath);
+    };
+    doc.on('pageAdded', drawChrome);
+    drawChrome();
+
+    const { colGap, footerReserve } = this.pdfLayout;
+    const margin = this.reportContentMargin;
+    const usableW = pageW - margin * 2;
+    const colW = (usableW - colGap) / 2;
+
+    const str = (v: unknown): string => {
+      if (v == null) return '';
+      return String(v).trim();
+    };
+
+    let y = doc.y;
+
+    const rowFull = (label: string, value: string) => {
+      const h = this.heightOfReportFieldCell(doc, label, value, usableW);
+      y = this.ensurePageSpace(doc, y, h);
+      this.drawReportFieldCell(doc, margin, y, usableW, label, value);
+      y += h;
+    };
+
+    const rowPair = (l1: string, v1: string, l2: string, v2: string) => {
+      const h = Math.max(
+        this.heightOfReportFieldCell(doc, l1, v1, colW),
+        this.heightOfReportFieldCell(doc, l2, v2, colW),
+      );
+      y = this.ensurePageSpace(doc, y, h);
+      this.drawReportFieldCell(doc, margin, y, colW, l1, v1);
+      this.drawReportFieldCell(doc, margin + colW + colGap, y, colW, l2, v2);
+      y += h;
+    };
+
+    const sectionBar = (title: string) => {
+      doc.font('ReportTitle').fontSize(12);
+      const guess =
+        Math.max(26, doc.heightOfString(title.toUpperCase(), { width: usableW - 26, lineGap: 1 }) + 14) + 12;
+      y = this.ensurePageSpace(doc, y, guess);
+      const barH = this.drawReportSectionBar(doc, margin, y, usableW, title);
+      y += barH + 10;
+    };
+
+    sectionBar('Solicitud de Inspección VIP');
+
+    rowPair('Número de solicitud', str(request.request_number), 'Aseguradora', str(request.insurer.name));
+    rowPair('Estado', str(request.status), 'Fecha', request.requested_at.toISOString().split('T')[0]);
+    y += 4;
+
+    sectionBar('Responsable del pedido');
+    if (str(request.responsible_phone)) {
+      rowPair('Responsable', str(request.responsible_name), 'Teléfono responsable', str(request.responsible_phone));
+    } else {
+      rowFull('Responsable', str(request.responsible_name));
+    }
+    if (str(request.responsible_email)) {
+      rowFull('Email responsable', str(request.responsible_email));
+    }
+
+    sectionBar('Datos de la solicitud');
+    const montoAseg =
+      request.insured_amount !== null && request.insured_amount !== undefined
+        ? String(request.insured_amount)
+        : '';
+    rowPair('Agente', str(request.agent_name), 'Monto asegurado', montoAseg);
+    const montoVigTxt =
+      request.has_amount_in_force && request.amount_in_force != null && request.amount_in_force !== ''
+        ? String(request.amount_in_force)
+        : '';
+    rowPair('Monto vigente', request.has_amount_in_force ? 'Sí' : 'No', 'Monto en vigencia', montoVigTxt);
+    rowPair('Estado civil', str(request.marital_status), 'Idioma entrevista', str(request.interview_language));
+    rowFull('Cliente avisado', request.client_notified ? 'Sí' : 'No');
     if (request.marital_status === 'Casado' || request.marital_status === 'Unido') {
-      this.addKeyValue(doc, 'Nombre del cónyuge', request.spouse_name ?? null);
+      rowFull('Nombre del cónyuge', str(request.spouse_name));
     }
-    this.addKeyValue(doc, 'Idioma entrevista', request.interview_language ?? null);
-    this.addKeyValue(doc, 'Cliente avisado', request.client_notified ? 'Sí' : 'No');
 
-    this.addSectionTitle(doc, 'Datos del cliente');
-    this.addKeyValue(doc, 'Nombres', request.client.first_name);
-    this.addKeyValue(doc, 'Apellidos', request.client.last_name);
-    this.addKeyValue(doc, 'Fecha de nacimiento', request.client.dob ? request.client.dob.toISOString().split('T')[0] : null);
-    if (request.client.id_type && request.client.id_number) {
-      this.addKeyValue(doc, 'Documento', `${request.client.id_type} ${request.client.id_number}`);
+    sectionBar('Datos del cliente');
+    rowPair('Nombres', str(request.client.first_name), 'Apellidos', str(request.client.last_name));
+    const dobStr = request.client.dob ? request.client.dob.toISOString().split('T')[0] : '';
+    const docStr =
+      request.client.id_type && request.client.id_number
+        ? `${request.client.id_type} ${request.client.id_number}`
+        : '';
+    rowPair('Fecha de nacimiento', dobStr, 'Documento', docStr);
+    rowPair('Email', str(request.client.email), 'Teléfono residencial', str(request.client.phone_home));
+    rowPair('Teléfono celular', str(request.client.phone_mobile), 'Teléfono laboral', str(request.client.phone_work));
+    rowFull('Dirección', str(request.client.address_line));
+    rowPair('Ciudad', str(request.client.city), 'País', str(request.client.country));
+    rowPair('Empresa/Empleador', str(request.client.employer_name), 'Profesión/Ocupación', str(request.client.profession));
+
+    sectionBar('Indicaciones / Comentarios');
+    rowFull('Comentarios', str(request.comments));
+
+    doc.y = y;
+    doc.x = margin;
+
+    if (!footerPath) {
+      this.addFooter(doc);
     }
-    this.addKeyValue(doc, 'Email', request.client.email ?? null);
-    this.addKeyValue(doc, 'Teléfono residencial', request.client.phone_home ?? null);
-    this.addKeyValue(doc, 'Teléfono celular', request.client.phone_mobile ?? null);
-    this.addKeyValue(doc, 'Teléfono laboral', request.client.phone_work ?? null);
-    this.addKeyValue(doc, 'Dirección', request.client.address_line ?? null);
-    this.addKeyValue(doc, 'Ciudad', request.client.city ?? null);
-    this.addKeyValue(doc, 'País', request.client.country ?? null);
-    this.addKeyValue(doc, 'Empresa/Empleador', request.client.employer_name ?? null);
-    this.addKeyValue(doc, 'Profesión/Ocupación', request.client.profession ?? null);
 
-    this.addSectionTitle(doc, 'Indicaciones / Comentarios');
-    this.addKeyValue(doc, 'Comentarios', request.comments ?? null);
-
-    this.addFooter(doc);
-
+    this.reportPdfLayoutMode = false;
     doc.end();
 
     await new Promise<void>((resolve) => doc.on('end', () => resolve()));
