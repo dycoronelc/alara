@@ -560,6 +560,7 @@ export type UserRow = {
   user_type: string;
   is_active: boolean;
   insurer: { id: number; name: string } | null;
+  alara_office?: { id: number; name: string } | null;
   roles: { code: string; name: string }[];
 };
 
@@ -581,3 +582,40 @@ export const createUserAdmin = (payload: Record<string, unknown>) =>
     },
     null,
   );
+
+export const updateUserAdmin = (id: number, payload: Record<string, unknown>) =>
+  safeFetch<UserRow>(buildApiUrl(`/api/users/${id}`), {
+    method: 'PATCH',
+    headers: defaultHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+export const deleteUserAdmin = (id: number) =>
+  safeFetch<UserRow>(buildApiUrl(`/api/users/${id}`), {
+    method: 'DELETE',
+    headers: defaultHeaders(),
+  });
+
+export const updateRoleAdmin = (id: number | string, payload: { name: string }) =>
+  safeFetch<RoleRow>(buildApiUrl(`/api/roles/${id}`), {
+    method: 'PATCH',
+    headers: defaultHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+export async function deleteRoleAdmin(id: number | string): Promise<void> {
+  const response = await fetch(buildApiUrl(`/api/roles/${id}`), {
+    method: 'DELETE',
+    headers: defaultHeaders(),
+  });
+  if (!response.ok) {
+    let msg = 'No se pudo eliminar el rol';
+    try {
+      const j = (await response.json()) as { message?: unknown };
+      if (j?.message) msg = String(j.message);
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg);
+  }
+}

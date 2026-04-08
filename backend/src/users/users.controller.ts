@@ -1,6 +1,8 @@
 import {
   Body,
   Controller,
+  Delete,
+  ForbiddenException,
   Get,
   Param,
   ParseIntPipe,
@@ -8,7 +10,6 @@ import {
   Post,
   Req,
   UseGuards,
-  ForbiddenException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -49,5 +50,15 @@ export class UsersController {
   update(@Req() req: Request, @Param('id', ParseIntPipe) id: number, @Body() dto: UpdateUserDto) {
     this.ensureAdmin(req);
     return this.usersService.update(id, dto);
+  }
+
+  /** Baja lógica: desactiva el usuario (no borra el registro). */
+  @Delete(':id')
+  remove(@Req() req: Request, @Param('id', ParseIntPipe) id: number) {
+    this.ensureAdmin(req);
+    if (req.userContext?.userId === id) {
+      throw new ForbiddenException('No puede desactivar su propio usuario');
+    }
+    return this.usersService.softDelete(id);
   }
 }

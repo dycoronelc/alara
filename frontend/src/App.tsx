@@ -7,7 +7,6 @@ import DashboardInsurer from './pages/DashboardInsurer';
 import DashboardAlara from './pages/DashboardAlara';
 import RequestsPage from './pages/RequestsPage';
 import CalendarPage from './pages/CalendarPage';
-import AdminPage from './pages/AdminPage';
 import AdminRolesPage from './pages/AdminRolesPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -51,9 +50,11 @@ const App = () => {
         <Route path="solicitudes" element={<RequestsPage portal="alara" />} />
         <Route path="solicitudes/:id" element={<RequestDetailPage portal="alara" />} />
         <Route path="agenda" element={<CalendarPage portal="alara" />} />
-        <Route path="administracion" element={<AdminPage />} />
-        <Route path="administracion/roles" element={<AdminRolesPage />} />
-        <Route path="administracion/usuarios" element={<AdminUsersPage />} />
+        <Route path="roles" element={<AdminRolesPage />} />
+        <Route path="usuarios" element={<AdminUsersPage />} />
+        <Route path="administracion" element={<Navigate to="/portal/alara/dashboard" replace />} />
+        <Route path="administracion/roles" element={<Navigate to="/portal/alara/roles" replace />} />
+        <Route path="administracion/usuarios" element={<Navigate to="/portal/alara/usuarios" replace />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

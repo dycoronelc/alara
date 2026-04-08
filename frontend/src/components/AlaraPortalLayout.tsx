@@ -11,12 +11,11 @@ function buildAlaraNavItems(): NavItem[] {
   const isAdmin = typeof window !== 'undefined' && localStorage.getItem('alara-role') === 'ADMIN';
   const adminOnly: NavItem[] = isAdmin
     ? [
-        { label: 'Roles', to: '/portal/alara/administracion/roles' },
-        { label: 'Usuarios', to: '/portal/alara/administracion/usuarios' },
+        { label: 'Roles', to: '/portal/alara/roles' },
+        { label: 'Usuarios', to: '/portal/alara/usuarios' },
       ]
     : [];
-  const tail: NavItem[] = [{ label: 'Administración', to: '/portal/alara/administracion' }];
-  return [...base, ...adminOnly, ...tail];
+  return [...base, ...adminOnly];
 }
 
 /** Portal ALARA: enlaces Roles y Usuarios solo para rol ADMIN (localStorage tras login). */
