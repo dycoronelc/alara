@@ -65,6 +65,149 @@ export class PdfService {
     colGap: 20,
   };
 
+  /** Colores cuerpo reporte (especificación ALARA). */
+  private readonly reportColors = {
+    sectionBg: '#1440AA',
+    sectionAccent: '#48D9FD',
+    valueBoxBg: '#E8F4FC',
+  };
+
+  /** Layout PDF reporte con cabecera/pie en imagen (A4). */
+  private reportPdfLayoutMode = false;
+  private reportHeaderDrawH = 0;
+  private reportFooterDrawH = 0;
+  private reportContentTopY = 0;
+  private reportContentMargin = 40;
+
+  private resolveReportAsset(filename: string): string | null {
+    const candidates = [
+      join(__dirname, '..', '..', 'assets', 'report', filename),
+      join(process.cwd(), 'assets', 'report', filename),
+      join(process.cwd(), filename),
+      join(process.cwd(), '..', filename),
+      join(__dirname, '..', '..', '..', filename),
+    ];
+    for (const p of candidates) {
+      if (existsSync(p)) return p;
+    }
+    return null;
+  }
+
+  private registerReportFontsForDoc(doc: PDFKit.PDFDocument) {
+    const dir = join(__dirname, '..', '..', 'assets', 'fonts');
+    const montserrat = join(dir, 'Montserrat-Bold.ttf');
+    const openBold = join(dir, 'OpenSans-Bold.ttf');
+    const openReg = join(dir, 'OpenSans-Regular.ttf');
+    try {
+      if (existsSync(montserrat)) doc.registerFont('ReportTitle', montserrat);
+      else doc.registerFont('ReportTitle', 'Helvetica-Bold');
+    } catch {
+      doc.registerFont('ReportTitle', 'Helvetica-Bold');
+    }
+    try {
+      if (existsSync(openBold)) doc.registerFont('ReportLabel', openBold);
+      else doc.registerFont('ReportLabel', 'Helvetica-Bold');
+    } catch {
+      doc.registerFont('ReportLabel', 'Helvetica-Bold');
+    }
+    try {
+      if (existsSync(openReg)) doc.registerFont('ReportValue', openReg);
+      else doc.registerFont('ReportValue', 'Helvetica');
+    } catch {
+      doc.registerFont('ReportValue', 'Helvetica');
+    }
+  }
+
+  private computeImageDrawHeight(doc: PDFKit.PDFDocument, imagePath: string, targetWidth: number): number {
+    const im = (doc as any).openImage(imagePath);
+    return (im.height / im.width) * targetWidth;
+  }
+
+  private drawReportChrome(doc: PDFKit.PDFDocument, headerPath: string | null, footerPath: string | null) {
+    const w = doc.page.width;
+    if (headerPath) {
+      doc.image(headerPath, 0, 0, { width: w });
+    }
+    if (footerPath) {
+      const fh = this.reportFooterDrawH;
+      doc.image(footerPath, 0, doc.page.height - fh, { width: w });
+    }
+    doc.x = this.reportContentMargin;
+    doc.y = this.reportContentTopY;
+  }
+
+  /** Barra de título: franja #48D9FD + fondo #1440AA, Montserrat 12 negrita blanco. */
+  private drawReportSectionBar(doc: PDFKit.PDFDocument, x: number, y: number, width: number, title: string): number {
+    const accentW = 6;
+    const padV = 7;
+    const text = title.toUpperCase();
+    doc.font('ReportTitle').fontSize(12);
+    const textPadLeft = x + accentW + 10;
+    const textWidth = width - accentW - 20;
+    const textH = doc.heightOfString(text, { width: textWidth, lineGap: 1 });
+    const barH = Math.max(26, textH + padV * 2);
+    doc.save();
+    doc.rect(x, y, accentW, barH).fill(this.reportColors.sectionAccent);
+    doc.rect(x + accentW, y, width - accentW, barH).fill(this.reportColors.sectionBg);
+    doc.fillColor('#ffffff').font('ReportTitle').fontSize(12);
+    doc.text(text, textPadLeft, y + padV, { width: textWidth, lineGap: 1 });
+    doc.restore();
+    doc.fillColor('#0f172a');
+    return barH;
+  }
+
+  /** Open Sans 10 negrita etiqueta + caja valor #E8F4FC, valor en Regular 10. */
+  private heightOfReportFieldCell(doc: PDFKit.PDFDocument, label: string, value: string, width: number): number {
+    const pad = 6;
+    doc.font('ReportLabel').fontSize(10).fillColor('#000000');
+    const labelLine = `${label}:`;
+    const lh = doc.heightOfString(labelLine, { width });
+    const display = value.trim() ? value : '—';
+    doc.font('ReportValue').fontSize(10);
+    const innerW = width - pad * 2;
+    const valueH = doc.heightOfString(display, { width: innerW, lineGap: 2 });
+    const boxH = Math.max(valueH + pad * 2, 24);
+    return lh + 4 + boxH + 8;
+  }
+
+  private drawReportFieldCell(
+    doc: PDFKit.PDFDocument,
+    x: number,
+    y: number,
+    width: number,
+    label: string,
+    value: string,
+  ): number {
+    const pad = 6;
+    doc.font('ReportLabel').fontSize(10).fillColor('#000000');
+    const labelLine = `${label}:`;
+    doc.text(labelLine, x, y, { width });
+    const lh = doc.heightOfString(labelLine, { width });
+    const display = value.trim() ? value : '—';
+    doc.font('ReportValue').fontSize(10);
+    const innerW = width - pad * 2;
+    const valueH = doc.heightOfString(display, { width: innerW, lineGap: 2 });
+    const boxH = Math.max(valueH + pad * 2, 24);
+    const boxY = y + lh + 4;
+    doc.save();
+    doc.roundedRect(x, boxY, width, boxH, 3).fill(this.reportColors.valueBoxBg);
+    doc.fillColor('#0f172a').font('ReportValue').fontSize(10).text(display, x + pad, boxY + pad, {
+      width: innerW,
+      lineGap: 2,
+    });
+    doc.restore();
+    return lh + 4 + boxH + 8;
+  }
+
+  private ensureReportPageSpace(doc: PDFKit.PDFDocument, currentY: number, blockHeight: number): number {
+    const limit = doc.page.height - this.reportFooterDrawH - 16;
+    if (currentY + blockHeight > limit) {
+      doc.addPage();
+      return this.reportContentTopY;
+    }
+    return currentY;
+  }
+
   private addHeader(doc: PDFKit.PDFDocument, title: string) {
     const logoPath = join(process.cwd(), '..', 'public', 'logo-width.png');
 
@@ -105,26 +248,6 @@ export class PdfService {
       .fillColor(this.brand.muted)
       .text(`${label}: `, { continued: true });
     doc.font('Helvetica').fillColor(this.brand.dark).text(value ? String(value) : 'No disponible');
-  }
-
-  /** Misma jerarquía visual que la pestaña Reporte (banner VIP centrado). */
-  private addReportVipBanner(doc: PDFKit.PDFDocument) {
-    const w = doc.page.width;
-    const h = 78;
-    const split = Math.floor(h * 0.52);
-    doc.rect(0, 0, w, split).fill(this.brand.primary);
-    doc.rect(0, split, w, h - split).fill(this.brand.primaryDeep);
-    doc.fillColor('#ffffff');
-    doc.font('Helvetica').fontSize(8).text('GRACIAS POR CONFIAR EN NOSOTROS', 0, 22, {
-      width: w,
-      align: 'center',
-    });
-    doc.font('Helvetica-Bold').fontSize(11).text('ENTREVISTA SEGURO DE PERSONAS', 0, 40, {
-      width: w,
-      align: 'center',
-    });
-    doc.fillColor(this.brand.dark);
-    doc.y = h + 14;
   }
 
   private outcomeLabel(code: string): string {
@@ -224,6 +347,9 @@ export class PdfService {
   }
 
   private ensurePageSpace(doc: PDFKit.PDFDocument, currentY: number, blockHeight: number): number {
+    if (this.reportPdfLayoutMode) {
+      return this.ensureReportPageSpace(doc, currentY, blockHeight);
+    }
     const { margin, footerReserve } = this.pdfLayout;
     const limit = doc.page.height - footerReserve;
     if (currentY + blockHeight > limit) {
@@ -240,8 +366,10 @@ export class PdfService {
     section: { title: string; fields: { key: string; label: string }[] },
     valuesByKey: Map<string, string>,
     valuesByLabel: Map<string, string>,
+    reportStyled = false,
   ) {
-    const { margin, colGap } = this.pdfLayout;
+    const margin = reportStyled ? this.reportContentMargin : this.pdfLayout.margin;
+    const colGap = this.pdfLayout.colGap;
     const usableW = doc.page.width - margin * 2;
     const colW = (usableW - colGap) / 2;
     const skip = new Set(['weight_unit', 'height_unit']);
@@ -249,10 +377,21 @@ export class PdfService {
 
     let y = doc.y;
     if (section.title?.trim()) {
-      y = this.ensurePageSpace(doc, y, 28);
-      doc.y = y;
-      this.addSectionTitle(doc, section.title);
-      y = doc.y;
+      if (reportStyled) {
+        doc.font('ReportTitle').fontSize(12);
+        const th = doc.heightOfString(section.title.toUpperCase(), { width: usableW - 26, lineGap: 1 });
+        const barGuess = Math.max(26, th + 14);
+        y = this.ensurePageSpace(doc, y, barGuess + 12);
+        const barH = this.drawReportSectionBar(doc, margin, y, usableW, section.title);
+        y += barH + 10;
+        doc.y = y;
+        doc.x = margin;
+      } else {
+        y = this.ensurePageSpace(doc, y, 28);
+        doc.y = y;
+        this.addSectionTitle(doc, section.title);
+        y = doc.y;
+      }
     }
 
     let i = 0;
@@ -261,11 +400,17 @@ export class PdfService {
       const full = this.isPdfFullWidthField(f.key);
       if (full) {
         const value = this.resolveFieldValue(f, valuesByKey, valuesByLabel);
-        const h = this.heightOfFieldCell(doc, f.label, value, usableW);
+        const h = reportStyled
+          ? this.heightOfReportFieldCell(doc, f.label, value, usableW)
+          : this.heightOfFieldCell(doc, f.label, value, usableW);
         y = this.ensurePageSpace(doc, y, h);
         doc.y = y;
         doc.x = margin;
-        this.drawFieldCell(doc, margin, y, usableW, f.label, value);
+        if (reportStyled) {
+          this.drawReportFieldCell(doc, margin, y, usableW, f.label, value);
+        } else {
+          this.drawFieldCell(doc, margin, y, usableW, f.label, value);
+        }
         y = y + h;
         doc.y = y;
         doc.x = margin;
@@ -277,23 +422,38 @@ export class PdfService {
       if (f2 && !this.isPdfFullWidthField(f2.key)) {
         const v1 = this.resolveFieldValue(f, valuesByKey, valuesByLabel);
         const v2 = this.resolveFieldValue(f2, valuesByKey, valuesByLabel);
-        const h1 = this.heightOfFieldCell(doc, f.label, v1, colW);
-        const h2 = this.heightOfFieldCell(doc, f2.label, v2, colW);
+        const h1 = reportStyled
+          ? this.heightOfReportFieldCell(doc, f.label, v1, colW)
+          : this.heightOfFieldCell(doc, f.label, v1, colW);
+        const h2 = reportStyled
+          ? this.heightOfReportFieldCell(doc, f2.label, v2, colW)
+          : this.heightOfFieldCell(doc, f2.label, v2, colW);
         const rowH = Math.max(h1, h2);
         y = this.ensurePageSpace(doc, y, rowH);
         doc.x = margin;
-        this.drawFieldCell(doc, margin, y, colW, f.label, v1);
-        this.drawFieldCell(doc, margin + colW + colGap, y, colW, f2.label, v2);
+        if (reportStyled) {
+          this.drawReportFieldCell(doc, margin, y, colW, f.label, v1);
+          this.drawReportFieldCell(doc, margin + colW + colGap, y, colW, f2.label, v2);
+        } else {
+          this.drawFieldCell(doc, margin, y, colW, f.label, v1);
+          this.drawFieldCell(doc, margin + colW + colGap, y, colW, f2.label, v2);
+        }
         y += rowH;
         doc.y = y;
         doc.x = margin;
         i += 2;
       } else {
         const value = this.resolveFieldValue(f, valuesByKey, valuesByLabel);
-        const h = this.heightOfFieldCell(doc, f.label, value, colW);
+        const h = reportStyled
+          ? this.heightOfReportFieldCell(doc, f.label, value, colW)
+          : this.heightOfFieldCell(doc, f.label, value, colW);
         y = this.ensurePageSpace(doc, y, h);
         doc.x = margin;
-        this.drawFieldCell(doc, margin, y, colW, f.label, value);
+        if (reportStyled) {
+          this.drawReportFieldCell(doc, margin, y, colW, f.label, value);
+        } else {
+          this.drawFieldCell(doc, margin, y, colW, f.label, value);
+        }
         y += h;
         doc.y = y;
         doc.x = margin;
@@ -640,42 +800,72 @@ export class PdfService {
   }
 
   async buildReportPdf(request: InspectionRequestPayload, report?: InspectionReportPayload | null): Promise<Buffer> {
-    const doc = new (PDFDocument as any)({ margin: 40 });
+    const doc = new (PDFDocument as any)({ margin: 0, size: 'A4' });
     const chunks: Buffer[] = [];
 
     doc.on('data', (chunk: Buffer) => chunks.push(chunk));
 
-    this.addReportVipBanner(doc);
+    const headerPath = this.resolveReportAsset('cabeceraReporte.jpg');
+    const footerPath = this.resolveReportAsset('pieReporte.jpg');
+    const pageW = doc.page.width;
 
-    const { margin, colGap, footerReserve } = this.pdfLayout;
-    const usableW = doc.page.width - margin * 2;
+    this.registerReportFontsForDoc(doc);
+
+    if (headerPath) {
+      this.reportHeaderDrawH = this.computeImageDrawHeight(doc, headerPath, pageW);
+    } else {
+      this.reportHeaderDrawH = 0;
+    }
+    if (footerPath) {
+      this.reportFooterDrawH = this.computeImageDrawHeight(doc, footerPath, pageW);
+    } else {
+      this.reportFooterDrawH = this.pdfLayout.footerReserve;
+    }
+
+    this.reportContentMargin = 40;
+    this.reportContentTopY = this.reportHeaderDrawH + (this.reportHeaderDrawH > 0 ? 14 : 24);
+    this.reportPdfLayoutMode = true;
+
+    const drawChrome = () => {
+      this.drawReportChrome(doc, headerPath, footerPath);
+    };
+    doc.on('pageAdded', drawChrome);
+    drawChrome();
+
+    const { colGap, footerReserve } = this.pdfLayout;
+    const margin = this.reportContentMargin;
+    const usableW = pageW - margin * 2;
     const colW = (usableW - colGap) / 2;
 
     let y = doc.y;
     const metaRow1H = Math.max(
-      this.heightOfFieldCell(doc, 'Solicitud', request.request_number, colW),
-      this.heightOfFieldCell(doc, 'Aseguradora', request.insurer.name, colW),
+      this.heightOfReportFieldCell(doc, 'Solicitud', request.request_number, colW),
+      this.heightOfReportFieldCell(doc, 'Aseguradora', request.insurer.name, colW),
     );
     y = this.ensurePageSpace(doc, y, metaRow1H);
-    this.drawFieldCell(doc, margin, y, colW, 'Solicitud', request.request_number);
-    this.drawFieldCell(doc, margin + colW + colGap, y, colW, 'Aseguradora', request.insurer.name);
+    this.drawReportFieldCell(doc, margin, y, colW, 'Solicitud', request.request_number);
+    this.drawReportFieldCell(doc, margin + colW + colGap, y, colW, 'Aseguradora', request.insurer.name);
     y += metaRow1H;
 
     const clientName = `${request.client.first_name} ${request.client.last_name}`.trim();
     const metaRow2H = Math.max(
-      this.heightOfFieldCell(doc, 'Cliente', clientName, colW),
-      this.heightOfFieldCell(doc, 'Estado', request.status, colW),
+      this.heightOfReportFieldCell(doc, 'Cliente', clientName, colW),
+      this.heightOfReportFieldCell(doc, 'Estado', request.status, colW),
     );
     y = this.ensurePageSpace(doc, y, metaRow2H);
-    this.drawFieldCell(doc, margin, y, colW, 'Cliente', clientName);
-    this.drawFieldCell(doc, margin + colW + colGap, y, colW, 'Estado', request.status);
+    this.drawReportFieldCell(doc, margin, y, colW, 'Cliente', clientName);
+    this.drawReportFieldCell(doc, margin + colW + colGap, y, colW, 'Estado', request.status);
     y += metaRow2H + 8;
     doc.y = y;
     doc.x = margin;
 
     if (!report) {
-      doc.fontSize(10).fillColor(this.brand.dark).text('Reporte aún no disponible.');
-      this.addFooter(doc);
+      y = this.ensurePageSpace(doc, y, 24);
+      doc.font('ReportValue').fontSize(10).fillColor(this.brand.dark).text('Reporte aún no disponible.', margin, y);
+      if (!footerPath) {
+        this.addFooter(doc);
+      }
+      this.reportPdfLayoutMode = false;
       doc.end();
       await new Promise<void>((resolve) => doc.on('end', () => resolve()));
       return Buffer.concat(chunks);
@@ -697,15 +887,16 @@ export class PdfService {
 
     doc.y = y;
     doc.x = margin;
-    this.addSectionTitle(doc, 'Resumen del reporte');
-    y = doc.y;
-    doc.font('Helvetica').fontSize(9).fillColor('#475569');
-    const intro =
-      'Resumen de la conversación telefónica realizada al propuesto asegurado.';
-    const introH = doc.heightOfString(intro, { width: usableW });
-    y = this.ensurePageSpace(doc, y, introH + 4);
-    doc.text(intro, margin, y, { width: usableW });
-    y += introH + 12;
+    doc.font('ReportTitle').fontSize(12);
+    const resBarTitle =
+      'Resumen de la conversación telefónica realizada al propuesto asegurado:';
+    const resBarGuess =
+      Math.max(26, doc.heightOfString(resBarTitle.toUpperCase(), { width: usableW - 26, lineGap: 1 }) + 14) + 12;
+    y = this.ensurePageSpace(doc, doc.y, resBarGuess + 24);
+    const resBarH = this.drawReportSectionBar(doc, margin, y, usableW, resBarTitle);
+    y += resBarH + 10;
+    doc.y = y;
+    doc.x = margin;
 
     const outcomeStr = this.outcomeLabel(report.outcome);
     const blocks: { label: string; value: string }[] = [
@@ -714,9 +905,9 @@ export class PdfService {
       { label: 'Comentarios adicionales', value: report.additional_comments ?? '' },
     ];
     for (const b of blocks) {
-      const h = this.heightOfFieldCell(doc, b.label, b.value, usableW);
+      const h = this.heightOfReportFieldCell(doc, b.label, b.value, usableW);
       y = this.ensurePageSpace(doc, y, h);
-      this.drawFieldCell(doc, margin, y, usableW, b.label, b.value);
+      this.drawReportFieldCell(doc, margin, y, usableW, b.label, b.value);
       y += h;
     }
     doc.y = y;
@@ -724,20 +915,24 @@ export class PdfService {
 
     this.reportTemplate().forEach((section) => {
       doc.moveDown(0.35);
-      this.renderTemplateSection(doc, section, valuesByKey, valuesByLabel);
+      this.renderTemplateSection(doc, section, valuesByKey, valuesByLabel, true);
     });
 
     doc.moveDown();
     y = doc.y;
     const note =
       'Nota: El presente reporte es para uso exclusivo de la compañía de seguros solicitante y no debe ser exhibido a terceros, ni en su totalidad ni en ninguna de sus partes.';
-    doc.font('Helvetica').fontSize(8).fillColor(this.brand.muted);
-    const noteH = doc.heightOfString(note, { width: usableW });
-    y = this.ensurePageSpace(doc, y, noteH + footerReserve);
-    doc.text(note, margin, y, { width: usableW });
+    doc.font('ReportValue').fontSize(8).fillColor(this.brand.muted);
+    const noteH = doc.heightOfString(note, { width: usableW, lineGap: 2 });
+    y = this.ensurePageSpace(doc, y, noteH + (footerPath ? this.reportFooterDrawH + 8 : footerReserve));
+    doc.text(note, margin, y, { width: usableW, lineGap: 2 });
     doc.y = y + noteH + 12;
 
-    this.addFooter(doc);
+    if (!footerPath) {
+      this.addFooter(doc);
+    }
+
+    this.reportPdfLayoutMode = false;
     doc.end();
 
     await new Promise<void>((resolve) => doc.on('end', () => resolve()));

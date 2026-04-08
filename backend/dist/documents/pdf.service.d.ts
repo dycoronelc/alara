@@ -53,11 +53,24 @@ type InspectionReportPayload = {
 export declare class PdfService {
     private brand;
     private readonly pdfLayout;
+    private readonly reportColors;
+    private reportPdfLayoutMode;
+    private reportHeaderDrawH;
+    private reportFooterDrawH;
+    private reportContentTopY;
+    private reportContentMargin;
+    private resolveReportAsset;
+    private registerReportFontsForDoc;
+    private computeImageDrawHeight;
+    private drawReportChrome;
+    private drawReportSectionBar;
+    private heightOfReportFieldCell;
+    private drawReportFieldCell;
+    private ensureReportPageSpace;
     private addHeader;
     private addFooter;
     private addSectionTitle;
     private addKeyValue;
-    private addReportVipBanner;
     private outcomeLabel;
     private isPdfFullWidthField;
     private resolveFieldValue;

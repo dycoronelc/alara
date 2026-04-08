@@ -20,6 +20,7 @@ import {
 } from '../data/api';
 import StatusBadge from '../components/StatusBadge';
 import CancelInspectionRequestModal from '../components/CancelInspectionRequestModal';
+import ConfirmDeleteDocumentModal from '../components/ConfirmDeleteDocumentModal';
 import InvestigationsUafSection from '../components/InvestigationsUafSection';
 import ReportFormField from '../components/ReportFormField';
 import { defaultReportSections } from '../report/defaultReportSections';
@@ -169,7 +170,9 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
   const [documents, setDocuments] = useState<RequestDocument[]>([]);
   const [docOpenError, setDocOpenError] = useState('');
   const [openingDocId, setOpeningDocId] = useState<string | number | null>(null);
-  const [deletingDocId, setDeletingDocId] = useState<string | number | null>(null);
+  const [docDeleteModal, setDocDeleteModal] = useState<RequestDocument | null>(null);
+  const [docDeleteBusy, setDocDeleteBusy] = useState(false);
+  const [docDeleteError, setDocDeleteError] = useState<string | null>(null);
   const [investigationMessage, setInvestigationMessage] = useState('');
   const [uafSearchMode, setUafSearchMode] = useState<'cedula' | 'nombre' | 'ambos'>('ambos');
   const [callMessage, setCallMessage] = useState('');
@@ -364,19 +367,25 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
 
   const isAdminUser = getStoredRole() === 'ADMIN';
 
-  const handleDeleteDocument = async (file: RequestDocument) => {
+  const openDeleteDocumentModal = (file: RequestDocument) => {
     if (!id || !isAdminUser) return;
-    const label = file.filename || 'este documento';
-    if (!window.confirm(`¿Eliminar ${label}? Esta acción no se puede deshacer.`)) return;
+    setDocDeleteError(null);
     setDocOpenError('');
-    setDeletingDocId(file.id);
+    setDocDeleteModal(file);
+  };
+
+  const handleConfirmDeleteDocument = async () => {
+    if (!id || !docDeleteModal) return;
+    setDocDeleteBusy(true);
+    setDocDeleteError(null);
     try {
-      await deleteInspectionRequestDocument(Number(id), Number(file.id), portal);
-      setDocuments((prev) => prev.filter((d) => String(d.id) !== String(file.id)));
+      await deleteInspectionRequestDocument(Number(id), Number(docDeleteModal.id), portal);
+      setDocuments((prev) => prev.filter((d) => String(d.id) !== String(docDeleteModal.id)));
+      setDocDeleteModal(null);
     } catch (e) {
-      setDocOpenError(e instanceof Error ? e.message : 'No se pudo eliminar el documento.');
+      setDocDeleteError(e instanceof Error ? e.message : 'No se pudo eliminar el documento.');
     } finally {
-      setDeletingDocId(null);
+      setDocDeleteBusy(false);
     }
   };
 
@@ -1480,7 +1489,7 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                     type="button"
                     className="doc-filename-link"
                     onClick={() => handleOpenDocument(file)}
-                    disabled={openingDocId === file.id || deletingDocId === file.id}
+                    disabled={openingDocId === file.id}
                     title="Abrir o descargar documento"
                   >
                     {openingDocId === file.id ? 'Abriendo…' : file.filename}
@@ -1494,11 +1503,11 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                   <button
                     type="button"
                     className="ghost-button doc-delete-btn"
-                    onClick={() => handleDeleteDocument(file)}
-                    disabled={deletingDocId === file.id || openingDocId === file.id}
+                    onClick={() => openDeleteDocumentModal(file)}
+                    disabled={openingDocId === file.id || docDeleteBusy}
                     title="Eliminar documento (solo administradores)"
                   >
-                    {deletingDocId === file.id ? 'Eliminando…' : 'Eliminar'}
+                    Eliminar
                   </button>
                 )}
               </div>
@@ -1564,6 +1573,20 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
         error={cancelError}
         onClose={() => !cancelBusy && setCancelModalOpen(false)}
         onConfirm={handleConfirmCancelRequest}
+      />
+
+      <ConfirmDeleteDocumentModal
+        open={docDeleteModal != null}
+        filename={docDeleteModal?.filename ?? ''}
+        busy={docDeleteBusy}
+        error={docDeleteError}
+        onClose={() => {
+          if (!docDeleteBusy) {
+            setDocDeleteModal(null);
+            setDocDeleteError(null);
+          }
+        }}
+        onConfirm={handleConfirmDeleteDocument}
       />
     </div>
   );
