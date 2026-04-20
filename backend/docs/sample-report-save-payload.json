@@ -126,7 +126,7 @@
         },
         {
           "key": "seniority",
-          "label": "Antigüedad en la empresa",
+          "label": "Años de servicio",
           "type": "TEXT",
           "value": "Valor simulado: seniority"
         },

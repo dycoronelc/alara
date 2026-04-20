@@ -43,6 +43,13 @@ let UsersController = class UsersController {
         this.ensureAdmin(req);
         return this.usersService.update(id, dto);
     }
+    remove(req, id) {
+        this.ensureAdmin(req);
+        if (req.userContext?.userId === id) {
+            throw new common_1.ForbiddenException('No puede desactivar su propio usuario');
+        }
+        return this.usersService.softDelete(id);
+    }
 };
 exports.UsersController = UsersController;
 __decorate([
@@ -77,6 +84,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, Number, update_user_dto_1.UpdateUserDto]),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "update", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number]),
+    __metadata("design:returntype", void 0)
+], UsersController.prototype, "remove", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)('users'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

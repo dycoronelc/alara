@@ -73,6 +73,7 @@ export class DocumentsService {
       include: {
         client: true,
         insurer: true,
+        service_type: true,
         inspection_report: {
           include: { sections: { include: { fields: true } } },
         },
@@ -90,9 +91,12 @@ export class DocumentsService {
           outcome: request.inspection_report.outcome,
           summary: request.inspection_report.summary,
           additional_comments: request.inspection_report.additional_comments,
+          interview_started_at: request.inspection_report.interview_started_at,
+          interview_ended_at: request.inspection_report.interview_ended_at,
           sections: request.inspection_report.sections.map((section) => ({
             section_title: section.section_title,
             fields: section.fields.map((field) => ({
+              field_key: field.field_key,
               field_label: field.field_label,
               field_value: field.field_value,
             })),

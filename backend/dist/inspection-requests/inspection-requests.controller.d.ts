@@ -28,9 +28,9 @@ export declare class InspectionRequestsController {
             updated_at: Date | null;
             first_name: string;
             last_name: string;
-            dob: Date | null;
             id_type: import(".prisma/client").$Enums.IdType | null;
             id_number: string | null;
+            dob: Date | null;
             email: string | null;
             phone_mobile: string | null;
             phone_home: string | null;
@@ -262,9 +262,9 @@ export declare class InspectionRequestsController {
             updated_at: Date | null;
             first_name: string;
             last_name: string;
-            dob: Date | null;
             id_type: import(".prisma/client").$Enums.IdType | null;
             id_number: string | null;
+            dob: Date | null;
             email: string | null;
             phone_mobile: string | null;
             phone_home: string | null;
@@ -466,9 +466,9 @@ export declare class InspectionRequestsController {
             updated_at: Date | null;
             first_name: string;
             last_name: string;
-            dob: Date | null;
             id_type: import(".prisma/client").$Enums.IdType | null;
             id_number: string | null;
+            dob: Date | null;
             email: string | null;
             phone_mobile: string | null;
             phone_home: string | null;

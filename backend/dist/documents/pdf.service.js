@@ -188,14 +188,28 @@ class PdfService {
             .text(`${label}: `, { continued: true });
         doc.font('Helvetica').fillColor(this.brand.dark).text(value ? String(value) : 'No disponible');
     }
-    outcomeLabel(code) {
-        const map = {
-            PENDIENTE: 'Pendiente',
-            FAVORABLE: 'Favorable',
-            NO_FAVORABLE: 'No favorable',
-            INCONCLUSO: 'Inconcluso',
-        };
-        return map[code] ?? code;
+    formatReportDate(d) {
+        if (!d || Number.isNaN(d.getTime()))
+            return '';
+        return new Intl.DateTimeFormat('es-PA', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            timeZone: 'America/Panama',
+        }).format(d);
+    }
+    formatReportDateTime(d) {
+        if (!d || Number.isNaN(d.getTime()))
+            return '';
+        return new Intl.DateTimeFormat('es-PA', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+            timeZone: 'America/Panama',
+        }).format(d);
     }
     isPdfFullWidthField(key) {
         if (key.endsWith('_detalle_respuesta_afirmativa'))
@@ -380,22 +394,32 @@ class PdfService {
             }
         }
     }
-    reportTemplate() {
-        const affirmative = 'Por favor ampliar respuesta (Si en caso de alguna o más fue positiva):';
+    serviceTypeShowsInformacionMedica(serviceType) {
+        const n = (serviceType?.name ?? '').trim().toLowerCase();
+        if (!n)
+            return false;
+        if (n.includes('tmu'))
+            return true;
+        if (/tele[\s_-]?med|telem[eé]dic/.test(n))
+            return true;
+        return false;
+    }
+    reportTemplate(includeInformacionMedicaTmu) {
+        const affirmative = 'Por favor, ampliar las respuestas afirmativas:';
         return [
             {
                 title: 'Datos personales',
                 fields: [
                     { key: 'first_name', label: 'Nombres' },
                     { key: 'last_name', label: 'Apellidos' },
-                    { key: 'marital_status', label: 'Estado Civil' },
-                    { key: 'dob', label: 'Fecha de Nacimiento' },
-                    { key: 'nationality', label: 'Nacionalidad' },
+                    { key: 'id_type', label: 'Tipo de documento' },
+                    { key: 'id_number', label: 'Número de documento' },
                     { key: 'home_address', label: 'Domicilio' },
                     { key: 'residence_time', label: 'Tiempo de residencia' },
                     { key: 'foreign_residence', label: 'Residencia en el extranjero (Dónde / cuándo)' },
-                    { key: 'id_type', label: 'Tipo de documento' },
-                    { key: 'id_number', label: 'Número de documento' },
+                    { key: 'marital_status', label: 'Estado Civil' },
+                    { key: 'dob', label: 'Fecha de Nacimiento' },
+                    { key: 'nationality', label: 'Nacionalidad' },
                     { key: 'mobile', label: 'Celular' },
                     { key: 'email', label: 'E-mail' },
                     { key: 'spouse_name', label: 'Nombre del Cónyuge' },
@@ -409,7 +433,7 @@ class PdfService {
                     { key: 'business_address', label: 'Domicilio Comercial' },
                     { key: 'functions', label: 'Funciones' },
                     { key: 'clients', label: 'Clientes' },
-                    { key: 'seniority', label: 'Antigüedad en la empresa' },
+                    { key: 'seniority', label: 'Años de servicio' },
                     { key: 'employees', label: 'Cantidad de Empleados' },
                     { key: 'business_nature', label: 'Naturaleza del Negocio' },
                     { key: 'employer', label: 'Empleador / Empresa' },
@@ -643,64 +667,119 @@ class PdfService {
                 title: 'Información complementaria',
                 fields: [
                     { key: 'informacion_complementaria', label: 'Amplíe aquí' },
-                    { key: 'informacion_medica', label: 'Información Médica (TMU)' },
+                    ...(includeInformacionMedicaTmu
+                        ? [{ key: 'informacion_medica', label: 'Información Médica (TMU)' }]
+                        : []),
                 ],
             },
         ];
     }
     async buildRequestPdf(request) {
-        const doc = new PDFDocument({ margin: 40 });
+        const doc = new PDFDocument({ margin: 0, size: 'A4' });
         const chunks = [];
         doc.on('data', (chunk) => chunks.push(chunk));
-        this.addHeader(doc, 'Solicitud de Inspección VIP');
-        doc.fontSize(10).fillColor(this.brand.dark).font('Helvetica');
-        this.addKeyValue(doc, 'Número de solicitud', request.request_number);
-        this.addKeyValue(doc, 'Aseguradora', request.insurer.name);
-        this.addKeyValue(doc, 'Estado', request.status);
-        this.addKeyValue(doc, 'Fecha', request.requested_at.toISOString().split('T')[0]);
-        doc.moveDown();
-        this.addSectionTitle(doc, 'Responsable del pedido');
-        this.addKeyValue(doc, 'Responsable', request.responsible_name);
-        if (request.responsible_phone)
-            this.addKeyValue(doc, 'Teléfono responsable', request.responsible_phone);
-        if (request.responsible_email)
-            this.addKeyValue(doc, 'Email responsable', request.responsible_email);
-        this.addSectionTitle(doc, 'Datos de la solicitud');
-        this.addKeyValue(doc, 'Número de solicitud', request.request_number);
-        if (request.agent_name)
-            this.addKeyValue(doc, 'Agente', request.agent_name);
-        if (request.insured_amount !== null && request.insured_amount !== undefined) {
-            this.addKeyValue(doc, 'Monto asegurado', request.insured_amount.toString());
+        const headerPath = this.resolveReportAsset('cabeceraReporte.jpg');
+        const footerPath = this.resolveReportAsset('pieReporte.jpg');
+        const pageW = doc.page.width;
+        this.registerReportFontsForDoc(doc);
+        if (headerPath) {
+            this.reportHeaderDrawH = this.computeImageDrawHeight(doc, headerPath, pageW);
         }
-        this.addKeyValue(doc, 'Monto vigente', request.has_amount_in_force ? 'Sí' : 'No');
-        if (request.has_amount_in_force && request.amount_in_force != null && request.amount_in_force !== '') {
-            this.addKeyValue(doc, 'Monto en vigencia', String(request.amount_in_force));
+        else {
+            this.reportHeaderDrawH = 0;
         }
-        this.addKeyValue(doc, 'Estado civil', request.marital_status ?? null);
+        if (footerPath) {
+            this.reportFooterDrawH = this.computeImageDrawHeight(doc, footerPath, pageW);
+        }
+        else {
+            this.reportFooterDrawH = this.pdfLayout.footerReserve;
+        }
+        this.reportContentMargin = 40;
+        this.reportContentTopY = this.reportHeaderDrawH + (this.reportHeaderDrawH > 0 ? 14 : 24);
+        this.reportPdfLayoutMode = true;
+        const drawChrome = () => {
+            this.drawReportChrome(doc, headerPath, footerPath);
+        };
+        doc.on('pageAdded', drawChrome);
+        drawChrome();
+        const { colGap, footerReserve } = this.pdfLayout;
+        const margin = this.reportContentMargin;
+        const usableW = pageW - margin * 2;
+        const colW = (usableW - colGap) / 2;
+        const str = (v) => {
+            if (v == null)
+                return '';
+            return String(v).trim();
+        };
+        let y = doc.y;
+        const rowFull = (label, value) => {
+            const h = this.heightOfReportFieldCell(doc, label, value, usableW);
+            y = this.ensurePageSpace(doc, y, h);
+            this.drawReportFieldCell(doc, margin, y, usableW, label, value);
+            y += h;
+        };
+        const rowPair = (l1, v1, l2, v2) => {
+            const h = Math.max(this.heightOfReportFieldCell(doc, l1, v1, colW), this.heightOfReportFieldCell(doc, l2, v2, colW));
+            y = this.ensurePageSpace(doc, y, h);
+            this.drawReportFieldCell(doc, margin, y, colW, l1, v1);
+            this.drawReportFieldCell(doc, margin + colW + colGap, y, colW, l2, v2);
+            y += h;
+        };
+        const sectionBar = (title) => {
+            doc.font('ReportTitle').fontSize(12);
+            const guess = Math.max(26, doc.heightOfString(title.toUpperCase(), { width: usableW - 26, lineGap: 1 }) + 14) + 12;
+            y = this.ensurePageSpace(doc, y, guess);
+            const barH = this.drawReportSectionBar(doc, margin, y, usableW, title);
+            y += barH + 10;
+        };
+        sectionBar('Solicitud de Inspección VIP');
+        rowPair('Número de solicitud', str(request.request_number), 'Aseguradora', str(request.insurer.name));
+        rowPair('Estado', str(request.status), 'Fecha', request.requested_at.toISOString().split('T')[0]);
+        y += 4;
+        sectionBar('Responsable del pedido');
+        if (str(request.responsible_phone)) {
+            rowPair('Responsable', str(request.responsible_name), 'Teléfono responsable', str(request.responsible_phone));
+        }
+        else {
+            rowFull('Responsable', str(request.responsible_name));
+        }
+        if (str(request.responsible_email)) {
+            rowFull('Email responsable', str(request.responsible_email));
+        }
+        sectionBar('Datos de la solicitud');
+        const montoAseg = request.insured_amount !== null && request.insured_amount !== undefined
+            ? String(request.insured_amount)
+            : '';
+        rowPair('Agente', str(request.agent_name), 'Monto asegurado', montoAseg);
+        const montoVigTxt = request.has_amount_in_force && request.amount_in_force != null && request.amount_in_force !== ''
+            ? String(request.amount_in_force)
+            : '';
+        rowPair('Monto vigente', request.has_amount_in_force ? 'Sí' : 'No', 'Monto en vigencia', montoVigTxt);
+        rowPair('Estado civil', str(request.marital_status), 'Idioma entrevista', str(request.interview_language));
+        rowFull('Cliente avisado', request.client_notified ? 'Sí' : 'No');
         if (request.marital_status === 'Casado' || request.marital_status === 'Unido') {
-            this.addKeyValue(doc, 'Nombre del cónyuge', request.spouse_name ?? null);
+            rowFull('Nombre del cónyuge', str(request.spouse_name));
         }
-        this.addKeyValue(doc, 'Idioma entrevista', request.interview_language ?? null);
-        this.addKeyValue(doc, 'Cliente avisado', request.client_notified ? 'Sí' : 'No');
-        this.addSectionTitle(doc, 'Datos del cliente');
-        this.addKeyValue(doc, 'Nombres', request.client.first_name);
-        this.addKeyValue(doc, 'Apellidos', request.client.last_name);
-        this.addKeyValue(doc, 'Fecha de nacimiento', request.client.dob ? request.client.dob.toISOString().split('T')[0] : null);
-        if (request.client.id_type && request.client.id_number) {
-            this.addKeyValue(doc, 'Documento', `${request.client.id_type} ${request.client.id_number}`);
+        sectionBar('Datos del cliente');
+        rowPair('Nombres', str(request.client.first_name), 'Apellidos', str(request.client.last_name));
+        const dobStr = request.client.dob ? request.client.dob.toISOString().split('T')[0] : '';
+        const docStr = request.client.id_type && request.client.id_number
+            ? `${request.client.id_type} ${request.client.id_number}`
+            : '';
+        rowPair('Fecha de nacimiento', dobStr, 'Documento', docStr);
+        rowPair('Email', str(request.client.email), 'Teléfono residencial', str(request.client.phone_home));
+        rowPair('Teléfono celular', str(request.client.phone_mobile), 'Teléfono laboral', str(request.client.phone_work));
+        rowFull('Dirección', str(request.client.address_line));
+        rowPair('Ciudad', str(request.client.city), 'País', str(request.client.country));
+        rowPair('Empresa/Empleador', str(request.client.employer_name), 'Profesión/Ocupación', str(request.client.profession));
+        sectionBar('Indicaciones / Comentarios');
+        rowFull('Comentarios', str(request.comments));
+        doc.y = y;
+        doc.x = margin;
+        if (!footerPath) {
+            this.addFooter(doc);
         }
-        this.addKeyValue(doc, 'Email', request.client.email ?? null);
-        this.addKeyValue(doc, 'Teléfono residencial', request.client.phone_home ?? null);
-        this.addKeyValue(doc, 'Teléfono celular', request.client.phone_mobile ?? null);
-        this.addKeyValue(doc, 'Teléfono laboral', request.client.phone_work ?? null);
-        this.addKeyValue(doc, 'Dirección', request.client.address_line ?? null);
-        this.addKeyValue(doc, 'Ciudad', request.client.city ?? null);
-        this.addKeyValue(doc, 'País', request.client.country ?? null);
-        this.addKeyValue(doc, 'Empresa/Empleador', request.client.employer_name ?? null);
-        this.addKeyValue(doc, 'Profesión/Ocupación', request.client.profession ?? null);
-        this.addSectionTitle(doc, 'Indicaciones / Comentarios');
-        this.addKeyValue(doc, 'Comentarios', request.comments ?? null);
-        this.addFooter(doc);
+        this.reportPdfLayoutMode = false;
         doc.end();
         await new Promise((resolve) => doc.on('end', () => resolve()));
         return Buffer.concat(chunks);
@@ -738,9 +817,9 @@ class PdfService {
         const usableW = pageW - margin * 2;
         const colW = (usableW - colGap) / 2;
         let y = doc.y;
-        const metaRow1H = Math.max(this.heightOfReportFieldCell(doc, 'Solicitud', request.request_number, colW), this.heightOfReportFieldCell(doc, 'Aseguradora', request.insurer.name, colW));
+        const metaRow1H = Math.max(this.heightOfReportFieldCell(doc, 'N° de solicitud', request.request_number, colW), this.heightOfReportFieldCell(doc, 'Aseguradora', request.insurer.name, colW));
         y = this.ensurePageSpace(doc, y, metaRow1H);
-        this.drawReportFieldCell(doc, margin, y, colW, 'Solicitud', request.request_number);
+        this.drawReportFieldCell(doc, margin, y, colW, 'N° de solicitud', request.request_number);
         this.drawReportFieldCell(doc, margin + colW + colGap, y, colW, 'Aseguradora', request.insurer.name);
         y += metaRow1H;
         const clientName = `${request.client.first_name} ${request.client.last_name}`.trim();
@@ -784,21 +863,36 @@ class PdfService {
         y += resBarH + 10;
         doc.y = y;
         doc.x = margin;
-        const outcomeStr = this.outcomeLabel(report.outcome);
-        const blocks = [
-            { label: 'Resultado', value: outcomeStr },
-            { label: 'Resumen', value: report.summary ?? '' },
-            { label: 'Comentarios adicionales', value: report.additional_comments ?? '' },
-        ];
-        for (const b of blocks) {
-            const h = this.heightOfReportFieldCell(doc, b.label, b.value, usableW);
-            y = this.ensurePageSpace(doc, y, h);
-            this.drawReportFieldCell(doc, margin, y, usableW, b.label, b.value);
-            y += h;
-        }
+        const strMeta = (v) => {
+            if (v == null)
+                return '';
+            return String(v).trim();
+        };
+        const montoSolicitado = request.insured_amount !== null && request.insured_amount !== undefined
+            ? strMeta(request.insured_amount)
+            : '';
+        const corredor = strMeta(request.agent_name);
+        const fechaPedido = this.formatReportDate(request.requested_at);
+        const fechaEntrevista = this.formatReportDateTime(report.interview_started_at ?? request.scheduled_start_at ?? undefined);
+        const fechaDescarga = this.formatReportDateTime(new Date());
+        const metaRow3H = Math.max(this.heightOfReportFieldCell(doc, 'Corredor / Productor seguro', corredor, colW), this.heightOfReportFieldCell(doc, 'Monto solicitado', montoSolicitado, colW));
+        y = this.ensurePageSpace(doc, y, metaRow3H);
+        this.drawReportFieldCell(doc, margin, y, colW, 'Corredor / Productor seguro', corredor);
+        this.drawReportFieldCell(doc, margin + colW + colGap, y, colW, 'Monto solicitado', montoSolicitado);
+        y += metaRow3H;
+        const metaRow4H = Math.max(this.heightOfReportFieldCell(doc, 'Fecha pedido del informe', fechaPedido, colW), this.heightOfReportFieldCell(doc, 'Fecha/Hora de la entrevista', fechaEntrevista, colW));
+        y = this.ensurePageSpace(doc, y, metaRow4H);
+        this.drawReportFieldCell(doc, margin, y, colW, 'Fecha pedido del informe', fechaPedido);
+        this.drawReportFieldCell(doc, margin + colW + colGap, y, colW, 'Fecha/Hora de la entrevista', fechaEntrevista);
+        y += metaRow4H;
+        const metaRow5H = this.heightOfReportFieldCell(doc, 'Fecha del reporte descargado', fechaDescarga, usableW);
+        y = this.ensurePageSpace(doc, y, metaRow5H);
+        this.drawReportFieldCell(doc, margin, y, usableW, 'Fecha del reporte descargado', fechaDescarga);
+        y += metaRow5H + 8;
         doc.y = y;
         doc.x = margin;
-        this.reportTemplate().forEach((section) => {
+        const includeInformacionMedicaTmu = this.serviceTypeShowsInformacionMedica(request.service_type);
+        this.reportTemplate(includeInformacionMedicaTmu).forEach((section) => {
             doc.moveDown(0.35);
             this.renderTemplateSection(doc, section, valuesByKey, valuesByLabel, true);
         });

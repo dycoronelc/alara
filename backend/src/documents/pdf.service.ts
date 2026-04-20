@@ -19,6 +19,9 @@ type InspectionRequestPayload = {
   comments?: string | null;
   status: string;
   requested_at: Date;
+  scheduled_start_at?: Date | null;
+  scheduled_end_at?: Date | null;
+  service_type?: { name: string } | null;
   insurer: { name: string };
   client: {
     first_name: string;
@@ -44,6 +47,8 @@ type InspectionReportPayload = {
   summary?: string | null;
   additional_comments?: string | null;
   outcome: string;
+  interview_started_at?: Date | null;
+  interview_ended_at?: Date | null;
   sections: {
     section_title: string;
     fields: { field_key?: string | null; field_label?: string | null; field_value?: string | null }[];
@@ -250,14 +255,28 @@ export class PdfService {
     doc.font('Helvetica').fillColor(this.brand.dark).text(value ? String(value) : 'No disponible');
   }
 
-  private outcomeLabel(code: string): string {
-    const map: Record<string, string> = {
-      PENDIENTE: 'Pendiente',
-      FAVORABLE: 'Favorable',
-      NO_FAVORABLE: 'No favorable',
-      INCONCLUSO: 'Inconcluso',
-    };
-    return map[code] ?? code;
+  /** Fechas en formato usado en reportes (zona Panamá). */
+  private formatReportDate(d: Date | null | undefined): string {
+    if (!d || Number.isNaN(d.getTime())) return '';
+    return new Intl.DateTimeFormat('es-PA', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: 'America/Panama',
+    }).format(d);
+  }
+
+  private formatReportDateTime(d: Date | null | undefined): string {
+    if (!d || Number.isNaN(d.getTime())) return '';
+    return new Intl.DateTimeFormat('es-PA', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'America/Panama',
+    }).format(d);
   }
 
   /** Campos largos a ancho completo, alineados al formulario web (details-wide). */
@@ -462,24 +481,32 @@ export class PdfService {
     }
   }
 
+  /** Bloque «Información Médica (TMU)» solo para servicios Tele-Med / TMU (por nombre de tipo de servicio). */
+  private serviceTypeShowsInformacionMedica(serviceType: { name?: string | null } | null | undefined): boolean {
+    const n = (serviceType?.name ?? '').trim().toLowerCase();
+    if (!n) return false;
+    if (n.includes('tmu')) return true;
+    if (/tele[\s_-]?med|telem[eé]dic/.test(n)) return true;
+    return false;
+  }
+
   /** Alineado al formulario impreso «Reporte de Inspección VIP – ALARA INSP, S.A.» */
-  private reportTemplate() {
-    const affirmative =
-      'Por favor ampliar respuesta (Si en caso de alguna o más fue positiva):';
+  private reportTemplate(includeInformacionMedicaTmu: boolean) {
+    const affirmative = 'Por favor, ampliar las respuestas afirmativas:';
     return [
       {
         title: 'Datos personales',
         fields: [
           { key: 'first_name', label: 'Nombres' },
           { key: 'last_name', label: 'Apellidos' },
-          { key: 'marital_status', label: 'Estado Civil' },
-          { key: 'dob', label: 'Fecha de Nacimiento' },
-          { key: 'nationality', label: 'Nacionalidad' },
+          { key: 'id_type', label: 'Tipo de documento' },
+          { key: 'id_number', label: 'Número de documento' },
           { key: 'home_address', label: 'Domicilio' },
           { key: 'residence_time', label: 'Tiempo de residencia' },
           { key: 'foreign_residence', label: 'Residencia en el extranjero (Dónde / cuándo)' },
-          { key: 'id_type', label: 'Tipo de documento' },
-          { key: 'id_number', label: 'Número de documento' },
+          { key: 'marital_status', label: 'Estado Civil' },
+          { key: 'dob', label: 'Fecha de Nacimiento' },
+          { key: 'nationality', label: 'Nacionalidad' },
           { key: 'mobile', label: 'Celular' },
           { key: 'email', label: 'E-mail' },
           { key: 'spouse_name', label: 'Nombre del Cónyuge' },
@@ -493,7 +520,7 @@ export class PdfService {
           { key: 'business_address', label: 'Domicilio Comercial' },
           { key: 'functions', label: 'Funciones' },
           { key: 'clients', label: 'Clientes' },
-          { key: 'seniority', label: 'Antigüedad en la empresa' },
+          { key: 'seniority', label: 'Años de servicio' },
           { key: 'employees', label: 'Cantidad de Empleados' },
           { key: 'business_nature', label: 'Naturaleza del Negocio' },
           { key: 'employer', label: 'Empleador / Empresa' },
@@ -728,7 +755,9 @@ export class PdfService {
         title: 'Información complementaria',
         fields: [
           { key: 'informacion_complementaria', label: 'Amplíe aquí' },
-          { key: 'informacion_medica', label: 'Información Médica (TMU)' },
+          ...(includeInformacionMedicaTmu
+            ? [{ key: 'informacion_medica', label: 'Información Médica (TMU)' }]
+            : []),
         ],
       },
     ];
@@ -910,11 +939,11 @@ export class PdfService {
 
     let y = doc.y;
     const metaRow1H = Math.max(
-      this.heightOfReportFieldCell(doc, 'Solicitud', request.request_number, colW),
+      this.heightOfReportFieldCell(doc, 'N° de solicitud', request.request_number, colW),
       this.heightOfReportFieldCell(doc, 'Aseguradora', request.insurer.name, colW),
     );
     y = this.ensurePageSpace(doc, y, metaRow1H);
-    this.drawReportFieldCell(doc, margin, y, colW, 'Solicitud', request.request_number);
+    this.drawReportFieldCell(doc, margin, y, colW, 'N° de solicitud', request.request_number);
     this.drawReportFieldCell(doc, margin + colW + colGap, y, colW, 'Aseguradora', request.insurer.name);
     y += metaRow1H;
 
@@ -969,22 +998,48 @@ export class PdfService {
     doc.y = y;
     doc.x = margin;
 
-    const outcomeStr = this.outcomeLabel(report.outcome);
-    const blocks: { label: string; value: string }[] = [
-      { label: 'Resultado', value: outcomeStr },
-      { label: 'Resumen', value: report.summary ?? '' },
-      { label: 'Comentarios adicionales', value: report.additional_comments ?? '' },
-    ];
-    for (const b of blocks) {
-      const h = this.heightOfReportFieldCell(doc, b.label, b.value, usableW);
-      y = this.ensurePageSpace(doc, y, h);
-      this.drawReportFieldCell(doc, margin, y, usableW, b.label, b.value);
-      y += h;
-    }
+    const strMeta = (v: unknown): string => {
+      if (v == null) return '';
+      return String(v).trim();
+    };
+    const montoSolicitado =
+      request.insured_amount !== null && request.insured_amount !== undefined
+        ? strMeta(request.insured_amount)
+        : '';
+    const corredor = strMeta(request.agent_name);
+    const fechaPedido = this.formatReportDate(request.requested_at);
+    const fechaEntrevista = this.formatReportDateTime(
+      report.interview_started_at ?? request.scheduled_start_at ?? undefined,
+    );
+    const fechaDescarga = this.formatReportDateTime(new Date());
+
+    const metaRow3H = Math.max(
+      this.heightOfReportFieldCell(doc, 'Corredor / Productor seguro', corredor, colW),
+      this.heightOfReportFieldCell(doc, 'Monto solicitado', montoSolicitado, colW),
+    );
+    y = this.ensurePageSpace(doc, y, metaRow3H);
+    this.drawReportFieldCell(doc, margin, y, colW, 'Corredor / Productor seguro', corredor);
+    this.drawReportFieldCell(doc, margin + colW + colGap, y, colW, 'Monto solicitado', montoSolicitado);
+    y += metaRow3H;
+
+    const metaRow4H = Math.max(
+      this.heightOfReportFieldCell(doc, 'Fecha pedido del informe', fechaPedido, colW),
+      this.heightOfReportFieldCell(doc, 'Fecha/Hora de la entrevista', fechaEntrevista, colW),
+    );
+    y = this.ensurePageSpace(doc, y, metaRow4H);
+    this.drawReportFieldCell(doc, margin, y, colW, 'Fecha pedido del informe', fechaPedido);
+    this.drawReportFieldCell(doc, margin + colW + colGap, y, colW, 'Fecha/Hora de la entrevista', fechaEntrevista);
+    y += metaRow4H;
+
+    const metaRow5H = this.heightOfReportFieldCell(doc, 'Fecha del reporte descargado', fechaDescarga, usableW);
+    y = this.ensurePageSpace(doc, y, metaRow5H);
+    this.drawReportFieldCell(doc, margin, y, usableW, 'Fecha del reporte descargado', fechaDescarga);
+    y += metaRow5H + 8;
     doc.y = y;
     doc.x = margin;
 
-    this.reportTemplate().forEach((section) => {
+    const includeInformacionMedicaTmu = this.serviceTypeShowsInformacionMedica(request.service_type);
+    this.reportTemplate(includeInformacionMedicaTmu).forEach((section) => {
       doc.moveDown(0.35);
       this.renderTemplateSection(doc, section, valuesByKey, valuesByLabel, true);
     });

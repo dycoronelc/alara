@@ -208,8 +208,7 @@ export const TEXTAREA_KEYS = new Set<string>([
 const SI_VALUES = ['Sí'] as const;
 
 /** Texto del formulario impreso ALARA INSP (PDF de referencia). */
-export const AFFIRMATIVE_DETAIL_LABEL =
-  'Por favor ampliar respuesta (Si en caso de alguna o más fue positiva):';
+export const AFFIRMATIVE_DETAIL_LABEL = 'Por favor, ampliar las respuestas afirmativas:';
 
 export const AFFIRMATIVE_YES_KEYS_SALUD = [
   'deafness',

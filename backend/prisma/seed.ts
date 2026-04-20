@@ -79,7 +79,7 @@ async function main() {
           { key: 'occupation', label: 'Ocupación / Cargo', type: 'TEXT', value: '' },
           { key: 'functions', label: 'Funciones', type: 'TEXT', value: '' },
           { key: 'employer', label: 'Empleador / Empresa', type: 'TEXT', value: '' },
-          { key: 'seniority', label: 'Antigüedad en la empresa', type: 'TEXT', value: '' },
+          { key: 'seniority', label: 'Años de servicio', type: 'TEXT', value: '' },
           { key: 'company_start', label: 'Fecha de Creación de la Empresa', type: 'TEXT', value: '' },
           { key: 'employees', label: 'Cantidad de Empleados', type: 'TEXT', value: '' },
           { key: 'employee_or_partner', label: '¿Es empleado o socio?', type: 'TEXT', value: '' },

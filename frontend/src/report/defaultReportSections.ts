@@ -44,7 +44,7 @@ export const defaultReportSections = (): ReportSectionDef[] => [
       { key: 'business_address', label: 'Domicilio Comercial' },
       { key: 'functions', label: 'Funciones', type: 'textarea' },
       { key: 'clients', label: 'Clientes' },
-      { key: 'seniority', label: 'Antigüedad en la empresa' },
+      { key: 'seniority', label: 'Años de servicio' },
       { key: 'employees', label: 'Cantidad de Empleados' },
       { key: 'business_nature', label: 'Naturaleza del Negocio' },
       { key: 'employer', label: 'Empleador / Empresa' },

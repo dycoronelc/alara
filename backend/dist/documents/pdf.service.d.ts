@@ -15,6 +15,11 @@ type InspectionRequestPayload = {
     comments?: string | null;
     status: string;
     requested_at: Date;
+    scheduled_start_at?: Date | null;
+    scheduled_end_at?: Date | null;
+    service_type?: {
+        name: string;
+    } | null;
     insurer: {
         name: string;
     };
@@ -41,6 +46,8 @@ type InspectionReportPayload = {
     summary?: string | null;
     additional_comments?: string | null;
     outcome: string;
+    interview_started_at?: Date | null;
+    interview_ended_at?: Date | null;
     sections: {
         section_title: string;
         fields: {
@@ -71,13 +78,15 @@ export declare class PdfService {
     private addFooter;
     private addSectionTitle;
     private addKeyValue;
-    private outcomeLabel;
+    private formatReportDate;
+    private formatReportDateTime;
     private isPdfFullWidthField;
     private resolveFieldValue;
     private heightOfFieldCell;
     private drawFieldCell;
     private ensurePageSpace;
     private renderTemplateSection;
+    private serviceTypeShowsInformacionMedica;
     private reportTemplate;
     buildRequestPdf(request: InspectionRequestPayload): Promise<Buffer>;
     buildReportPdf(request: InspectionRequestPayload, report?: InspectionReportPayload | null): Promise<Buffer>;

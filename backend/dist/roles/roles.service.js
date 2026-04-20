@@ -22,6 +22,28 @@ let RolesService = class RolesService {
             select: { id: true, code: true, name: true },
         });
     }
+    async update(id, name) {
+        const existing = await this.prisma.role.findUnique({ where: { id } });
+        if (!existing) {
+            throw new common_1.NotFoundException('Rol no encontrado');
+        }
+        return this.prisma.role.update({
+            where: { id },
+            data: { name: name.trim() },
+            select: { id: true, code: true, name: true },
+        });
+    }
+    async remove(id) {
+        const existing = await this.prisma.role.findUnique({ where: { id } });
+        if (!existing) {
+            throw new common_1.NotFoundException('Rol no encontrado');
+        }
+        const n = await this.prisma.userRole.count({ where: { role_id: id } });
+        if (n > 0) {
+            throw new common_1.ConflictException('No se puede eliminar: hay usuarios asignados a este rol');
+        }
+        await this.prisma.role.delete({ where: { id } });
+    }
 };
 exports.RolesService = RolesService;
 exports.RolesService = RolesService = __decorate([

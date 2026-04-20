@@ -16,15 +16,27 @@ exports.RolesController = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const roles_service_1 = require("./roles.service");
+const update_role_dto_1 = require("./dto/update-role.dto");
 let RolesController = class RolesController {
     constructor(rolesService) {
         this.rolesService = rolesService;
     }
-    findAll(req) {
+    ensureAdmin(req) {
         if (req.userContext?.role !== 'ADMIN') {
             throw new common_1.ForbiddenException('Solo administradores');
         }
+    }
+    findAll(req) {
+        this.ensureAdmin(req);
         return this.rolesService.findAll();
+    }
+    update(req, id, dto) {
+        this.ensureAdmin(req);
+        return this.rolesService.update(id, dto.name);
+    }
+    remove(req, id) {
+        this.ensureAdmin(req);
+        return this.rolesService.remove(id);
     }
 };
 exports.RolesController = RolesController;
@@ -35,6 +47,24 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], RolesController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Patch)(':id'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number, update_role_dto_1.UpdateRoleDto]),
+    __metadata("design:returntype", void 0)
+], RolesController.prototype, "update", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    (0, common_1.HttpCode)(204),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number]),
+    __metadata("design:returntype", void 0)
+], RolesController.prototype, "remove", null);
 exports.RolesController = RolesController = __decorate([
     (0, common_1.Controller)('roles'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

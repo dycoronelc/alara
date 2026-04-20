@@ -7,4 +7,10 @@ export declare class RolesService {
         name: string;
         code: string;
     }[]>;
+    update(id: number, name: string): Promise<{
+        id: bigint;
+        name: string;
+        code: string;
+    }>;
+    remove(id: number): Promise<void>;
 }

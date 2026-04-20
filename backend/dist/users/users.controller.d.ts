@@ -90,4 +90,25 @@ export declare class UsersController {
             name: string;
         }[];
     }>;
+    remove(req: Request, id: number): Promise<{
+        id: number;
+        email: string;
+        phone: string;
+        full_name: string;
+        user_type: string;
+        is_active: boolean;
+        created_at: string;
+        insurer: {
+            id: number;
+            name: string;
+        } | null;
+        alara_office: {
+            id: number;
+            name: string;
+        } | null;
+        roles: {
+            code: string;
+            name: string;
+        }[];
+    }>;
 }
