@@ -1405,6 +1405,12 @@ const RequestDetailPage = ({ portal }: RequestDetailProps) => {
                           className={`form-field${
                             field.key === 'informacion_medica' ||
                             field.key === 'informacion_complementaria' ||
+                            field.key === 'socios_participacion' ||
+                            field.key === 'travel_plans' ||
+                            field.key === 'other_travels' ||
+                            field.key === 'alcohol_frequency_detail' ||
+                            field.key === 'passive_concept_detail' ||
+                            field.key === 'negative_history_detail' ||
                             field.key.endsWith('_detalle_respuesta_afirmativa')
                               ? ' details-wide'
                               : ''

@@ -774,14 +774,32 @@
     },
     {
       "code": "DETALLE_SEGURO",
-      "title": "Detalle del seguro",
+      "title": "Información del seguro y origen de fondos",
       "order": 12,
       "fields": [
         {
           "key": "insurance_object",
-          "label": "Objeto del seguro",
+          "label": "Propósito del seguro",
           "type": "TEXT",
           "value": "Valor simulado: insurance_object"
+        },
+        {
+          "key": "replaces_policy",
+          "label": "¿Este seguro reemplaza alguna póliza actual?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "previous_rejected",
+          "label": "¿Le han rechazado alguna solicitud anteriormente?",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "previous_rejection_reason",
+          "label": "Motivo del Rechazo",
+          "type": "TEXT",
+          "value": ""
         },
         {
           "key": "policy_holder",
@@ -796,34 +814,16 @@
           "value": "Valor simulado: policy_payer"
         },
         {
-          "key": "bank_name",
-          "label": "Banco de origen de fondos",
-          "type": "TEXT",
-          "value": "Valor simulado: bank_name"
-        },
-        {
           "key": "funds_origin",
           "label": "Origen de fondos",
           "type": "TEXT",
           "value": "Texto simulado para prueba de guardado."
         },
         {
-          "key": "previous_rejected",
-          "label": "¿Le han Rechazado alguna Solicitud anteriormente?",
-          "type": "BOOL",
-          "value": "No"
-        },
-        {
-          "key": "previous_rejection_reason",
-          "label": "Motivo del Rechazo",
+          "key": "bank_name",
+          "label": "Banco de donde provienen los fondos",
           "type": "TEXT",
-          "value": ""
-        },
-        {
-          "key": "replaces_policy",
-          "label": "¿Este Seguro Reemplaza una Póliza Actual?",
-          "type": "BOOL",
-          "value": "No"
+          "value": "Valor simulado: bank_name"
         }
       ]
     },
@@ -929,6 +929,12 @@
           "label": "Total Pasivo Personal",
           "type": "TEXT",
           "value": "Valor simulado: total_liabilities"
+        },
+        {
+          "key": "passive_concept_detail",
+          "label": "Concepto o detalles",
+          "type": "TEXT",
+          "value": ""
         }
       ]
     },
@@ -957,15 +963,21 @@
         },
         {
           "key": "bankruptcy",
-          "label": "¿Está en Quiebra Comercial?",
+          "label": "¿Quiebra Comercial?",
           "type": "BOOL",
           "value": "No"
         },
         {
           "key": "negative_history",
           "label": "Antecedentes comerciales negativos",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "negative_history_detail",
+          "label": "De ser afirmativo detallar",
           "type": "TEXT",
-          "value": "Texto simulado para prueba de guardado."
+          "value": ""
         }
       ]
     },
@@ -976,15 +988,21 @@
       "fields": [
         {
           "key": "dui",
-          "label": "Condenas por DUI en últimos 5 años",
-          "type": "TEXT",
-          "value": "Texto simulado para prueba de guardado."
+          "label": "Condenas o infracciones por conducir bajo la influencia de alcohol o drogas",
+          "type": "BOOL",
+          "value": "No"
         },
         {
           "key": "traffic",
           "label": "Infracciones de tránsito últimos 3 años",
+          "type": "BOOL",
+          "value": "No"
+        },
+        {
+          "key": "historial_manejo_detalle_respuesta_afirmativa",
+          "label": "Por favor, ampliar las respuestas afirmativas",
           "type": "TEXT",
-          "value": "Texto simulado para prueba de guardado."
+          "value": ""
         }
       ]
     },
@@ -1022,6 +1040,12 @@
           "label": "¿Ha sido Arrestado? Detallar",
           "type": "TEXT",
           "value": "Texto simulado para prueba de guardado."
+        },
+        {
+          "key": "juicios_detalle_respuesta_afirmativa",
+          "label": "Por favor, ampliar las respuestas afirmativas",
+          "type": "TEXT",
+          "value": ""
         }
       ]
     },

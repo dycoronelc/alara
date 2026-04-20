@@ -58,16 +58,16 @@ async function main() {
           { key: 'last_name', label: 'Apellidos', type: 'TEXT', value: '' },
           { key: 'id_type', label: 'Tipo de documento', type: 'TEXT', value: '' },
           { key: 'id_number', label: 'Número de documento', type: 'TEXT', value: '' },
-          { key: 'home_address', label: 'Domicilio Particular', type: 'TEXT', value: '' },
-          { key: 'residence_time', label: 'Tiempo de Residencia', type: 'TEXT', value: '' },
+          { key: 'home_address', label: 'Domicilio', type: 'TEXT', value: '' },
+          { key: 'residence_time', label: 'Tiempo de residencia', type: 'TEXT', value: '' },
           { key: 'foreign_residence', label: 'Residencia en el extranjero (Dónde / cuándo)', type: 'TEXT', value: '' },
           { key: 'mobile', label: 'Celular', type: 'TEXT', value: '' },
-          { key: 'email', label: 'E-mail', type: 'TEXT', value: '' },
+          { key: 'email', label: 'E-Mail', type: 'TEXT', value: '' },
           { key: 'dob', label: 'Fecha de Nacimiento', type: 'TEXT', value: '' },
-          { key: 'nationality', label: 'Nacionalidad', type: 'TEXT', value: '' },
           { key: 'marital_status', label: 'Estado Civil', type: 'TEXT', value: '' },
           { key: 'spouse_name', label: 'Nombre del Cónyuge', type: 'TEXT', value: '' },
-          { key: 'children', label: 'Hijos', type: 'TEXT', value: '' }
+          { key: 'children', label: 'Hijos', type: 'TEXT', value: '' },
+          { key: 'nationality', label: 'Nacionalidad', type: 'TEXT', value: '' }
         ]
       },
       {
@@ -77,14 +77,12 @@ async function main() {
         fields: [
           { key: 'profession_studies', label: 'Profesión / Estudios Cursados', type: 'TEXT', value: '' },
           { key: 'occupation', label: 'Ocupación / Cargo', type: 'TEXT', value: '' },
-          { key: 'functions', label: 'Funciones', type: 'TEXT', value: '' },
           { key: 'employer', label: 'Empleador / Empresa', type: 'TEXT', value: '' },
-          { key: 'seniority', label: 'Años de servicio', type: 'TEXT', value: '' },
-          { key: 'company_start', label: 'Fecha de Creación de la Empresa', type: 'TEXT', value: '' },
-          { key: 'employees', label: 'Cantidad de Empleados', type: 'TEXT', value: '' },
-          { key: 'employee_or_partner', label: '¿Es empleado o socio?', type: 'TEXT', value: '' },
+          { key: 'functions', label: 'Funciones', type: 'TEXT', value: '' },
           { key: 'business_nature', label: 'Naturaleza del Negocio', type: 'TEXT', value: '' },
-          { key: 'clients', label: 'Clientes', type: 'TEXT', value: '' },
+          { key: 'seniority', label: 'Años de servicio', type: 'TEXT', value: '' },
+          { key: 'employee_or_partner', label: '¿Es empleado o socio?', type: 'TEXT', value: '' },
+          { key: 'socios_participacion', label: 'Indicar número de socios y porcentaje de participación', type: 'TEXT', value: '' },
           { key: 'business_address', label: 'Domicilio Comercial', type: 'TEXT', value: '' },
           { key: 'website', label: 'Sitio Web', type: 'TEXT', value: '' },
           { key: 'other_occupation', label: 'Otra Ocupación Actual (describa)', type: 'TEXT', value: '' }
@@ -141,7 +139,9 @@ async function main() {
           { key: 'travel_destination', label: 'Destino', type: 'TEXT', value: '' },
           { key: 'travel_transport', label: 'Medio', type: 'TEXT', value: '' },
           { key: 'travel_reason', label: 'Motivo', type: 'TEXT', value: '' },
-          { key: 'travel_frequency', label: 'Frecuencia', type: 'TEXT', value: '' }
+          { key: 'travel_frequency', label: 'Frecuencia', type: 'TEXT', value: '' },
+          { key: 'travel_plans', label: 'Tiene planes de viajar/destino/fecha:', type: 'TEXT', value: '' },
+          { key: 'other_travels', label: 'Otros viajes realizados/ destino/ fecha/ frecuencia:', type: 'TEXT', value: '' }
         ]
       },
       {
@@ -178,8 +178,9 @@ async function main() {
           { key: 'smoker', label: '¿Es Fumador o utiliza algún tipo de tabaco?', type: 'TEXT', value: '' },
           { key: 'tobacco_type', label: 'Tipo de Tabaco', type: 'TEXT', value: '' },
           { key: 'tobacco_amount', label: 'Cantidad y Frecuencia de Consumo', type: 'TEXT', value: '' },
-          { key: 'tobacco_period', label: 'Período de Consumo', type: 'TEXT', value: '' },
           { key: 'tobacco_last', label: 'Fecha del Último consumo', type: 'TEXT', value: '' },
+          { key: 'tobacco_period', label: 'Período de Consumo', type: 'TEXT', value: '' },
+          { key: 'tobacco_in_past', label: '¿Lo ha sido en el pasado?', type: 'TEXT', value: '' },
           { key: 'vape', label: '¿Consume cigarrillo electrónico?', type: 'TEXT', value: '' },
           { key: 'vape_details', label: 'En caso afirmativo: cantidad, frecuencia y circunstancias', type: 'TEXT', value: '' }
         ]
@@ -190,6 +191,7 @@ async function main() {
         order: 9,
         fields: [
           { key: 'alcohol', label: '¿Toma Bebidas Alcohólicas?', type: 'TEXT', value: '' },
+          { key: 'alcohol_frequency_detail', label: 'Tipo, frecuencia y cantidad:', type: 'TEXT', value: '' },
           { key: 'marijuana', label: 'Marihuana', type: 'TEXT', value: '' },
           { key: 'amphetamines', label: 'Anfetaminas', type: 'TEXT', value: '' },
           { key: 'barbiturics', label: 'Barbitúricos', type: 'TEXT', value: '' },
@@ -197,7 +199,8 @@ async function main() {
           { key: 'lsd', label: 'LSD', type: 'TEXT', value: '' },
           { key: 'stimulants', label: 'Estimulantes', type: 'TEXT', value: '' },
           { key: 'other_drugs', label: 'Otras Drogas', type: 'TEXT', value: '' },
-          { key: 'treatment', label: 'Tratamiento por Consumo de Drogas / Alcohol', type: 'TEXT', value: '' }
+          { key: 'treatment', label: 'Tratamiento por Consumo de Drogas / Alcohol', type: 'TEXT', value: '' },
+          { key: 'professional_athlete_doping', label: 'En caso de deportista profesional ¿Dopaje positivo?', type: 'TEXT', value: '' }
         ]
       },
       {
@@ -205,8 +208,19 @@ async function main() {
         title: 'Política',
         order: 10,
         fields: [
-          { key: 'pep', label: '¿Es Persona Políticamente Expuesta (PEP)?', type: 'TEXT', value: '' },
-          { key: 'political_party', label: '¿Participa en algún partido político?', type: 'TEXT', value: '' }
+          {
+            key: 'pep',
+            label: '¿Es PEP? En caso afirmativo, dar detalles de su cargo y funciones:',
+            type: 'TEXT',
+            value: '',
+          },
+          {
+            key: 'political_party',
+            label:
+              '¿Participa o es miembro de algún partido político? En caso afirmativo, dar detalles:',
+            type: 'TEXT',
+            value: '',
+          }
         ]
       },
       {
@@ -233,29 +247,35 @@ async function main() {
       },
       {
         code: 'HISTORIA_SEGUROS',
-        title: 'Historia de Seguros',
+        title: 'Historia de Seguros - Vigentes',
         order: 12,
         fields: [
-          { key: 'insurance_date', label: 'Fecha', type: 'TEXT', value: '' },
           { key: 'insurance_company', label: 'Compañía', type: 'TEXT', value: '' },
           { key: 'insurance_amount', label: 'Monto', type: 'TEXT', value: '' },
-          { key: 'insurance_reason', label: 'Motivo del seguro', type: 'TEXT', value: '' },
-          { key: 'simultaneous_policy', label: '¿Seguro de vida en otra compañía? Detallar', type: 'TEXT', value: '' }
+          { key: 'insurance_date', label: 'Fecha de Emisión', type: 'TEXT', value: '' },
+          { key: 'insurance_reason', label: 'Seguro personal o Negocios', type: 'TEXT', value: '' },
+          {
+            key: 'simultaneous_policy',
+            label:
+              '¿Se encuentra aplicando un seguro de vida para otra Cía. simultáneamente? En caso afirmativo, dar detalles:',
+            type: 'TEXT',
+            value: '',
+          }
         ]
       },
       {
         code: 'DETALLE_SEGURO',
-        title: 'Detalle del seguro',
+        title: 'Información del seguro y origen de fondos',
         order: 13,
         fields: [
-          { key: 'insurance_object', label: 'Objeto del seguro', type: 'TEXT', value: '' },
+          { key: 'insurance_object', label: 'Propósito del seguro', type: 'TEXT', value: '' },
+          { key: 'replaces_policy', label: '¿Este seguro reemplaza alguna póliza actual?', type: 'TEXT', value: '' },
+          { key: 'previous_rejected', label: '¿Le han rechazado alguna solicitud anteriormente?', type: 'TEXT', value: '' },
+          { key: 'previous_rejection_reason', label: 'Motivo del Rechazo', type: 'TEXT', value: '' },
           { key: 'policy_holder', label: 'Tomador de la Póliza', type: 'TEXT', value: '' },
           { key: 'policy_payer', label: 'Pagador de la Póliza', type: 'TEXT', value: '' },
-          { key: 'bank_name', label: 'Banco de origen de fondos', type: 'TEXT', value: '' },
           { key: 'funds_origin', label: 'Origen de fondos', type: 'TEXT', value: '' },
-          { key: 'previous_rejected', label: '¿Le han Rechazado alguna Solicitud anteriormente?', type: 'TEXT', value: '' },
-          { key: 'previous_rejection_reason', label: 'Motivo del Rechazo', type: 'TEXT', value: '' },
-          { key: 'replaces_policy', label: '¿Este Seguro Reemplaza una Póliza Actual?', type: 'TEXT', value: '' }
+          { key: 'bank_name', label: 'Banco de donde provienen los fondos', type: 'TEXT', value: '' }
         ]
       },
       {
@@ -290,7 +310,8 @@ async function main() {
         title: 'Pasivo Personal',
         order: 16,
         fields: [
-          { key: 'total_liabilities', label: 'Total Pasivo Personal', type: 'TEXT', value: '' }
+          { key: 'total_liabilities', label: 'Total Pasivo Personal', type: 'TEXT', value: '' },
+          { key: 'passive_concept_detail', label: 'Concepto o detalles', type: 'TEXT', value: '' }
         ]
       },
       {
@@ -301,8 +322,9 @@ async function main() {
           { key: 'banks', label: 'Bancos con los cuales opera', type: 'TEXT', value: '' },
           { key: 'bank_relationship', label: 'Antigüedad', type: 'TEXT', value: '' },
           { key: 'credit_cards', label: 'Tarjetas de crédito', type: 'TEXT', value: '' },
-          { key: 'bankruptcy', label: '¿Está en Quiebra Comercial?', type: 'TEXT', value: '' },
-          { key: 'negative_history', label: 'Antecedentes comerciales negativos', type: 'TEXT', value: '' }
+          { key: 'bankruptcy', label: '¿Quiebra Comercial?', type: 'TEXT', value: '' },
+          { key: 'negative_history', label: 'Antecedentes comerciales negativos', type: 'TEXT', value: '' },
+          { key: 'negative_history_detail', label: 'De ser afirmativo detallar', type: 'TEXT', value: '' }
         ]
       },
       {
@@ -310,8 +332,20 @@ async function main() {
         title: 'Historial de Manejo',
         order: 18,
         fields: [
-          { key: 'dui', label: 'Condena por DUI últimos 5 años', type: 'TEXT', value: '' },
-          { key: 'traffic', label: 'Infracciones de tránsito últimos 3 años', type: 'TEXT', value: '' }
+          {
+            key: 'dui',
+            label:
+              'Condenas o infracciones por conducir bajo la influencia de alcohol o drogas',
+            type: 'TEXT',
+            value: '',
+          },
+          { key: 'traffic', label: 'Infracciones de tránsito últimos 3 años', type: 'TEXT', value: '' },
+          {
+            key: 'historial_manejo_detalle_respuesta_afirmativa',
+            label: 'Por favor, ampliar las respuestas afirmativas',
+            type: 'TEXT',
+            value: '',
+          }
         ]
       },
       {
@@ -323,7 +357,13 @@ async function main() {
           { key: 'civil_case', label: 'Juicio Civil', type: 'TEXT', value: '' },
           { key: 'commercial_case', label: 'Juicio Comercial', type: 'TEXT', value: '' },
           { key: 'labor_case', label: 'Juicio Laboral', type: 'TEXT', value: '' },
-          { key: 'arrested', label: '¿Ha sido Arrestado por algún Motivo? Detallar.', type: 'TEXT', value: '' }
+          { key: 'arrested', label: '¿Ha sido Arrestado? Detallar', type: 'TEXT', value: '' },
+          {
+            key: 'juicios_detalle_respuesta_afirmativa',
+            label: 'Por favor, ampliar las respuestas afirmativas',
+            type: 'TEXT',
+            value: '',
+          }
         ]
       },
       {

@@ -131,6 +131,7 @@ export const YES_NO_KEYS = new Set<string>([
   'paragliding',
   'climbing',
   'smoker',
+  'tobacco_in_past',
   'vape',
   'alcohol',
   'marijuana',
@@ -141,6 +142,7 @@ export const YES_NO_KEYS = new Set<string>([
   'stimulants',
   'other_drugs',
   'treatment',
+  'professional_athlete_doping',
   'pep',
   'political_party',
   'kidnapping',
@@ -154,6 +156,9 @@ export const YES_NO_KEYS = new Set<string>([
   'previous_rejected',
   'replaces_policy',
   'bankruptcy',
+  'negative_history',
+  'dui',
+  'traffic',
   'criminal_case',
   'civil_case',
   'commercial_case',
@@ -165,6 +170,10 @@ export const YES_NO_KEYS = new Set<string>([
 export const TEXTAREA_KEYS = new Set<string>([
   'foreign_residence',
   'functions',
+  'socios_participacion',
+  'travel_plans',
+  'other_travels',
+  'alcohol_frequency_detail',
   'studies',
   'results',
   'surgeries',
@@ -190,9 +199,9 @@ export const TEXTAREA_KEYS = new Set<string>([
   'unearned_concept',
   'goods',
   'other_assets',
-  'negative_history',
-  'dui',
-  'traffic',
+  'negative_history_detail',
+  'passive_concept_detail',
+  'historial_manejo_detalle_respuesta_afirmativa',
   'arrested',
   'additional_comments',
   'informacion_medica',
@@ -208,7 +217,7 @@ export const TEXTAREA_KEYS = new Set<string>([
 const SI_VALUES = ['Sí'] as const;
 
 /** Texto del formulario impreso ALARA INSP (PDF de referencia). */
-export const AFFIRMATIVE_DETAIL_LABEL = 'Por favor, ampliar las respuestas afirmativas:';
+export const AFFIRMATIVE_DETAIL_LABEL = 'Por favor, ampliar las respuestas afirmativas';
 
 export const AFFIRMATIVE_YES_KEYS_SALUD = [
   'deafness',
@@ -261,6 +270,8 @@ export const AFFIRMATIVE_YES_KEYS_SEGURIDAD = [
 
 export const AFFIRMATIVE_YES_KEYS_JUICIOS = ['criminal_case', 'civil_case', 'commercial_case', 'labor_case'] as const;
 
+export const AFFIRMATIVE_YES_KEYS_HISTORIAL_MANEJO = ['dui', 'traffic'] as const;
+
 /** Uso en `ReportFieldDef.visibleWhenAny` para mostrar detalle si alguna respuesta es Sí. */
 export function visibleWhenAnySi(keys: readonly string[]): { keys: string[]; values: string[] } {
   return { keys: [...keys], values: [...SI_VALUES] };
@@ -273,6 +284,10 @@ export const AFFIRMATIVE_DETAIL_FIELD_GROUPS: { detailKey: string; yesKeys: read
   { detailKey: 'deportes_riesgo_detalle_respuesta_afirmativa', yesKeys: AFFIRMATIVE_YES_KEYS_DEPORTES_RIESGO },
   { detailKey: 'alcohol_drogas_detalle_respuesta_afirmativa', yesKeys: AFFIRMATIVE_YES_KEYS_ALCOHOL_DROGAS },
   { detailKey: 'seguridad_detalle_respuesta_afirmativa', yesKeys: AFFIRMATIVE_YES_KEYS_SEGURIDAD },
+  {
+    detailKey: 'historial_manejo_detalle_respuesta_afirmativa',
+    yesKeys: AFFIRMATIVE_YES_KEYS_HISTORIAL_MANEJO,
+  },
   { detailKey: 'juicios_detalle_respuesta_afirmativa', yesKeys: AFFIRMATIVE_YES_KEYS_JUICIOS },
 ];
 
@@ -303,6 +318,21 @@ const SELECT_BY_KEY: Record<string, ReportFieldOption[]> = {
 export function applyReportFieldUiRules(def: ReportFieldDef): ReportFieldDef {
   if (def.key === 'spouse_name') {
     return { ...def, visibleWhen: { key: 'marital_status', values: ['Casado', 'Unido'] } };
+  }
+  if (def.key === 'socios_participacion') {
+    return { ...def, visibleWhen: { key: 'employee_or_partner', values: ['Socio'] } };
+  }
+  if (def.key === 'alcohol_frequency_detail') {
+    return { ...def, visibleWhen: { key: 'alcohol', values: ['Sí'] } };
+  }
+  if (def.key === 'negative_history_detail') {
+    return { ...def, visibleWhen: { key: 'negative_history', values: ['Sí'] } };
+  }
+  if (def.key === 'historial_manejo_detalle_respuesta_afirmativa') {
+    return {
+      ...def,
+      visibleWhenAny: visibleWhenAnySi(AFFIRMATIVE_YES_KEYS_HISTORIAL_MANEJO),
+    };
   }
   return def;
 }

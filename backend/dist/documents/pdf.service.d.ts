@@ -71,6 +71,8 @@ export declare class PdfService {
     private computeImageDrawHeight;
     private drawReportChrome;
     private drawReportSectionBar;
+    private measureReportSectionBarHeight;
+    private estimateFirstReportFieldsRowHeight;
     private heightOfReportFieldCell;
     private drawReportFieldCell;
     private ensureReportPageSpace;

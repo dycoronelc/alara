@@ -110,6 +110,34 @@ class PdfService {
         doc.fillColor('#0f172a');
         return barH;
     }
+    measureReportSectionBarHeight(doc, barWidth, title) {
+        const padV = 7;
+        const text = title.toUpperCase();
+        doc.font('ReportTitle').fontSize(12);
+        const textWidth = barWidth - 6 - 20;
+        const textH = doc.heightOfString(text, { width: textWidth, lineGap: 1 });
+        return Math.max(26, textH + padV * 2);
+    }
+    estimateFirstReportFieldsRowHeight(doc, fields, valuesByKey, valuesByLabel, usableW, colW, colGap) {
+        if (!fields.length)
+            return 0;
+        const f = fields[0];
+        const full = this.isPdfFullWidthField(f.key);
+        if (full) {
+            const value = this.resolveFieldValue(f, valuesByKey, valuesByLabel);
+            return this.heightOfReportFieldCell(doc, f.label, value, usableW);
+        }
+        const f2 = fields[1];
+        if (f2 && !this.isPdfFullWidthField(f2.key)) {
+            const v1 = this.resolveFieldValue(f, valuesByKey, valuesByLabel);
+            const v2 = this.resolveFieldValue(f2, valuesByKey, valuesByLabel);
+            const h1 = this.heightOfReportFieldCell(doc, f.label, v1, colW);
+            const h2 = this.heightOfReportFieldCell(doc, f2.label, v2, colW);
+            return Math.max(h1, h2);
+        }
+        const value = this.resolveFieldValue(f, valuesByKey, valuesByLabel);
+        return this.heightOfReportFieldCell(doc, f.label, value, colW);
+    }
     heightOfReportFieldCell(doc, label, value, width) {
         const pad = 6;
         doc.font('ReportLabel').fontSize(10).fillColor('#000000');
@@ -220,6 +248,10 @@ class PdfService {
             'foreign_residence',
             'functions',
             'other_occupation',
+            'socios_participacion',
+            'travel_plans',
+            'other_travels',
+            'alcohol_frequency_detail',
             'results',
             'studies',
             'consultation_reason',
@@ -245,9 +277,8 @@ class PdfService {
             'unearned_concept',
             'goods',
             'other_assets',
-            'negative_history',
-            'dui',
-            'traffic',
+            'negative_history_detail',
+            'passive_concept_detail',
             'arrested',
             'additional_comments',
         ]);
@@ -304,16 +335,48 @@ class PdfService {
         const usableW = doc.page.width - margin * 2;
         const colW = (usableW - colGap) / 2;
         const skip = new Set(['weight_unit', 'height_unit']);
-        const fields = section.fields.filter((f) => !skip.has(f.key));
+        const fields = section.fields.filter((f) => {
+            if (skip.has(f.key))
+                return false;
+            if (f.key === 'socios_participacion') {
+                const role = (valuesByKey.get('employee_or_partner') ??
+                    valuesByLabel.get('¿Es empleado o socio?') ??
+                    '').trim();
+                return role === 'Socio';
+            }
+            if (f.key === 'alcohol_frequency_detail') {
+                const a = (valuesByKey.get('alcohol') ??
+                    valuesByLabel.get('¿Toma Bebidas Alcohólicas?') ??
+                    '').trim();
+                return a === 'Sí';
+            }
+            if (f.key === 'negative_history_detail') {
+                const v = (valuesByKey.get('negative_history') ??
+                    valuesByLabel.get('Antecedentes comerciales negativos') ??
+                    '').trim();
+                return v === 'Sí';
+            }
+            if (f.key === 'historial_manejo_detalle_respuesta_afirmativa') {
+                const d = (valuesByKey.get('dui') ?? '').trim();
+                const t = (valuesByKey.get('traffic') ?? '').trim();
+                return d === 'Sí' || t === 'Sí';
+            }
+            if (f.key === 'juicios_detalle_respuesta_afirmativa') {
+                const keys = ['criminal_case', 'civil_case', 'commercial_case', 'labor_case'];
+                return keys.some((k) => (valuesByKey.get(k) ?? '').trim() === 'Sí');
+            }
+            return true;
+        });
         let y = doc.y;
         if (section.title?.trim()) {
             if (reportStyled) {
-                doc.font('ReportTitle').fontSize(12);
-                const th = doc.heightOfString(section.title.toUpperCase(), { width: usableW - 26, lineGap: 1 });
-                const barGuess = Math.max(26, th + 14);
-                y = this.ensurePageSpace(doc, y, barGuess + 12);
-                const barH = this.drawReportSectionBar(doc, margin, y, usableW, section.title);
-                y += barH + 10;
+                const barH = this.measureReportSectionBarHeight(doc, usableW, section.title);
+                const hFirstRow = fields.length > 0
+                    ? this.estimateFirstReportFieldsRowHeight(doc, fields, valuesByKey, valuesByLabel, usableW, colW, colGap)
+                    : 0;
+                y = this.ensurePageSpace(doc, y, barH + 10 + hFirstRow);
+                const barDrawnH = this.drawReportSectionBar(doc, margin, y, usableW, section.title);
+                y += barDrawnH + 10;
                 doc.y = y;
                 doc.x = margin;
             }
@@ -405,7 +468,7 @@ class PdfService {
         return false;
     }
     reportTemplate(includeInformacionMedicaTmu) {
-        const affirmative = 'Por favor, ampliar las respuestas afirmativas:';
+        const affirmative = 'Por favor, ampliar las respuestas afirmativas';
         return [
             {
                 title: 'Datos personales',
@@ -417,48 +480,47 @@ class PdfService {
                     { key: 'home_address', label: 'Domicilio' },
                     { key: 'residence_time', label: 'Tiempo de residencia' },
                     { key: 'foreign_residence', label: 'Residencia en el extranjero (Dónde / cuándo)' },
-                    { key: 'marital_status', label: 'Estado Civil' },
-                    { key: 'dob', label: 'Fecha de Nacimiento' },
-                    { key: 'nationality', label: 'Nacionalidad' },
                     { key: 'mobile', label: 'Celular' },
-                    { key: 'email', label: 'E-mail' },
+                    { key: 'email', label: 'E-Mail' },
+                    { key: 'dob', label: 'Fecha de Nacimiento' },
+                    { key: 'marital_status', label: 'Estado Civil' },
                     { key: 'spouse_name', label: 'Nombre del Cónyuge' },
                     { key: 'children', label: 'Hijos' },
+                    { key: 'nationality', label: 'Nacionalidad' },
                 ],
             },
             {
                 title: 'Profesión – Actividad Laboral',
                 fields: [
                     { key: 'profession_studies', label: 'Profesión / Estudios Cursados' },
-                    { key: 'business_address', label: 'Domicilio Comercial' },
-                    { key: 'functions', label: 'Funciones' },
-                    { key: 'clients', label: 'Clientes' },
-                    { key: 'seniority', label: 'Años de servicio' },
-                    { key: 'employees', label: 'Cantidad de Empleados' },
-                    { key: 'business_nature', label: 'Naturaleza del Negocio' },
-                    { key: 'employer', label: 'Empleador / Empresa' },
-                    { key: 'website', label: 'Sitio Web' },
                     { key: 'occupation', label: 'Ocupación / Cargo' },
+                    { key: 'employer', label: 'Empleador / Empresa' },
+                    { key: 'functions', label: 'Funciones' },
+                    { key: 'business_nature', label: 'Naturaleza del Negocio' },
+                    { key: 'seniority', label: 'Años de servicio' },
                     { key: 'employee_or_partner', label: '¿Es empleado o socio?' },
+                    {
+                        key: 'socios_participacion',
+                        label: 'Indicar número de socios y porcentaje de participación',
+                    },
+                    { key: 'business_address', label: 'Domicilio Comercial' },
+                    { key: 'website', label: 'Sitio Web' },
                     { key: 'other_occupation', label: 'Otra Ocupación Actual (describa)' },
-                    { key: 'company_start', label: 'Fecha de Creación de la Empresa' },
                 ],
             },
             {
                 title: 'Salud',
                 fields: [
                     { key: 'doctor_name', label: 'Nombre del Médico Personal' },
+                    { key: 'medical_coverage', label: 'Cobertura Médica' },
+                    { key: 'last_consult', label: 'Fecha Última Consulta Médica' },
+                    { key: 'consultation_reason', label: 'Motivo de la Consulta' },
+                    { key: 'doctor_contact', label: 'Nombre, Dirección del Médico Consultado' },
+                    { key: 'studies', label: 'Estudios realizados' },
                     { key: 'results', label: 'Resultados Obtenidos' },
                     { key: 'weight', label: 'Peso (kg / lb)' },
-                    { key: 'weight_unit', label: 'kg / lb' },
                     { key: 'height', label: 'Altura (cm / ft)' },
-                    { key: 'height_unit', label: 'cm / ft' },
                     { key: 'weight_change', label: 'Cambio de Peso' },
-                    { key: 'medical_coverage', label: 'Cobertura Médica' },
-                    { key: 'studies', label: 'Estudios realizados' },
-                    { key: 'consultation_reason', label: 'Motivo de la Consulta' },
-                    { key: 'last_consult', label: 'Fecha Última Consulta Médica' },
-                    { key: 'doctor_contact', label: 'Nombre, Dirección del Médico Consultado' },
                     { key: 'deafness', label: 'Sordera' },
                     { key: 'blindness', label: 'Ceguera' },
                     { key: 'physical_alterations', label: 'Alteraciones Físicas' },
@@ -492,6 +554,8 @@ class PdfService {
                     { key: 'travel_transport', label: 'Medio' },
                     { key: 'travel_reason', label: 'Motivo' },
                     { key: 'travel_frequency', label: 'Frecuencia' },
+                    { key: 'travel_plans', label: 'Tiene planes de viajar/destino/fecha:' },
+                    { key: 'other_travels', label: 'Otros viajes realizados/ destino/ fecha/ frecuencia:' },
                 ],
             },
             {
@@ -499,12 +563,12 @@ class PdfService {
                 fields: [
                     { key: 'diving', label: '¿Buceo?' },
                     { key: 'racing', label: '¿Carrera de Vehículos?' },
+                    { key: 'pilot', label: '¿Es Piloto de avión o Piloto Estudiante?' },
                     { key: 'ultralight', label: 'Aviones Ultraligeros' },
                     { key: 'parachute', label: 'Paracaidismo' },
                     { key: 'paragliding', label: 'Parapente' },
                     { key: 'climbing', label: 'Escalamiento de montañas' },
                     { key: 'other_risk', label: 'Otra Actividad de Riesgo (ampliar)' },
-                    { key: 'pilot', label: '¿Es Piloto de avión o Piloto Estudiante?' },
                     {
                         key: 'accidents',
                         label: '¿Ha sufrido algún accidente o lesión practicando un deporte o actividad física? (En caso afirmativo, detallar circunstancias, fecha, lugar, secuelas)',
@@ -527,8 +591,9 @@ class PdfService {
                     { key: 'smoker', label: '¿Es Fumador o utiliza algún tipo de tabaco?' },
                     { key: 'tobacco_type', label: 'Tipo de Tabaco' },
                     { key: 'tobacco_amount', label: 'Cantidad y Frecuencia de Consumo' },
-                    { key: 'tobacco_period', label: 'Período de consumo' },
                     { key: 'tobacco_last', label: 'Fecha del Último consumo' },
+                    { key: 'tobacco_period', label: 'Período de consumo' },
+                    { key: 'tobacco_in_past', label: '¿Lo ha sido en el pasado?' },
                     { key: 'vape', label: '¿Consume cigarrillo electrónico?' },
                     { key: 'vape_details', label: 'Frecuencia: Detalles' },
                 ],
@@ -537,24 +602,35 @@ class PdfService {
                 title: 'Alcohol – Drogas',
                 fields: [
                     { key: 'alcohol', label: '¿Toma Bebidas Alcohólicas?' },
+                    { key: 'alcohol_frequency_detail', label: 'Tipo, frecuencia y cantidad:' },
                     { key: 'marijuana', label: 'Marihuana' },
+                    { key: 'amphetamines', label: 'Anfetaminas' },
+                    { key: 'barbiturics', label: 'Barbitúricos' },
                     { key: 'cocaine', label: 'Cocaína' },
                     { key: 'lsd', label: 'LSD' },
-                    { key: 'amphetamines', label: 'Anfetaminas' },
                     { key: 'stimulants', label: 'Estimulantes' },
-                    { key: 'barbiturics', label: 'Barbitúricos' },
                     { key: 'other_drugs', label: 'Otras Drogas' },
                     { key: 'treatment', label: 'Tratamiento por Consumo de Drogas / Alcohol' },
                     { key: 'treatment_detail', label: 'Detalle del tratamiento (centro, fechas, etc.)' },
+                    {
+                        key: 'professional_athlete_doping',
+                        label: 'En caso de deportista profesional ¿Dopaje positivo?',
+                    },
                     { key: 'alcohol_drogas_detalle_respuesta_afirmativa', label: affirmative },
                 ],
             },
             {
                 title: 'Política',
                 fields: [
-                    { key: 'pep', label: '¿Es PEP? (En caso de afirmativo dar detalles)' },
+                    {
+                        key: 'pep',
+                        label: '¿Es PEP? En caso afirmativo, dar detalles de su cargo y funciones:',
+                    },
                     { key: 'pep_detail', label: 'Detalle PEP (cargo, organismo, etc.)' },
-                    { key: 'political_party', label: '¿Participa en partido político? (En caso de afirmativo dar detalles)' },
+                    {
+                        key: 'political_party',
+                        label: '¿Participa o es miembro de algún partido político? En caso afirmativo, dar detalles:',
+                    },
                     { key: 'political_party_detail', label: 'Detalle participación política' },
                 ],
             },
@@ -582,26 +658,29 @@ class PdfService {
                 ],
             },
             {
-                title: 'Historia de Seguros',
+                title: 'Historia de Seguros - Vigentes',
                 fields: [
-                    { key: 'insurance_date', label: 'Fecha del seguro' },
                     { key: 'insurance_company', label: 'Compañía' },
                     { key: 'insurance_amount', label: 'Monto' },
-                    { key: 'insurance_reason', label: 'Motivo del seguro' },
-                    { key: 'simultaneous_policy', label: 'Seguro de vida en otra compañía (detallar)' },
+                    { key: 'insurance_date', label: 'Fecha de Emisión' },
+                    { key: 'insurance_reason', label: 'Seguro personal o Negocios' },
+                    {
+                        key: 'simultaneous_policy',
+                        label: '¿Se encuentra aplicando un seguro de vida para otra Cía. simultáneamente? En caso afirmativo, dar detalles:',
+                    },
                 ],
             },
             {
-                title: 'Detalle del seguro',
+                title: 'Información del seguro y origen de fondos',
                 fields: [
-                    { key: 'insurance_object', label: 'Objeto del seguro' },
+                    { key: 'insurance_object', label: 'Propósito del seguro' },
+                    { key: 'replaces_policy', label: '¿Este seguro reemplaza alguna póliza actual?' },
+                    { key: 'previous_rejected', label: '¿Le han rechazado alguna solicitud anteriormente?' },
+                    { key: 'previous_rejection_reason', label: 'Motivo del Rechazo' },
                     { key: 'policy_holder', label: 'Tomador de la Póliza' },
                     { key: 'policy_payer', label: 'Pagador de la Póliza' },
-                    { key: 'bank_name', label: 'Banco de origen de fondos' },
                     { key: 'funds_origin', label: 'Origen de fondos' },
-                    { key: 'previous_rejected', label: '¿Solicitud rechazada anteriormente?' },
-                    { key: 'previous_rejection_reason', label: 'Motivo del Rechazo' },
-                    { key: 'replaces_policy', label: '¿Reemplaza póliza actual?' },
+                    { key: 'bank_name', label: 'Banco de donde provienen los fondos' },
                 ],
             },
             {
@@ -629,7 +708,10 @@ class PdfService {
             },
             {
                 title: 'Pasivo Personal',
-                fields: [{ key: 'total_liabilities', label: 'Total Pasivo Personal' }],
+                fields: [
+                    { key: 'total_liabilities', label: 'Total Pasivo Personal' },
+                    { key: 'passive_concept_detail', label: 'Concepto o detalles' },
+                ],
             },
             {
                 title: 'Finanzas – Otros',
@@ -637,15 +719,20 @@ class PdfService {
                     { key: 'banks', label: 'Bancos con los cuales opera' },
                     { key: 'bank_relationship', label: 'Antigüedad' },
                     { key: 'credit_cards', label: 'Tarjetas de crédito' },
-                    { key: 'bankruptcy', label: '¿Está en Quiebra Comercial?' },
+                    { key: 'bankruptcy', label: '¿Quiebra Comercial?' },
                     { key: 'negative_history', label: 'Antecedentes comerciales negativos' },
+                    { key: 'negative_history_detail', label: 'De ser afirmativo detallar' },
                 ],
             },
             {
                 title: 'Historial de Manejo',
                 fields: [
-                    { key: 'dui', label: 'Condenas en los últimos 5 años' },
+                    {
+                        key: 'dui',
+                        label: 'Condenas o infracciones por conducir bajo la influencia de alcohol o drogas',
+                    },
                     { key: 'traffic', label: 'Infracciones de tránsito últimos 3 años' },
+                    { key: 'historial_manejo_detalle_respuesta_afirmativa', label: affirmative },
                 ],
             },
             {
@@ -655,8 +742,8 @@ class PdfService {
                     { key: 'civil_case', label: 'Juicio Civil' },
                     { key: 'commercial_case', label: 'Juicio Comercial' },
                     { key: 'labor_case', label: 'Juicio Laboral' },
-                    { key: 'juicios_detalle_respuesta_afirmativa', label: affirmative },
                     { key: 'arrested', label: '¿Ha sido Arrestado? Detallar' },
+                    { key: 'juicios_detalle_respuesta_afirmativa', label: affirmative },
                 ],
             },
             {
@@ -853,16 +940,6 @@ class PdfService {
                 }
             });
         });
-        doc.y = y;
-        doc.x = margin;
-        doc.font('ReportTitle').fontSize(12);
-        const resBarTitle = 'Resumen de la conversación telefónica realizada al propuesto asegurado:';
-        const resBarGuess = Math.max(26, doc.heightOfString(resBarTitle.toUpperCase(), { width: usableW - 26, lineGap: 1 }) + 14) + 12;
-        y = this.ensurePageSpace(doc, doc.y, resBarGuess + 24);
-        const resBarH = this.drawReportSectionBar(doc, margin, y, usableW, resBarTitle);
-        y += resBarH + 10;
-        doc.y = y;
-        doc.x = margin;
         const strMeta = (v) => {
             if (v == null)
                 return '';
@@ -889,6 +966,14 @@ class PdfService {
         y = this.ensurePageSpace(doc, y, metaRow5H);
         this.drawReportFieldCell(doc, margin, y, usableW, 'Fecha del reporte descargado', fechaDescarga);
         y += metaRow5H + 8;
+        doc.y = y;
+        doc.x = margin;
+        doc.font('ReportTitle').fontSize(12);
+        const resBarTitle = 'Resumen de la conversación telefónica realizada al propuesto asegurado:';
+        const resBarGuess = Math.max(26, doc.heightOfString(resBarTitle.toUpperCase(), { width: usableW - 26, lineGap: 1 }) + 14) + 12;
+        y = this.ensurePageSpace(doc, y, resBarGuess + 24);
+        const resBarH = this.drawReportSectionBar(doc, margin, y, usableW, resBarTitle);
+        y += resBarH + 10;
         doc.y = y;
         doc.x = margin;
         const includeInformacionMedicaTmu = this.serviceTypeShowsInformacionMedica(request.service_type);
